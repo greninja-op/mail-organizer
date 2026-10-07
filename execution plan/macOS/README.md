@@ -27,11 +27,11 @@ Never treat compilation as completion. Never claim unrun tests, runtime checks, 
 ## Phase map
 00 — macOS Architecture, Shared-Core & Desktop Audit
 01 — macOS Target & Toolchain Foundation
-02 — Shared KMP Contract & macOS Platform Boundary
+02 — Shared Rust Contract & macOS Platform Boundary
 03 — SwiftUI App Shell, Scenes & Lifecycle
 04 — Desktop Navigation & Multi-Column Workspace
 05 — macOS Visual System, Tokens & Theming
-06 — KMP Framework Integration & Dependency Boundary
+06 — Rust Core Integration & Dependency Boundary
 07 — Local Persistence & State Hydration
 08 — Secure Storage, Keychain & Account State
 09 — Google OAuth & Account Connection
