@@ -14,13 +14,25 @@ Build the Android UI foundation as the first serious product-quality milestone.
 - Centralize all design tokens and components so future screens cannot drift visually.
 - Use official Material Symbols/system icons or deliberately authored vectors; never AI-generate functional UI icons.
 
-### 2. Authentication entry experience
+### 2. Android mailbox shell
+Establish the reusable visual shell for the primary mailbox experience:
+- top app bar with three-line navigation drawer affordance;
+- Gmail-familiar search field/affordance at the top;
+- account/profile circle on the right;
+- navigation drawer destinations: All Inbox, Primary, Promotional, Social, Spam and Starred;
+- compact account/source indicator on each All Inbox message row;
+- familiar Star action on individual message rows;
+- company grouping/filtering surface inside a selected category rather than in the global drawer.
+
+Use clearly labeled fixtures in this UI-only foundation where real Gmail data is not yet available.
+
+### 3. Authentication entry experience
 - Build the sign-in entry point and surrounding loading/error/cancel/denied states.
 - The app must use official Google OAuth/browser authentication when authentication is implemented.
 - Never build a password field or fake Google credential collector.
 - Make the visual hierarchy, spacing and interaction language feel native to Android/Google apps.
 
-### 3. Adaptive performance foundation
+### 4. Adaptive performance foundation
 Create a lightweight capability assessment and PerformanceProfile abstraction.
 
 Assess only useful, permitted signals such as:
@@ -48,7 +60,7 @@ Do not equate 120 Hz display support with a 120 FPS target. Respect Android's fr
 
 Do not continuously benchmark the phone or poll hardware. Re-evaluate only at startup and meaningful state changes.
 
-### 4. Motion system
+### 5. Motion system
 Create a centralized motion policy using Material motion schemes where available.
 - Essential motion: lowest cost.
 - Standard motion: everyday navigation/list interactions.
@@ -57,7 +69,7 @@ Create a centralized motion policy using Material motion schemes where available
 
 Every animation must have a purpose and a bounded cost. No decorative animation should interfere with scrolling, typing, navigation or synchronization.
 
-### 5. Gmail → Mail Organizer recovery experience
+### 6. Gmail → Mail Organizer recovery experience
 Design and implement the reusable sync/recovery UI shell, but do not invent real sync data in this phase.
 
 When real synchronization later takes measurable time:
@@ -73,10 +85,21 @@ When real synchronization later takes measurable time:
 
 Use fixtures only as clearly labeled development data and keep the UI architecture ready for the real Phase 4 sync engine.
 
-### 6. Core Android shell
+### 7. Account switcher and add-account UX
+The account/profile affordance opens a familiar Google-style account switcher without copying proprietary artwork.
+
+It must provide:
+- current account identity;
+- connected account list;
+- add another account;
+- account-specific sync/recovery status where relevant.
+
+Swiping the profile/account affordance should switch to the next account immediately where supported. Adding an account must reuse the Gmail → Mail Organizer recovery animation when actual retrieval takes meaningful time.
+
+### 8. Core Android shell
 Implement the initial application shell, navigation structure, responsive layouts, light/dark themes, loading/empty/error/offline states and accessibility foundations according to design.md.
 
-### 7. Visual consistency gate
+### 9. Visual consistency gate
 Before completion, review every implemented screen together:
 - typography
 - spacing
