@@ -1,15 +1,15 @@
-# Phase 0 — iPadOS Platform Architecture, Shared-Core & Display Audit
+# Phase 0 — iPadOS Architecture, Shared-Core & Display Audit
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is an iPadOS-only phase. All iPadOS-specific work belongs under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP/common source remains shared; never duplicate common business logic into iPadOS.
+This is an iPadOS-only phase. All iPadOS-specific implementation, tests and documents belong under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP/mobile business and data logic remains common.
 
-## Mission
+## MISSION
 
-Audit actual repo; classify shared KMP, Android, iOS and iPad targets EXISTING/PARTIAL/MISSING/DUPLICATE/UNSAFE; map common source vs UI; inspect SwiftUI/iPad target, SDK/dependencies, NavigationSplitView/window APIs, Stage Manager, pointer/keyboard, persistence, OAuth, sync, notifications, Calendar/Tasks; inventory every screen and determine what information can coexist at iPad widths; establish content-driven breakpoints; create permanent isolation/common-source rule; baseline build only; no later functionality; validate Simulator sizes and real iPad where available; report evidence, blockers and exact commands; STOP.
+Audit the actual repository before implementation. Inventory KMP shared modules, Android, iOS and any existing iPad target; classify relevant components EXISTING/PARTIAL/MISSING/DUPLICATE/UNSAFE. Map exactly which source files must remain common and which presentation/OS integrations belong to iPadOS. Audit Kotlin/Native compatibility, Xcode/SwiftUI target, dependencies, persistence, OAuth, sync, notifications, Calendar/Tasks, tests and build tooling. Perform a display/viewport audit across portrait, landscape, narrow split, medium split, full screen and Stage Manager. Identify information that can be simultaneously exposed on iPad without clutter. Define content-driven layout states and risks. Do not implement later product features. Produce an evidence-based audit, baseline build/test commands, blockers and permanent platform-boundary rule.
 
-## Required completion protocol
+## REQUIRED VALIDATION
 
-Inspect root instructions and iPadOS requirements/spec/design/editor-rules. Inspect actual repository before implementation. Implement only this phase. Build and run. Exercise realistic and failure states. Fix failures. Rebuild and retest. Update status and permanent rules only when genuinely required. Never claim unrun tests or fabricate evidence.
+Inspect the actual repository before deciding. Implement only this phase. Run exact relevant build and automated tests, then runtime validation on iPad Simulator and a real iPad when available. Test failure and recovery states relevant to the phase. Fix failures, rebuild/reinstall/retest, record evidence, update status and permanent editor rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
