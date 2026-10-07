@@ -1,19 +1,15 @@
-# Phase 14 — iPadOS Advanced Automation
+# Phase 14 — iPad Mail Workspace & Conversation Viewer
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-iPadOS only. All iPadOS-specific work belongs under iPadOS/. Never modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Keep business/data logic in shared KMP.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission
+## MISSION
 
-Expose safe automation builder/list/detail/history in a tablet workspace; finite triggers/conditions/actions, account scope, preview/dry-run, confirmation, enable/disable/delete/re-enable, idempotency/loop protection, background constraints, notifications, circuit breaker and destructive safeguards. No arbitrary scripts or automatic send/reply/forward/permanent delete. Test duplicate/retry/partial failure/stale schedule/account removal/offline/background interruption/malicious email.
+Turn the mailbox into the full iPad workspace. Build adaptive sidebar/category context + persistent list + selected conversation/detail where width permits. Preserve list context while reading. Add thread grouping, conversation navigation, message-level actions already supported by shared contracts, attachment presentation, loading/stale/offline/error states and selection restoration. Verify narrow split fallback, landscape/wide layouts, Stage Manager resizing, large Dynamic Type, pointer/keyboard navigation, large threads and rapid selection changes. Do not implement new backend intelligence in this phase.
 
-## iPad workspace requirement
+## ACCEPTANCE / VALIDATION
 
-Use the larger viewport for meaningful contextual information, not decoration. Prefer adaptive sidebar/list/detail/inspector layouts when available. Preserve a usable fallback at narrow split widths. Pointer, keyboard, touch, Dynamic Type and VoiceOver must remain first-class.
-
-## Completion protocol
-
-Inspect actual repository. Implement only this phase. Build and test. Exercise multiple window sizes, orientations and relevant input modes. Fix and retest. Record exact evidence. Update documentation/status and permanent rules only when required.
+Inspect the actual repository and prior evidence. Implement only this phase. Run targeted automated tests, then iPad Simulator and real iPad validation where available. Test multiple viewport states relevant to the feature and exercise failure/recovery paths. Fix, rebuild/reinstall/retest and record exact evidence. Update status/rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
