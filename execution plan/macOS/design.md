@@ -1,22 +1,19 @@
 # macOS Visual & UX Contract
 
 ## Principle
-macOS should feel native to the desktop while preserving Mail Organizer's product identity and Gmail-familiar information hierarchy. It is not a scaled iPad UI.
+macOS is a native desktop client, not a scaled mobile UI. Rust owns product behavior; SwiftUI presents that behavior using native macOS conventions.
 
-## Layout
-Use adaptive SwiftUI split views and desktop window sizing. The workspace may use sidebar + message list + detail, with an optional inspector/context pane where the width supports it. Preserve selection and navigation state when resizing.
+## Layout and interaction
+Use adaptive SwiftUI split views, resizable windows, sidebar + list + detail, optional inspector, toolbar, menu commands, keyboard shortcuts, pointer/trackpad, context menus, selection semantics, multiple windows/scenes, VoiceOver and reduced motion.
 
 ## Navigation
-The primary hierarchy includes All Inbox, Primary, Promotional, Social, Spam, and Starred. Companies appear as filters within the selected category. Company pinning moves a company to the top of the company filter and is distinct from starring individual messages.
-
-## Toolbar and interaction
-Provide prominent search, account/profile access, useful contextual actions, standard macOS toolbar/menu behavior, keyboard shortcuts, context menus, pointer states, and sensible selection behavior. Avoid fake Google login forms.
+All Inbox, Primary, Promotional, Social, Spam, and Starred are primary destinations. Companies are filters within the selected category. Company pinning is separate from message starring.
 
 ## Visual system
-Use centralized design tokens for typography, spacing, surfaces, borders, semantic colors, icons, motion, and state presentation. Support light/dark mode and accessibility contrast. Prefer native SF Symbols/system controls or permitted/original vectors for functional UI.
+Centralize typography, spacing, surfaces, semantic colors, separators, icons, motion and state tokens. Support light/dark mode, contrast and accessibility sizing. Prefer native SF Symbols/system controls for functional UI.
 
-## Motion
-Motion must communicate real state. Sync animation may show Gmail-to-Mail Organizer movement only when an actual sync is occurring; determinate progress must be backed by trustworthy progress. Never fabricate percentages. Respect reduced-motion settings.
+## Rust/Swift boundary
+SwiftUI must consume Rust-owned models/use cases rather than reproduce business rules. UI state translation belongs at the boundary and must not create a second source of truth.
 
-## Quality
-Test multiple window sizes, light/dark mode, large accessibility text, VoiceOver, keyboard-only navigation, pointer/trackpad interaction, empty/loading/error/offline states, and selection restoration. Preserve performance during large mailbox rendering and scrolling.
+## Motion and QA
+Sync motion must represent real sync state; never fabricate percentages. Validate multiple window sizes, light/dark mode, accessibility text, VoiceOver, keyboard-only navigation, pointer interaction, offline/error/loading states, selection restoration and large-mailbox performance.
