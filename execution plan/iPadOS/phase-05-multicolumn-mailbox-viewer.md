@@ -1,15 +1,15 @@
-# Phase 5 — iPadOS Multi-Column Mailbox & Email Viewer
+# Phase 5 — Design Tokens, Theming & iPad Visual System
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is iPadOS only. iPadOS-specific work belongs under iPadOS/. Never modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Common KMP business/data logic must remain shared.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission and required work
+## MISSION
 
-Build the core tablet workspace: sidebar categories, message list and selected message/detail; adaptive two/three-column layout; richer rows with sender, subject, preview, time, source account, company, priority, Action Required, attachment and conversation indicators where available; selection persistence; thread/detail; sanitized HTML; safe links; pagination/lazy rendering; narrow-width fallback; keyboard/pointer; VoiceOver; verify portrait/landscape/split/Stage Manager, long threads, large Dynamic Type and offline/error states; do not merely scale iPhone UI; STOP.
+Establish shared semantic visual tokens without duplicating business constants. Define typography, spacing, colors, surfaces, shapes, icon semantics, motion and state tokens so Android/iPhone/iPad share product meaning while iPad can express its own layout. Implement light/dark and accessibility variants. Evaluate supported Apple visual materials, including Liquid Glass-era public APIs where appropriate, without private APIs or unofficial clones. Validate token consistency across sidebar/list/detail, Dynamic Type, contrast, Reduce Motion and narrow widths. Do not implement mailbox data.
 
-## Validation and completion
+## ACCEPTANCE / VALIDATION
 
-Inspect actual repository and all master iPadOS documents first. Implement only this phase. Build, automated-test, run on iPad Simulator and real iPad where available. Test multiple widths/orientations, narrow split, full screen, Stage Manager, Dynamic Type, VoiceOver, pointer and keyboard where relevant. Fix and retest. Record exact evidence. Update status/permanent rules only when genuinely required.
+Inspect actual repository and prior phase evidence. Implement only this phase. Run targeted unit/integration tests and runtime tests on iPad Simulator and real iPad where available. Exercise success, failure, cancellation and recovery paths appropriate to the phase. Inspect logs and persisted state. Fix, rebuild/reinstall/retest. Record exact evidence. Update status and permanent rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
