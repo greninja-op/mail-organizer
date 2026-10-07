@@ -1,15 +1,15 @@
-# Phase 15 — iPadOS Adaptive Layout, Performance, Accessibility & Input
+# Phase 15 — Categories, Company Intelligence & Company Workspace
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data source remains common.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission and required work
+## MISSION
 
-Perform a dedicated tablet optimization pass. Audit adaptive layout transitions, list virtualization, rendering/state churn, image/cache memory, search, large mailboxes/threads, window resizing, split-view transitions, Stage Manager, background work, battery and thermal behavior. Complete VoiceOver, Dynamic Type, Reduce Motion, pointer hover, keyboard shortcuts/focus, contextual menus and accessibility hit targets. Profile realistic workflows with Instruments/Xcode tools where available. Test cold/warm launch, scrolling, search, sync, thread opening, account switching, resizing and constrained memory. Never optimize only for benchmark FPS; ProMotion is not guaranteed 120 FPS.
+Expose deterministic category/company intelligence in the iPad workspace. Implement All Inbox, Primary, Promotional, Social, Spam and Starred views using shared classification. Build a company context/filter area that remains within the selected category. Company pinning moves companies to the top of the company filter and is distinct from email starring. Verify account-scoped company grouping, unknown senders, ambiguous domains, classification explanations, category transitions and selection preservation across list/detail columns. Test adversarial sender metadata and cross-account leakage.
 
-## Completion protocol
+## ACCEPTANCE / VALIDATION
 
-Read root instructions and iPadOS master documents. Inspect actual repository and previous phase evidence. Implement only this phase. Build, automated-test, run on iPad Simulator and real iPad where available, inspect logs/screenshots and perform viewport/accessibility/input/security QA. Fix failures, rebuild and retest. Update status and permanent rules only when genuinely required. Never claim unrun tests.
+Inspect actual repository and prior evidence. Implement only this phase. Run targeted unit/integration tests plus iPad Simulator and real iPad validation where available. Test multiple viewport modes, accessibility and relevant failure/recovery paths. Fix, rebuild/reinstall/retest and record exact evidence. Update status/rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
