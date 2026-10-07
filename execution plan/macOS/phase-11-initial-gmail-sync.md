@@ -1,10 +1,14 @@
+## Mandatory Rust desktop architecture
+
+**Rust is the primary implementation language for this macOS phase.** Platform-neutral business/data/application logic belongs in the reusable Rust desktop core. Swift/SwiftUI is for native macOS UI and OS integration only; it must not duplicate Rust business rules. Design the Rust core for Windows reuse.
+
 # Phase 11 — Initial Gmail Sync
 
 ## Mission
 Implement and verify **only Phase 11** of the Mail Organizer macOS execution plan. This phase is part of a sequential 31-phase roadmap. Do not implement Phase 12 or any later phase early.
 
 ## Mandatory macOS isolation
-All macOS-specific implementation, SwiftUI UI, resources, tests, entitlements, configuration, scripts, and release artifacts must remain inside the macOS platform boundary. Never create, edit, delete, rename, or reorganize `iOS/`, `iPadOS/`, `AndroidTablet/`, `Android/`, `Windows/`, `Linux/`, or another sibling platform area during this phase. Shared KMP changes are allowed only when they are genuinely platform-neutral and directly required by this phase.
+All macOS-specific implementation, SwiftUI UI, resources, tests, entitlements, configuration, scripts, and release artifacts must remain inside the macOS platform boundary. Never create, edit, delete, rename, or reorganize `iOS/`, `iPadOS/`, `AndroidTablet/`, `Android/`, `Windows/`, `Linux/`, or another sibling platform area during this phase. Shared Rust desktop core changes are allowed only when they are genuinely platform-neutral and directly required by this phase.
 
 ## Required reading and state discovery
 Before editing:
@@ -20,7 +24,7 @@ Implement the first real Gmail sync for a connected account. Define phases for d
 
 ## Implementation requirements
 - Keep the implementation production-oriented rather than a mock or screenshot-only prototype.
-- Reuse existing shared KMP/domain/data infrastructure where it is correct.
+- Reuse existing shared Rust desktop core/domain/data infrastructure where it is correct.
 - Do not duplicate business logic in SwiftUI merely for convenience.
 - Define explicit boundaries between UI state, application/use-case state, domain models, persistence, and external APIs.
 - Handle loading, success, empty, error, cancellation, offline, stale-data, and recovery states wherever applicable.
