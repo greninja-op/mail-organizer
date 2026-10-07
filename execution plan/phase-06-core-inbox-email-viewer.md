@@ -6,6 +6,14 @@ Read requirements.md, spec.md, design.md and editor-rules.md before starting. Co
 ## Phase objective
 Build the local-data Mail/Inbox/thread/email viewer. Use synchronized local data, safe HTML rendering, thread timelines, sender metadata and Gmail read-only state. Provide loading/empty/error/offline states, attachment metadata without automatic downloads, safe user-initiated links, accessibility, dark mode and pagination. No new sync logic or Gmail writes.
 
+## UI requirements
+- All Inbox must expose source Gmail account identity on every message row through a compact circular account indicator or equivalent.
+- The account indicator represents the receiving/source mailbox, not the sender/company avatar.
+- Message rows expose a familiar Star control.
+- Starring an email preserves its existing category and adds it to the global Starred view.
+- The top app bar uses the shared Gmail-familiar search/account/navigation shell defined in design.md.
+- Category/company filter context must remain visible when the user drills into a company within a category.
+
 ## Mandatory verification
 - Build with the repository's official Gradle/KMP tooling.
 - Run relevant automated tests and record real results.
