@@ -1,15 +1,15 @@
-# Phase 16 — iPadOS Comprehensive QA & Adversarial Testing
+# Phase 16 — Search & Local Index
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data source remains common.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission and required work
+## MISSION
 
-QA the complete real iPad product through Phase 15. Gates: clean build, dependencies, secret scan, fresh/upgrade install, launch/relaunch/process death, OAuth, multi-account/cross-account attacks, Gmail sync, parsing/HTML security, classification/company/priority/action, search/index, rules/corrections, temporal/conversation, Calendar/Tasks, offline/background, notifications, AI, automation, privacy/security, Keychain/entitlements, accessibility, Dynamic Type, pointer/keyboard, dark mode, every important viewport/window mode, performance/memory/storage/battery, migration/corruption/recovery and release configuration. Classify P0-P3. Never fabricate evidence.
+Implement the iPad search workspace over the common local index. Support sender, subject, body, thread, company, domain, category, priority, action and Gmail labels where available. Provide keyboard-friendly search, cancellation, pagination, recent-search behavior with privacy controls, stale-index handling and rich result/detail context. Test special characters, partial terms, empty queries, huge datasets, deleted messages, stale index, offline search, account switching and performance. No second search database.
 
-## Completion protocol
+## ACCEPTANCE / VALIDATION
 
-Read root instructions and iPadOS master documents. Inspect actual repository and previous phase evidence. Implement only this phase. Build, automated-test, run on iPad Simulator and real iPad where available, inspect logs/screenshots and perform viewport/accessibility/input/security QA. Fix failures, rebuild and retest. Update status and permanent rules only when genuinely required. Never claim unrun tests.
+Inspect actual repository and prior evidence. Implement only this phase. Run targeted unit/integration tests plus iPad Simulator and real iPad validation where available. Test multiple viewport modes, accessibility and relevant failure/recovery paths. Fix, rebuild/reinstall/retest and record exact evidence. Update status/rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
