@@ -1,1159 +1,1454 @@
-# PHASE 0 — PROJECT AUDIT & DEVELOPMENT FOUNDATION
+# PHASE 3 — GOOGLE OAUTH & GMAIL CONNECTION
 
-You are now beginning **Phase 0** of the Mail Organizer Android application.
+You are now executing:
 
-This phase is **not** about building Gmail features yet.
+**Phase 3 — Google OAuth & Gmail Connection**
 
-Your responsibility in this phase is to deeply understand the existing project, establish the development foundation, configure the persistent engineering rules/skills, identify architectural risks, and make the repository ready for the remaining implementation phases.
+This phase must only begin after Phase 2 has been verified as complete.
 
-Do not rush into feature development.
+Do not execute Phase 4 or any later phase automatically.
 
----
-
-## 1. READ THE PROJECT CONTRACT FIRST
-
-Before modifying any code, read these four project documents completely:
-
-1. `requirements.md`
-2. `spec.md`
-3. `design.md`
-4. `editor-rules.md`
-
-Treat them as the authoritative product and engineering contract.
-
-The priority order is:
-
-1. `requirements.md`
-2. `spec.md`
-3. `design.md`
-4. `editor-rules.md`
-5. Existing architecture/implementation
-6. Official Android/Google API documentation
-7. Engineering judgment
-
-Do not silently contradict these documents.
-
-If the repository contains other planning documents, architecture documents, README files, ADRs, or existing project instructions, inspect them too and identify any conflicts.
-
-Do not delete or overwrite existing project documentation unless there is a clear reason.
-
----
-
-# 2. ESTABLISH THE PERSISTENT EDITOR SKILLS
-
-The project requires persistent engineering skills/rules.
-
-The following conceptual skills must exist for this project:
-
-- Mail Organizer — Architecture Skill
-- Mail Organizer — Android Development Skill
-- Mail Organizer — Gmail OAuth/API Skill
-- Mail Organizer — Privacy & Security Skill
-- Mail Organizer — Classification Engine Skill
-- Mail Organizer — Integration Skill
-- Mail Organizer — UI/UX Design Skill
-- Mail Organizer — Testing & QA Skill
-- Mail Organizer — Phase Execution Skill
-- Mail Organizer — Code Quality Skill
-
-Use the editor's **native persistent skill/rule mechanism** if one exists.
-
-If the current editor supports project-level skills, create these as actual persistent skills.
-
-If it does not support native skills, create the closest supported persistent project instruction mechanism instead.
-
-Do NOT invent fake configuration formats that the editor will not understand.
-
-The important requirement is that these rules must remain available in future sessions.
-
-Each skill should contain the relevant rules from `editor-rules.md`, while `editor-rules.md` remains the master reference.
-
-The skills must reinforce:
-
-- phase-based development
-- architecture separation
-- Gmail API usage
-- OAuth security
-- least privilege
-- local-first processing
-- privacy
-- deterministic classification
-- modular integrations
-- account isolation
-- UI/design consistency
-- testing
-- code quality
-- release safety
-
-After creating them, verify that they are actually recognized/available by the current editor environment if the editor provides a way to do so.
-
-Do not merely create files and assume they work.
-
----
-
-# 3. DETERMINE THE CURRENT REPOSITORY STATE
-
-Before changing anything, perform a complete repository audit.
-
-Inspect:
-
-### Project structure
-
-Identify:
-
-- root directory
-- Android modules
-- Gradle modules
-- source sets
-- resources
-- assets
-- test directories
-- build scripts
-- configuration files
-- documentation
-- generated files
-- local configuration
-- CI/CD configuration
-- GitHub configuration if present
-
-Produce a concise structural map.
-
-Example:
+The project follows a strict sequential execution model:
 
 ```text
-project/
-├── app/
-│   ├── src/main/
-│   ├── src/test/
-│   └── src/androidTest/
-├── ...
-├── gradle/
-├── build.gradle...
-└── ...
+Phase 0
+  ↓
+Phase 1
+  ↓
+Phase 2
+  ↓
+Phase 3 ← YOU ARE HERE
+  ↓
+Phase 4
+  ↓
+...
 ```
 
-Use the actual repository structure.
+Complete this phase, verify it, update the project documentation, and STOP.
+
+Do not implement Gmail synchronization, classification, Calendar, Tasks, AI, or other future functionality in this phase.
 
 ---
 
-# 4. IDENTIFY THE EXISTING ANDROID STACK
+# 1. DISCOVER THE PROJECT INSTRUCTION FOLDER
 
-Determine exactly what the project currently uses.
+Before doing anything:
 
-Inspect and record:
+1. Locate the Mail Organizer instruction folder.
+2. Read the available project `.md` files.
+3. Read:
+    - `requirements.md`
+    - `spec.md`
+    - `design.md`
+    - `editor-rules.md`
+    - relevant architecture/status documents
+    - this Phase 3 prompt
+4. Determine the actual current implementation state.
+5. Confirm Phase 2 is complete.
+6. Identify the Mail Organizer project root.
 
-### Language
-
-- Kotlin version
-- Java version if applicable
-- Kotlin/JVM configuration
-- Kotlin compiler configuration
-
-### Android
-
-- compileSdk
-- targetSdk
-- minSdk
-- buildTools if explicitly configured
-- Android Gradle Plugin version
-- Gradle version
-- namespace
-- application ID/package name
-
-### Architecture
-
-Determine whether the project currently uses:
-
-- MVVM
-- MVI
-- Clean Architecture
-- layered architecture
-- repository pattern
-- use cases/interactors
-- dependency injection
-- service locator
-- direct Activity/Fragment logic
-- Compose
-- XML layouts
-- mixed UI architecture
-
-Do not replace the architecture just because you personally prefer another pattern.
-
-First understand what exists.
+Do not assume the current working directory is the Mail Organizer project.
 
 ---
 
-# 5. AUDIT DEPENDENCIES
+# 2. STRICT MULTI-PROJECT ISOLATION
 
-Inspect every important dependency.
+The workspace may contain multiple unrelated Android applications.
 
-Group them into:
+You MUST identify the Mail Organizer project root before running:
 
-### UI
+- Gradle
+- Git
+- ADB
+- Android tooling
+- file modifications
+- build commands
+- tests
 
-For example:
+Only operate inside the Mail Organizer project.
 
-- Jetpack Compose
-- Material
-- Material 3
-- XML
-- Navigation
+Never modify sibling projects.
 
-### Architecture
+Never modify another project's:
 
-For example:
+- source
+- Gradle files
+- SDK configuration
+- build configuration
+- dependencies
+- manifests
+- signing configuration
+- environment files
+- tests
+- resources
+- generated files
+- Git repository
 
-- ViewModel
-- Lifecycle
-- Hilt
-- Koin
-- Coroutines
-- Flow
+Never upgrade or downgrade global Android SDK components just because another project uses a different version.
 
-### Persistence
+Never run Gradle from a parent workspace directory when that could target another project.
 
-For example:
+---
 
-- Room
-- DataStore
-- SQLite
-- Realm
-- other storage
+# 3. UPDATE `editor-rules.md`
 
-### Networking
+Before implementation, update `editor-rules.md` if necessary.
 
-For example:
+Add any permanent rules discovered during this phase, especially rules concerning:
 
-- Retrofit
-- OkHttp
-- Ktor
-- Google APIs
+- Google OAuth security
+- Gmail API security
+- least-privilege scopes
+- token handling
+- account isolation
+- OAuth disconnect/revocation
+- OAuth failure handling
+- test-account handling
+- no password collection
+- no token logging
+- production-vs-development OAuth configuration
+- Google Cloud project isolation
+- multi-account authorization
+- external permission transparency
 
-### Authentication
+Do this yourself.
 
-Identify existing:
+Do not ask the user to manually edit `editor-rules.md`.
 
-- Google Sign-In
+Do not replace the whole file unnecessarily.
+
+---
+
+# 4. PHASE OBJECTIVE
+
+The objective of Phase 3 is to establish a secure, production-oriented Google authentication and Gmail authorization foundation.
+
+At the end of this phase, a user should be able to:
+
+```text
+Open Mail Organizer
+        ↓
+Choose "Connect Gmail"
+        ↓
+Google authentication
+        ↓
+Grant the requested Gmail permission
+        ↓
+Return to Mail Organizer
+        ↓
+See the connected Gmail account
+```
+
+The app must NOT yet synchronize the mailbox.
+
+The Gmail connection should only establish authorization and account identity.
+
+---
+
+# 5. IMPORTANT: USE OFFICIAL GOOGLE AUTHENTICATION
+
+Use official Google-supported Android authentication mechanisms and APIs.
+
+Do NOT implement:
+
+- Gmail website scraping
+- embedded Gmail login pages
+- username/password collection
+- cookie extraction
+- browser automation for Gmail
+- AccessibilityService-based Gmail control
+- reverse-engineered Gmail APIs
+- unofficial authentication hacks
+
+The user must authenticate through Google's supported OAuth flow.
+
+---
+
+# 6. DETERMINE THE CURRENT GOOGLE AUTHENTICATION STACK
+
+Inspect the project.
+
+Determine whether it currently uses:
+
 - Credential Manager
+- Google Identity Services
+- Google Sign-In
 - OAuth libraries
-- token libraries
+- Google API client libraries
+- custom authentication abstractions
 
-### Testing
+Do not introduce redundant authentication systems.
 
-Identify:
+If an existing supported authentication foundation is present, use it where appropriate.
 
-- JUnit
-- MockK
-- Mockito
-- Turbine
-- Compose UI tests
-- Espresso
-- Robolectric
-
-### Other dependencies
-
-Identify anything else that may affect architecture, performance, security, licensing, or future Gmail integration.
-
-For each important dependency, determine whether it should remain, be upgraded, replaced, or deferred.
-
-Do not upgrade dependencies simply for the sake of upgrading them.
+If it is outdated or incompatible with the requirements, document why it must be replaced before doing so.
 
 ---
 
-# 6. AUDIT THE CURRENT BUILD
+# 7. GOOGLE CLOUD PROJECT
 
-Before making changes, run the project's current build.
+Establish the development Google Cloud configuration required by Mail Organizer.
 
-At minimum determine:
+Verify or configure the appropriate Google Cloud project.
 
-- whether the project compiles
-- whether unit tests compile
-- whether unit tests pass
-- whether Android tests compile if practical
-- whether lint/static analysis is configured
-- whether there are warnings/errors
-- whether Gradle configuration is healthy
+The project must have the required APIs enabled.
 
-Record the baseline result.
+At minimum, Gmail API must be enabled.
 
-If the project already fails to build:
+Do not enable unrelated Google APIs unnecessarily.
 
-DO NOT pretend this is caused by Phase 0.
+Future APIs such as:
 
-Identify whether the failure is:
+- Google Calendar API
+- Google Tasks API
 
-- pre-existing
-- caused by environment
-- caused by missing configuration
-- caused by dependency resolution
-- caused by broken project code
+belong to later phases unless the current implementation requires only preliminary configuration.
 
-Document it.
+Do not request unnecessary permissions now.
 
 ---
 
-# 7. AUDIT GIT STATE
+# 8. GOOGLE CLOUD PROJECT ISOLATION
 
-Inspect:
+If multiple applications/projects are being developed by the user:
 
-- current branch
-- working tree
-- uncommitted changes
-- untracked files
-- recent commits
-- remotes
-- ignored files
-- repository cleanliness
+Do not modify another application's Google Cloud configuration.
 
-DO NOT destroy existing user changes.
+Verify that the OAuth configuration being used belongs specifically to Mail Organizer.
 
-Do not reset the repository.
+Do not:
 
-Do not run destructive Git commands.
+- delete another project's OAuth clients
+- modify another app's consent screen
+- change another application's test users
+- rotate another application's credentials
+- change another project's APIs
+- alter unrelated Google Cloud resources
 
-Do not rewrite history.
-
-If there are pre-existing uncommitted changes, record them and preserve them.
-
-Before finishing Phase 0, inspect the final diff carefully.
+Document which Google Cloud project belongs to Mail Organizer without exposing sensitive credentials.
 
 ---
 
-# 8. PERFORM A SECURITY/SECRET AUDIT
+# 9. ANDROID APPLICATION IDENTITY
 
-Search the repository for accidentally committed secrets.
+Verify that the Android OAuth configuration matches the Mail Organizer application.
 
-Look for:
+Confirm:
 
-- API keys
-- OAuth client secrets
-- service account JSON
-- private keys
-- signing keys
-- passwords
-- tokens
-- refresh tokens
-- access tokens
-- `.env` files
-- local credential files
-- Firebase/private configuration where applicable
-- hardcoded credentials
-- private certificates
+- package/application ID
+- signing certificate SHA-1/SHA-256 as appropriate
+- debug signing configuration
+- release signing configuration
+- application identity
 
-Do not print actual secrets into the phase report.
+The Android OAuth client must correspond to the correct application identity.
 
-If you find one:
+Do not change the package ID casually.
 
-- do not expose it
-- identify the file and type of secret
-- recommend/remediate the exposure safely
-- ensure it is ignored appropriately
-- determine whether rotation is necessary
+Do not use another project's certificate fingerprint.
+
+---
+
+# 10. DEBUG AND RELEASE OAUTH CONFIGURATION
+
+Clearly distinguish:
+
+### Development
+
+Used for:
+
+- local development
+- debug builds
+- test accounts
+- device testing
+
+### Production
+
+Used later for:
+
+- production release
+- Play Store
+- production OAuth verification
+- real users
+
+Do not mix credentials/configuration between unrelated projects.
+
+Do not commit sensitive OAuth secrets.
 
 Remember:
 
-An Android OAuth client ID is not equivalent to a secret.
+- OAuth client IDs are generally identifiers, not passwords.
+- access tokens are sensitive.
+- refresh tokens are sensitive.
+- signing private keys are sensitive.
+- client secrets must be protected where applicable.
 
-OAuth access/refresh tokens and signing private keys must be treated as sensitive.
-
-Never commit the Android signing private key.
-
----
-
-# 9. CHECK PROJECT CONFIGURATION HYGIENE
-
-Inspect:
-
-- `.gitignore`
-- Gradle properties
-- local properties
-- environment configuration
-- build variants
-- debug/release configuration
-- signing configuration
-- ProGuard/R8 configuration
-- manifest configuration
-- network security configuration
-- backup configuration
-- exported Android components
-- permissions
-
-Do not add Gmail permissions yet unless the project already requires them.
-
-Phase 0 is preparation.
+Never place actual secrets into source code.
 
 ---
 
-# 10. ESTABLISH THE TARGET ARCHITECTURE
+# 11. OAUTH CONSENT SCREEN
 
-Based on the project documents and existing code, establish a clean architecture suitable for the Mail Organizer.
+Configure the Google OAuth consent experience appropriately for development.
 
-The target logical separation should be approximately:
+Ensure it clearly identifies:
+
+- application name
+- developer/app identity
+- requested access
+- privacy policy information where required
+- appropriate contact/support information where required
+
+Do not misrepresent the purpose of the application.
+
+The app should request only the access necessary for the current phase.
+
+---
+
+# 12. LEAST PRIVILEGE — CRITICAL
+
+For Phase 3, use the minimum Gmail scope required.
+
+The initial Gmail integration should use a read-only scope such as:
 
 ```text
-Presentation
-    ↓
-Application / Use Cases
-    ↓
-Domain
-    ↓
-Data
-    ↓
-External APIs / Platform
+https://www.googleapis.com/auth/gmail.readonly
 ```
 
-The exact implementation can differ if the existing project has a better compatible architecture.
+Do NOT request:
 
-The following responsibilities must remain clearly separated:
+```text
+gmail.modify
+gmail.send
+gmail.insert
+gmail.compose
+```
 
-### Authentication
+unless explicitly required by this phase.
 
-Responsible for:
+They are not required.
 
-- Google OAuth
-- account authorization
-- token lifecycle
-- authorization state
-
-### Gmail Client
-
-Responsible for:
-
-- Gmail API communication
-- Gmail-specific API models
-- request/response handling
-
-### Synchronization
-
-Responsible for:
-
-- mailbox synchronization
-- pagination
-- incremental synchronization
-- sync state
-- retries
-- account-specific synchronization
-
-### Email Parser
-
-Responsible for:
-
-- normalizing Gmail messages
-- sender extraction
-- recipients
-- subject
-- timestamps
-- headers
-- body
-- HTML/plain text
-- URLs
-- unsubscribe information
-
-### Classification Engine
-
-Responsible for:
-
-- category
-- confidence
-- priority
-- action-required state
-- explainability
-
-### Company Intelligence
-
-Responsible for:
-
-- sender/domain normalization
-- company identification
-- company grouping
-- sender intelligence
-
-### Rules
-
-Responsible for:
-
-- user-defined rules
-- sender overrides
-- category overrides
-- priority overrides
-
-### Action Engine
-
-Responsible for:
-
-- meetings
-- deadlines
-- tasks
-- reminders
-- payments
-- travel
-- applications
-- other structured actions
-
-### Integration Layer
-
-Responsible for:
-
-- Google Calendar
-- Google Tasks
-- future integrations
-
-### Persistence
-
-Responsible for:
-
-- local database
-- local settings
-- account-scoped data
-- sync state
-
-### Search
-
-Responsible for:
-
-- local indexing
-- structured search
-- filtering
-- sorting
-
-### Presentation
-
-Responsible for:
-
-- screens
-- components
-- navigation
-- UI state
-- accessibility
-- user interaction
-
-Do not tightly couple these systems.
+Future write capabilities belong to later phases.
 
 ---
 
-# 11. ESTABLISH ACCOUNT ISOLATION AS A FOUNDATION RULE
+# 13. PERMISSION TRANSPARENCY
 
-The application will support multiple Gmail accounts.
+The user must be able to understand what access the app is requesting.
 
-Therefore, account identity must be treated as a first-class data boundary.
+Do not display misleading language such as:
 
-Design the foundation so future data can be scoped by account.
+> "Sign in to continue"
+
+if the actual operation is granting access to Gmail data.
+
+Prefer transparent messaging such as:
+
+> Connect your Gmail account so Mail Organizer can read and organize your email locally.
+
+The exact UI copy should follow the product's design language.
+
+---
+
+# 14. DO NOT REQUEST EVERYTHING AT ONCE
+
+Do not request:
+
+- Calendar access
+- Tasks access
+- Drive access
+- Contacts access
+- Gmail write access
+- unrelated Google permissions
+
+during this phase.
+
+Each integration should be independently authorized later.
+
+This keeps the permission model understandable and reduces unnecessary access.
+
+---
+
+# 15. ACCOUNT MODEL INTEGRATION
+
+Connect the OAuth result to the Account persistence model created in Phase 2.
+
+After successful authorization, create or update the local account record.
+
+The account record should contain appropriate identity information such as:
+
+- internal account ID
+- Google account identity where appropriate
+- email address
+- display name if available
+- provider
+- connected state
+- timestamps
+
+Do not store OAuth tokens as ordinary account fields.
+
+---
+
+# 16. TOKEN STORAGE — CRITICAL SECURITY REQUIREMENT
+
+Access tokens and refresh tokens are sensitive.
+
+Do NOT store them in:
+
+- Room email tables
+- ordinary SharedPreferences
+- plaintext files
+- logs
+- UI state
+- analytics
+- screenshots
+- database debug output
+
+Use an appropriate secure credential/token storage strategy for Android.
+
+The authentication layer must own token lifecycle management.
+
+The rest of the application should not directly manipulate raw token storage.
+
+---
+
+# 17. AUTHENTICATION ABSTRACTION
+
+Create a clean authentication boundary.
 
 For example:
 
 ```text
-Account
- ├── Gmail authorization
- ├── Sync state
- ├── Emails
- ├── Threads
- ├── Sender intelligence
- ├── Company intelligence
- ├── Rules
- └── Classification state
+Authentication
+    ↓
+Google OAuth Provider
+    ↓
+Secure Token Storage
 ```
 
-Do not allow future code to accidentally mix data between accounts.
+The Gmail client should depend on an authentication abstraction rather than directly knowing where tokens are stored.
 
-Do not implement the full multi-account system yet.
-
-Simply establish the architectural rule now.
+This will make future testing and authentication changes safer.
 
 ---
 
-# 12. ESTABLISH LOCAL-FIRST PRINCIPLES
+# 18. TOKEN REFRESH
 
-The application must not depend on a custom backend for basic functionality.
+The authentication layer must support token expiration/refresh appropriately.
 
-The target architecture is:
+Do not implement fragile logic such as:
 
 ```text
-Gmail
-   ↓
-Gmail API
-   ↓
-Android application
-   ↓
-Local database
-   ↓
-Local processing
-   ↓
-UI
+if token expired:
+    ask user to log in every time
 ```
 
-Do not introduce:
+Instead, use the supported Google authentication/token lifecycle mechanisms.
 
-- unnecessary backend servers
-- unnecessary cloud databases
-- analytics servers
-- third-party email processing
-- unnecessary AI APIs
+Handle:
 
-The application should eventually be able to provide useful functionality from locally synchronized data even when temporarily offline.
+- expired access token
+- refresh
+- invalid refresh state
+- revoked authorization
+- account removal
+- user denial
 
-Phase 0 only establishes the foundation for this.
+Do not log tokens while debugging these flows.
 
 ---
 
-# 13. ESTABLISH PRIVACY ARCHITECTURE
+# 19. ACCOUNT SELECTION
 
-Create/document the initial privacy model.
+Support selecting a Google account during connection.
 
-Email content is sensitive.
+The user should be able to choose the account they want to connect.
+
+Do not assume the currently signed-in Android account is automatically the desired Gmail account.
+
+Do not silently connect a random account.
+
+---
+
+# 20. MULTI-ACCOUNT FOUNDATION
+
+The app supports multiple Gmail accounts.
 
 Therefore:
 
-- minimize stored data
-- store only what is required
-- avoid unnecessary logging
-- never log email bodies
-- never log OAuth tokens
-- never log authorization headers
-- never send email content to third-party services without an explicit product decision
-- keep processing local where practical
-- isolate accounts
-- provide future deletion/disconnect paths
-
-If encrypted storage is required, document where it will be introduced.
-
-Do not claim the application is encrypted or private if the implementation does not actually provide it.
-
----
-
-# 14. ESTABLISH LOGGING RULES
-
-Create a safe logging strategy.
-
-Logs may contain:
-
-- lifecycle information
-- sync state
-- non-sensitive diagnostic information
-- error categories
-- performance measurements
-
-Logs must NOT contain:
-
-- email bodies
-- OAuth tokens
-- refresh tokens
-- passwords
-- authorization headers
-- private user content
-- unnecessary sender information
-- full URLs containing sensitive query parameters
-
-Create a clear distinction between:
-
 ```text
-DEBUG
-INFO
-WARNING
-ERROR
+Account A
+Account B
+Account C
 ```
 
-and prepare the project so sensitive logs can be disabled/removed from release builds.
+must be treated as independent authorization contexts.
+
+Phase 3 does not need to implement the full unified inbox.
+
+However, it must establish the foundation for:
+
+- connect account
+- disconnect account
+- account identity
+- account status
+- account-specific authorization
+- account-specific token handling
+
+Do not mix authorization state between accounts.
 
 ---
 
-# 15. ESTABLISH ERROR HANDLING PRINCIPLES
+# 21. CONNECT ACCOUNT UI
 
-Create the foundation for consistent error handling.
+Implement a proper connection screen/state.
 
-Errors should distinguish between:
+It should clearly show:
 
-- network failure
-- authentication failure
-- permission denial
-- API failure
-- rate limiting
-- parsing failure
-- database failure
-- invalid user configuration
-- integration failure
-- unexpected application failure
+### Not connected
 
-Do not allow external integration failures to crash the core email experience.
+- Connect Gmail action
+- explanation of required access
+
+### Connecting
+
+- loading state
+- no duplicate connection actions
+
+### Connected
+
+- account email
+- connection status
+- disconnect action
+
+### Failed
+
+- useful error
+- retry option
+
+### Permission denied
+
+- clear explanation
+- retry/permission path
+
+Do not show fake connected accounts.
 
 ---
 
-# 16. ESTABLISH TESTING FOUNDATION
+# 22. DISCONNECT ACCOUNT
 
-Verify the project has a usable testing structure.
+Implement a safe disconnect mechanism.
 
-At minimum establish the ability to test:
+Disconnect should:
 
-### Unit
+- remove the account's active connection state
+- clear associated authentication state appropriately
+- prevent future Gmail API use
+- preserve or delete local data according to the product's explicit data policy
+- clearly communicate what will happen
 
-- domain logic
-- parsers
-- classifiers
-- repositories
-- use cases
+Do not silently delete local mail data unless the user has explicitly chosen that behavior.
 
-### Integration
+If disconnecting requires local data cleanup, make it explicit.
 
-- database
-- repository implementations
-- synchronization logic
+---
 
-### UI
+# 23. GOOGLE REVOCATION
 
-- important screen behavior
+Where supported and appropriate, provide a proper revocation path.
+
+Understand the difference between:
+
+```text
+Disconnect from Mail Organizer
+```
+
+and:
+
+```text
+Revoke Google's authorization
+```
+
+The UI should not falsely claim that disconnecting locally necessarily revokes Google's authorization.
+
+Handle revocation failures gracefully.
+
+---
+
+# 24. OAUTH FAILURE STATES
+
+Handle at minimum:
+
+- user cancels
+- user denies
+- network unavailable
+- Google authentication failure
+- invalid OAuth configuration
+- redirect/configuration mismatch
+- account unavailable
+- token refresh failure
+- authorization revoked
+- API unavailable
+- unsupported account state
+
+Every error must produce a useful user-facing state.
+
+Avoid exposing raw stack traces.
+
+---
+
+# 25. DO NOT LEAK GOOGLE ERRORS
+
+Internal errors may contain technical information.
+
+Do not directly show raw exception messages to users.
+
+Instead map errors to safe categories such as:
+
+```text
+Connection cancelled
+Permission denied
+Google authentication failed
+Network unavailable
+Authorization expired
+Configuration problem
+Unexpected error
+```
+
+Log technical details safely without exposing secrets.
+
+---
+
+# 26. GMAIL API CLIENT FOUNDATION
+
+Establish the Gmail API client architecture.
+
+The client should eventually support:
+
+```text
+GmailService
+    ↓
+Authenticated Google API Client
+    ↓
+Gmail API
+```
+
+But Phase 3 should not implement mailbox synchronization.
+
+At most, validate that the authorized Gmail API client can perform a minimal safe authenticated operation required to prove authorization.
+
+Do not download the mailbox.
+
+---
+
+# 27. AUTHENTICATED API SMOKE TEST
+
+After OAuth succeeds, perform a minimal authenticated Gmail API validation if appropriate.
+
+The test should prove:
+
+```text
+OAuth succeeded
++
+token works
++
+Gmail API authorization works
+```
+
+Do not:
+
+- fetch hundreds/thousands of messages
+- synchronize inbox
+- classify email
+- build local search index
+- process email bodies
+
+A minimal account/profile-level request is preferable where supported.
+
+---
+
+# 28. API FAILURE HANDLING
+
+If the Gmail API smoke test fails:
+
+- identify authentication vs permission vs network failure
+- show an appropriate UI state
+- log only safe diagnostic information
+- do not crash the application
+- do not retry infinitely
+
+Do not implement the complete retry engine yet.
+
+---
+
+# 29. GOOGLE API RATE LIMITING
+
+Do not aggressively poll Gmail during this phase.
+
+There should be no mailbox polling.
+
+If a test API request is necessary, perform only what is required.
+
+Future synchronization will implement appropriate rate-limit handling.
+
+---
+
+# 30. NO BACKEND
+
+Do not create a custom authentication backend.
+
+Do not send OAuth tokens through your own server.
+
+The initial architecture should be:
+
+```text
+Android App
+    ↓
+Google OAuth
+    ↓
+Google Gmail API
+```
+
+not:
+
+```text
+Android App
+    ↓
+Mail Organizer Server
+    ↓
+Google
+```
+
+unless a later product requirement explicitly introduces a backend.
+
+---
+
+# 31. NETWORK SECURITY
+
+Verify that network communication is appropriate.
+
+Use HTTPS/TLS for network traffic.
+
+Do not enable broad cleartext traffic simply to make development work.
+
+If local development networking is necessary:
+
+- isolate it to debug configuration
+- use ADB reverse where appropriate
+- do not weaken production network security
+
+---
+
+# 32. ADB / DEVICE VALIDATION
+
+This phase MUST be validated on an Android device/emulator whenever available.
+
+Use:
+
+- Gradle
+- ADB
+- device installation
+- application launch
+- logcat
+- screenshots
+- screen capture/recording where useful
+
+The validation loop is:
+
+```text
+Code
+ ↓
+Gradle build
+ ↓
+Install
+ ↓
+Launch
+ ↓
+Connect Gmail
+ ↓
+Observe OAuth flow
+ ↓
+Capture screenshots
+ ↓
+Inspect logs
+ ↓
+Disconnect
+ ↓
+Reconnect
+ ↓
+Retest
+```
+
+---
+
+# 33. INSTALLATION MUST BE PROJECT-SCOPED
+
+Before installing:
+
+1. confirm Mail Organizer package ID
+2. confirm APK belongs to Mail Organizer
+3. install only that APK
+4. do not uninstall unrelated applications
+5. do not clear unrelated app data
+
+Do not use broad device reset operations.
+
+---
+
+# 34. ADB REVERSE
+
+If the development environment requires localhost access during OAuth/API development:
+
+Use:
+
+```text
+adb reverse
+```
+
+appropriately.
+
+Before modifying reverse mappings:
+
+- inspect current mappings where possible
+- identify the required Mail Organizer port
+- avoid disturbing mappings belonging to another project
+
+If no reverse connection is needed, do not create one.
+
+---
+
+# 35. SCREENSHOT OAUTH STATES
+
+Capture and inspect screenshots for appropriate states:
+
+### State 1
+
+Mail Organizer not connected.
+
+### State 2
+
+Connection explanation.
+
+### State 3
+
+OAuth/account-selection transition if capturable and appropriate.
+
+### State 4
+
+Connected Gmail account.
+
+### State 5
+
+Connection failure.
+
+### State 6
+
+Permission denied.
+
+### State 7
+
+Disconnect confirmation/result.
+
+Do not capture sensitive OAuth tokens or private Google account information unnecessarily.
+
+Blur/redact sensitive information in any documentation if needed.
+
+---
+
+# 36. SCREEN RECORDING
+
+Where useful, record the connection flow to validate:
+
+- transitions
+- loading
+- returning from Google
+- duplicate taps
 - navigation
-- loading/error/empty states
+- failure handling
 
-### Security-sensitive behavior
-
-- account isolation
-- token handling
-- permission state
-- sensitive logging
-
-Do not attempt to write the entire application's tests in Phase 0.
-
-Only establish the foundation and identify gaps.
+Do not retain unnecessary recordings containing personal account information.
 
 ---
 
-# 17. ESTABLISH DESIGN SYSTEM FOUNDATION
+# 37. LOGCAT VALIDATION
 
-Read `design.md` carefully.
+During OAuth testing inspect logs for:
 
-If the project already has a design system:
+- crashes
+- token errors
+- configuration errors
+- API errors
+- Activity lifecycle problems
+- authentication failures
 
-Audit it.
+Verify that logs do NOT contain:
 
-If it does not:
+- access tokens
+- refresh tokens
+- authorization headers
+- passwords
+- sensitive email information
 
-Establish the basic structure for centralized:
-
-- colors
-- typography
-- spacing
-- corner radius
-- elevation
-- icon sizing
-- light theme
-- dark theme
-- semantic status colors
-
-Do not build the full Mail Organizer UI yet.
-
-The purpose is to prevent every future screen from inventing its own styles.
-
-Use the design tokens from `design.md` unless there is a documented reason to change them.
+If sensitive logging appears, fix it before completing the phase.
 
 ---
 
-# 18. ESTABLISH NAVIGATION FOUNDATION
+# 38. TEST ACCOUNT SAFETY
 
-Determine whether navigation already exists.
+Use a controlled test Gmail account for development where possible.
 
-If it does:
+Do not use a user's primary personal account simply because it is convenient.
 
-Audit it and preserve compatible existing work.
+Google Cloud OAuth development may require configured test users.
 
-If it does not:
+Configure only the Mail Organizer test account(s).
 
-Create only the minimal navigation foundation needed for future phases.
+Do not alter unrelated applications' OAuth test users.
 
-The future primary information architecture is:
+---
+
+# 39. DEVELOPMENT OAUTH LIMITATIONS
+
+Understand and document any development OAuth limitations, including:
+
+- test-user requirements
+- consent-screen state
+- scope restrictions
+- publishing/verification requirements
+- developer/testing limitations
+
+Do not work around Google's OAuth security mechanisms.
+
+Do not use unofficial bypasses.
+
+---
+
+# 40. PRODUCTION OAUTH PREPARATION
+
+Do not attempt full production verification during this phase unless required.
+
+However, document what will eventually be needed:
+
+- production consent configuration
+- verified domains where applicable
+- privacy policy
+- app identity
+- production OAuth client
+- release signing certificate
+- Google verification for sensitive/restricted scopes if applicable
+- Play Store release configuration
+
+Do not claim production approval has been obtained.
+
+---
+
+# 41. NO GMAIL WRITE ACCESS
+
+This is mandatory.
+
+Phase 3 must not request or implement:
+
+- archive
+- delete
+- mark read/unread
+- label modification
+- send
+- reply
+- move
+- trash
+
+Those require additional permissions and belong to later phases.
+
+The current Gmail permission should remain read-only.
+
+---
+
+# 42. NO EMAIL CONTENT PROCESSING
+
+Do not process mailbox contents during Phase 3.
+
+Do not:
+
+- classify messages
+- detect companies
+- extract meetings
+- extract deadlines
+- build action cards
+- index email
+- run AI
+- download attachments
+
+The application only needs to establish:
 
 ```text
-Home
-Mail
-Categories
-Companies
-Actions
+Google account
++
+Gmail authorization
++
+authenticated API capability
 ```
 
-Secondary destinations include:
+---
+
+# 43. TEST MATRIX
+
+Test at minimum:
+
+### Successful authorization
 
 ```text
-Search
-Integrations
-Settings
-Privacy
-Accounts
+Install→ Launch
+→ Connect
+→ Google account
+→ Grant
+→ Return
+→ Connected
 ```
 
-Do not fully implement these screens during Phase 0.
-
-Only establish the navigation architecture if required.
-
----
-
-# 19. ESTABLISH ENVIRONMENT SEPARATION
-
-Prepare for:
+### Cancel
 
 ```text
-Debug
-Release
+Connect
+→ Cancel
+→ Return
+→ Not connected
 ```
 
-and, if appropriate:
+### Denied
 
 ```text
-Development
-Production
+Connect
+→ Deny
+→ Return
+→ Permission denied state
 ```
 
-The project must eventually be able to distinguish:
-
-- development OAuth configuration
-- production OAuth configuration
-- debug signing
-- release signing
-- debug logging
-- release logging
-
-Do not place production secrets directly into source code.
-
-Do not create fake production credentials.
-
----
-
-# 20. DOCUMENT GOOGLE INTEGRATION REQUIREMENTS — BUT DO NOT IMPLEMENT THEM YET
-
-Phase 0 should identify what will be required later.
-
-Document the future Google Cloud configuration:
-
-- Google Cloud project
-- Gmail API
-- OAuth consent configuration
-- Android OAuth client
-- application package ID
-- signing certificate fingerprints
-- test users during development
-- production OAuth verification requirements
-- Calendar API
-- Tasks API
-
-However:
-
-**DO NOT implement Gmail OAuth in Phase 0.**
-
-**DO NOT request Gmail permissions yet.**
-
-**DO NOT connect a real Gmail account yet.**
-
-Those belong to later phases.
-
----
-
-# 21. DO NOT IMPLEMENT PRODUCT FEATURES PREMATURELY
-
-The following are explicitly OUT OF SCOPE for Phase 0:
-
-- Gmail OAuth implementation
-- Gmail synchronization
-- Gmail API mailbox fetching
-- email classification
-- company detection
-- priority calculation
-- action-required detection
-- meeting extraction
-- deadline extraction
-- Calendar integration
-- Tasks integration
-- AI classification
-- automation engine
-- full dashboard
-- advanced search
-- Gmail modification
-- email sending
-- full analytics
-
-Do not create fake placeholder implementations just to claim these tasks are complete.
-
----
-
-# 22. IF THE REPOSITORY IS EMPTY
-
-If the repository is empty or only contains minimal scaffolding:
-
-Bootstrap a production-quality Android foundation.
-
-Choose the technology stack that best fits the requirements, preferably:
-
-- Kotlin
-- modern Android SDK
-- Jetpack
-- Compose if appropriate
-- Coroutines
-- Flow
-- Room for local persistence
-- DataStore where appropriate
-- dependency injection where justified
-
-However, do not blindly install every library.
-
-Every dependency must have a reason.
-
-Keep the initial dependency graph small and maintainable.
-
----
-
-# 23. IF THE REPOSITORY ALREADY CONTAINS AN APPLICATION
-
-Do NOT rebuild it from scratch.
-
-Preserve:
-
-- existing screens
-- working functionality
-- existing architecture where compatible
-- useful components
-- assets
-- tests
-- project configuration
-
-Refactor only where necessary to align the project with the product contract.
-
-Do not perform unrelated cleanup.
-
-Do not turn Phase 0 into a giant rewrite.
-
----
-
-# 24. CREATE/UPDATE PROJECT DOCUMENTATION
-
-After the audit, create or update a project architecture document if one does not already exist.
-
-Recommended:
+### Reconnect
 
 ```text
-docs/
-    architecture.md
-    development-status.md
+Connect
+→ Success
+→ Disconnect
+→ Connect again
+→ Success
 ```
 
-Use existing documentation conventions if the repository already has them.
+### Restart
 
-`architecture.md` should explain:
+```text
+Connected
+→ Force stop
+→ Relaunch
+→ Correct connection state
+```
 
-- application layers
-- module responsibilities
-- data flow
-- account isolation
-- local-first approach
-- external integrations
-- authentication boundary
-- synchronization boundary
-- classification boundary
-- action boundary
+### Token/auth state
 
-`development-status.md` should record:
+Where safely testable:
 
-- baseline build state
-- current phase
-- known issues
-- technical decisions
-- deferred work
-- important risks
+```text
+Expired/invalid authorization
+→ appropriate recovery
+```
 
-Do not duplicate the entire `requirements.md`.
+### Offline
 
----
+```text
+No network
+→ Connect attempt
+→ graceful failure
+```
 
-# 25. CREATE ARCHITECTURAL DECISIONS WHERE NEEDED
-
-If important architectural decisions are made during Phase 0, document them.
-
-Examples:
-
-- why Gmail API is used instead of AccessibilityService
-- why processing is local-first
-- why classification begins deterministically
-- why external integrations are adapters
-- why account isolation is mandatory
-- why Gmail write permissions are deferred
-- why AI is optional rather than mandatory
-
-Use ADRs if the repository already has an ADR convention.
-
-Otherwise keep these decisions in `architecture.md`.
+Do not endlessly retry.
 
 ---
 
-# 26. VERIFY THE FOUNDATION
+# 44. MULTI-ACCOUNT TESTING
 
-After making the Phase 0 changes:
+If the environment permits, test:
+
+```text
+Account A → connect
+Account B → connect
+Account A → remains connected
+Account B → remains connected
+```
+
+Verify that:
+
+- identities remain distinct
+- token state does not mix
+- account records remain distinct
+- disconnecting A does not disconnect B
+
+Do not implement the full unified inbox yet.
+
+---
+
+# 45. DATABASE VALIDATION
+
+Verify that OAuth/account connection updates the correct account record.
+
+For example:
+
+```text
+Google Account A
+      ↓
+Local Account A
+```
+
+and:
+
+```text
+Google Account B
+      ↓
+Local Account B
+```
+
+Never create duplicate account records unnecessarily for the same connected account.
+
+---
+
+# 46. SECURITY REVIEW
+
+Before completion verify:
+
+- [ ] no Gmail password collection
+- [ ] no Gmail scraping
+- [ ] no AccessibilityService
+- [ ] no cookies
+- [ ] no unofficial Gmail authentication
+- [ ] minimum OAuth scope
+- [ ] no Gmail write scope
+- [ ] no tokens in logs
+- [ ] no tokens in Room
+- [ ] no tokens in SharedPreferences
+- [ ] no tokens in UI state
+- [ ] no secrets committed
+- [ ] account isolation
+- [ ] OAuth errors handled
+- [ ] disconnect handled
+- [ ] revocation behavior understood
+
+---
+
+# 47. PERFORMANCE / BATTERY
+
+Do not create background Gmail polling in Phase 3.
+
+The app should not:
+
+- continuously poll Gmail
+- wake the device unnecessarily
+- repeatedly refresh OAuth state
+- make repeated API calls
+
+Synchronization belongs to Phase 4 and later.
+
+---
+
+# 48. DO NOT TOUCH OTHER PROJECTS
+
+Before final verification, inspect the workspace and Git state again.
+
+Confirm:
+
+- only Mail Organizer files changed
+- only Mail Organizer Gradle files changed
+- no sibling project SDK configuration changed
+- no sibling project dependencies changed
+- no sibling project build was modified
+- no unrelated APK was installed/uninstalled
+- no unrelated device data was cleared
+- no unrelated Google Cloud project was changed
+
+If you discover an accidental modification:
+
+STOP.
+
+Identify it.
+
+Restore only the accidental change if it is safe to do so.
+
+Do not destroy legitimate work belonging to another project.
+
+---
+
+# 49. FINAL BUILD
+
+Run the Mail Organizer project's own Gradle build.
+
+Use its own Gradle wrapper.
+
+Verify:
+
+- compilation
+- unit tests
+- relevant Android tests
+- lint/static checks where configured
+- debug APK generation
+
+Fix all issues introduced during Phase 3.
+
+---
+
+# 50. FINAL DEVICE VALIDATION
+
+Install the final debug APK on the test device/emulator.
 
 Run:
 
-1. clean/build
-2. unit tests
-3. lint/static checks if configured
-4. relevant Android compilation
-5. any available architecture/configuration checks
+```text
+Launch
+→ Connect Gmail
+→ Authenticate
+→ Grant permission
+→ Return
+→ Verify connected account
+→ Restart app
+→ Verify state
+→ Disconnect
+→ Verify disconnected state
+```
 
-Then inspect:
+Capture screenshots of important states.
 
-- Git diff
-- Git status
-- generated files
-- accidental secrets
-- debug/release configuration- documentation
-- dependency changes
+Inspect logcat.
 
-Fix any issues introduced by Phase 0.
+If anything fails:
+
+```text
+Fix
+→ Build
+→ Install
+→ Retest
+```
+
+Do not mark the phase complete until the flow works.
 
 ---
 
-# 27. PHASE 0 ACCEPTANCE CRITERIA
+# 51. FINAL GIT REVIEW
 
-Phase 0 may only be marked complete when ALL applicable conditions are satisfied.
+From the Mail Organizer Git root:
 
-### Documentation
+Inspect:
 
-- [ ] `requirements.md` read and understood
-- [ ] `spec.md` read and understood
-- [ ] `design.md` read and understood
-- [ ] `editor-rules.md` read and understood
-- [ ] architecture documented
-- [ ] development status documented
+```text
+git status
+git diff
+```
 
-### Editor Skills
+Verify:
 
-- [ ] persistent skills/rules established
-- [ ] architecture rules available
-- [ ] Android rules available
-- [ ] Gmail/OAuth rules available
-- [ ] privacy/security rules available
-- [ ] classification rules available
-- [ ] integration rules available
-- [ ] UI/UX rules available
-- [ ] testing rules available
-- [ ] phase execution rules available
-- [ ] code quality rules available
+- only intended Mail Organizer files changed
+- no secrets
+- no OAuth tokens
+- no generated credentials
+- no APK artifacts accidentally committed
+- no unrelated project modifications
 
-### Repository
+Do not commit unless explicitly instructed.
 
-- [ ] repository structure audited
-- [ ] Android stack identified
-- [ ] dependencies audited
-- [ ] build system audited
-- [ ] Git state audited
-- [ ] existing work preserved
+---
+
+# 52. UPDATE `spec.md`
+
+After verification:
+
+Update the Phase 3 section in `spec.md`.
+
+Only mark tasks complete after actual verification.
+
+Do not mark Phase 4 or future phases complete.
+
+---
+
+# 53. UPDATE PROJECT STATUS
+
+Update `docs/development-status.md` if present.
+
+Record:
+
+- OAuth implementation state
+- Gmail API authorization state
+- test configuration
+- known limitations
+- security decisions
+- unresolved issues
+
+Do not record sensitive credentials.
+
+---
+
+# 54. UPDATE `editor-rules.md`
+
+Before closing Phase 3, update `editor-rules.md` with any permanent rules discovered during this implementation.
+
+Especially preserve:
+
+- OAuth least privilege
+- Gmail read-only by default
+- token security
+- Google Cloud project isolation
+- multi-account authorization isolation
+- no password collection
+- no Gmail scraping
+- no AccessibilityService
+- no sensitive logging
+- development/production OAuth separation
+- device/package isolation
+- multi-project workspace isolation
+- sequential phase execution
+
+Do this yourself.
+
+Do not ask the user to manually copy anything.
+
+---
+
+# 55. PHASE 3 ACCEPTANCE CRITERIA
+
+Phase 3 is complete only when:
+
+### Google Cloud
+
+- [ ] correct Mail Organizer Google Cloud project identified
+- [ ] Gmail API enabled
+- [ ] OAuth configuration established
+- [ ] Android OAuth identity verified
+- [ ] development/test configuration established
+
+### Authentication
+
+- [ ] official Google OAuth flow works
+- [ ] account selection works
+- [ ] successful authorization works
+- [ ] cancellation handled
+- [ ] denial handled
+- [ ] refresh/invalid authorization handled appropriately
+- [ ] disconnect works
+- [ ] account identity persisted correctly
+
+### Permissions
+
+- [ ] least-privilege Gmail scope used
+- [ ] read-only Gmail access only
+- [ ] no Gmail write scope
+- [ ] no unrelated Google scopes
 
 ### Security
 
-- [ ] secret exposure checked
-- [ ] logging risks checked
-- [ ] signing configuration checked
-- [ ] OAuth architecture documented
-- [ ] sensitive data handling documented
+- [ ] tokens securely handled
+- [ ] tokens never logged
+- [ ] tokens not stored in ordinary Room tables
+- [ ] no passwords
+- [ ] no cookies
+- [ ] no Gmail scraping
+- [ ] no AccessibilityService
+- [ ] no secrets committed
 
-### Architecture
+### Gmail API
 
-- [ ] presentation boundary defined
-- [ ] domain boundary defined
-- [ ] data boundary defined
-- [ ] external API boundary defined
-- [ ] account isolation principle established
-- [ ] local-first principle established
-- [ ] integration architecture established
-- [ ] error handling strategy established
-- [ ] testing strategy established
+- [ ] authenticated Gmail API client established
+- [ ] minimal API smoke test works
+- [ ] API failure handled
+- [ ] no mailbox synchronization implemented
 
-### Design
+### Multi-account
 
-- [ ] design tokens foundation established
-- [ ] theme strategy established
-- [ ] dark mode strategy established
-- [ ] navigation foundation established if required
+- [ ] account identity isolated
+- [ ] authorization state isolated
+- [ ] Account A/B testing performed where possible
 
-### Verification
+### UI
 
-- [ ] baseline build understood
-- [ ] final build passes
-- [ ] relevant tests pass
-- [ ] final Git diff reviewed
-- [ ] no accidental secrets added
-- [ ] no unrelated features implemented
+- [ ] connect state
+- [ ] connecting state
+- [ ] connected state
+- [ ] denied state
+- [ ] error state
+- [ ] disconnect flow
+- [ ] accessibility
+- [ ] light/dark theme
 
----
+### Device
 
-# 28. IMPORTANT: DO NOT FAKE COMPLETION
+- [ ] Gradle build passes
+- [ ] APK installed
+- [ ] app launched
+- [ ] OAuth tested on device/emulator
+- [ ] screenshots inspected
+- [ ] logcat inspected
+- [ ] runtime issues fixed
 
-A checkbox may only become:
+### Workspace safety
 
-```text
-[x]
-```
-
-after the work has actually been completed and verified.
-
-If something cannot be completed:
-
-```text
-[!]
-```
-
-and explain why.
-
-If something is intentionally deferred:
-
-```text
-[-]
-```
-
-with an explanation.
-
-Never mark something complete because the code "looks ready".
+- [ ] only Mail Organizer project modified
+- [ ] sibling projects untouched
+- [ ] sibling Gradle configurations untouched
+- [ ] unrelated SDK configurations untouched
+- [ ] unrelated device applications untouched
+- [ ] unrelated Google Cloud projects untouched
 
 ---
 
-# 29. UPDATE `spec.md`
+# 56. FINAL PHASE REPORT
 
-After successful verification, update the Phase 0 section in `spec.md`.
+Provide:
 
-Only check tasks that were actually completed.
-
-If Phase 0 acceptance criteria are fully satisfied, change its status to completed.
-
-Do not modify future phase checkboxes.
-
-Do not mark Phase 1 or any later phase as started/completed.
-
----
-
-# 30. FINAL PHASE REPORT
-
-At the end of the work, provide a Phase 0 report using this structure:
-
-## Phase 0 Status
+## Phase 3 Status
 
 `COMPLETE` / `PARTIAL` / `BLOCKED`
 
-## Repository Baseline
+## OAuth Architecture
 
-- project type
-- Android stack
-- architecture
-- build state
-- test state
-- Git state
+Explain the implemented authentication flow.
 
-## What Was Changed
+## Gmail Permission
 
-List concrete changes.
+State exactly which Gmail scope is currently requested.
 
-## Architecture Established
+## Google Cloud Configuration
 
-Explain the final architecture briefly.
+Describe the configured components without exposing secrets.
 
-## Skills / Rules Established
+## Account Handling
 
-List the persistent skills/rules created.
+Explain account persistence and isolation.
 
-## Security Findings
+## Token Security
 
-List findings without exposing secrets.
+Explain where token handling occurs without exposing credentials.
+
+## Gmail API
+
+Report the minimal authenticated API test.
+
+## Device Validation
+
+Report:
+
+- device/emulator
+- Android/API level
+- build
+- installation
+- OAuth test
+- disconnect/reconnect
+- screenshots
+- logcat
+
+## Security Validation
+
+Report the security checks.
+
+## Workspace Isolation
+
+Explicitly confirm that sibling Android projects were not modified.
+
+## Files Changed
+
+List important files.
 
 ## Known Issues
 
@@ -1161,73 +1456,92 @@ List unresolved issues.
 
 ## Deferred Work
 
-List anything intentionally postponed to later phases.
+Especially:
 
-## Validation
+- mailbox synchronization
+- classification
+- search
+- Calendar
+- Tasks
+- AI
+- Gmail write operations
 
-Include:
+## Acceptance Criteria
 
-- build result
-- tests
-- lint/static analysis
-- relevant verification
-
-## Files Changed
-
-List important files.
-
-## Phase 0 Acceptance Criteria
-
-Show each criterion and its final status.
+Show every Phase 3 criterion and its status.
 
 ## Next Phase
 
-The next phase must be:
+The next incomplete phase is:
 
-**Phase 1 — Android Application Foundation**
+**Phase 4 — Gmail Synchronization Engine**
 
-Do not start Phase 1 automatically unless explicitly instructed.
+Do not execute Phase 4 automatically.
 
 ---
 
-# FINAL OPERATING RULE
+# FINAL OPERATING MODEL
 
-From this point forward, this project must be treated as a serious production application.
-
-Do not optimize for speed at the expense of architecture.
-
-Do not optimize for the number of completed checkboxes.
-
-Optimize for:
-
-**correctness → privacy → security → maintainability → testability → UX → performance → speed of development.**
-
-Remember the central product principle:
+Continue following this exact lifecycle:
 
 ```text
-Gmail
-  ↓
-Synchronization
-  ↓
-Local Processing
-  ↓
-Company / Category / Priority
-  ↓
-Structured Information
-  ↓
-Actions / Search / Insights
-  ↓
-User Confirmation
-  ↓
-External Integrations
+DISCOVER INSTRUCTION FOLDER
+        ↓
+READ PROJECT RULES
+        ↓
+IDENTIFY MAIL ORGANIZER ROOT
+        ↓
+IDENTIFY CURRENT PHASE
+        ↓
+READ CURRENT PHASE PROMPT
+        ↓
+IMPLEMENT ONLY CURRENT PHASE
+        ↓
+GRADLE BUILD
+        ↓
+INSTALL ONLY MAIL ORGANIZER
+        ↓
+RUN ON DEVICE
+        ↓
+SCREENSHOT / SCREEN RECORD
+        ↓
+INSPECT LOGCAT
+        ↓
+TEST
+        ↓
+FIX
+        ↓
+REBUILD
+        ↓
+REINSTALL
+        ↓
+RETEST
+        ↓
+SECURITY REVIEW
+        ↓
+GIT REVIEW
+        ↓
+UPDATE RULES + STATUS
+        ↓
+STOP
 ```
 
-And remember:
+Do not implement the entire application in one shot.
 
-**Mail Organizer is NOT a Gmail clone.**
+Do not skip phases.
 
-Gmail remains the source of truth.
+Do not touch sibling projects.
 
-Mail Organizer is the intelligent organization, understanding, prioritization, and action layer on top of Gmail.
+Do not alter unrelated Android SDK/build configuration.
 
-Execute Phase 0 completely, verify it, document it, and stop at the Phase 0 boundary.
+Do not install/uninstall unrelated applications.
+
+Do not weaken Google's OAuth security.
+
+Do not request permissions that the current phase does not need.
+
+Do not mark a phase complete without real verification.
+
+**Phase 3 ends after Gmail authorization is working and verified.**
+
+Stop there.
