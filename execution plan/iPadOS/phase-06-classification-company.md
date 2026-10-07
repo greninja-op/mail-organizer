@@ -1,15 +1,15 @@
-# Phase 6 — iPadOS Classification, Company Intelligence & Category Workspace
+# Phase 6 — KMP Framework Integration & Dependency Boundary
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is iPadOS only. iPadOS-specific work belongs under iPadOS/. Never modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Common KMP business/data logic must remain shared.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission and required work
+## MISSION
 
-Expose deterministic classification/company intelligence using common engines; category workspace with persistent company/category context where width allows; pinned companies at top of category filter; company pin distinct from email star; Promotional/Social/Spam behavior; richer category headers and filtering; account-safe grouping; test adversarial/unknown sender metadata, cross-account leakage, narrow split widths and selection preservation; no iPad-only classifier; STOP.
+Integrate the actual shared KMP framework into iPadOS production-shaped dependency boundaries. Expose only required use cases/repositories/state flows to SwiftUI. Handle Kotlin/Native lifecycle, coroutine observation, threading and cancellation safely. Remove accidental duplicate business logic from the iPad layer where proven. Add integration tests around representative shared use cases and failure propagation. Validate Debug/Release, simulator/device architectures, cancellation, lifecycle restart and error mapping.
 
-## Validation and completion
+## ACCEPTANCE / VALIDATION
 
-Inspect actual repository and all master iPadOS documents first. Implement only this phase. Build, automated-test, run on iPad Simulator and real iPad where available. Test multiple widths/orientations, narrow split, full screen, Stage Manager, Dynamic Type, VoiceOver, pointer and keyboard where relevant. Fix and retest. Record exact evidence. Update status/permanent rules only when genuinely required.
+Inspect actual repository and prior phase evidence. Implement only this phase. Run targeted unit/integration tests and runtime tests on iPad Simulator and real iPad where available. Exercise success, failure, cancellation and recovery paths appropriate to the phase. Inspect logs and persisted state. Fix, rebuild/reinstall/retest. Record exact evidence. Update status and permanent rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
