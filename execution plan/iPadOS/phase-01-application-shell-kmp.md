@@ -1,15 +1,15 @@
-# Phase 1 — iPadOS Application Shell & Shared KMP Integration
+# Phase 1 — iPadOS Project Target & Toolchain Foundation
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is an iPadOS-only phase. All iPadOS-specific work belongs under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP/common source remains shared; never duplicate common business logic into iPadOS.
+This is an iPadOS-only phase. All iPadOS-specific implementation, tests and documents belong under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP/mobile business and data logic remains common.
 
-## Mission
+## MISSION
 
-Create iPad app shell and clean shared KMP boundary; integrate framework; SwiftUI scene lifecycle; adaptive NavigationSplitView architecture; sidebar/content/detail containers; centralized tokens; environment/config separation; selection/state restoration foundation; pointer/keyboard focus foundation; Stage Manager/resizing baseline; loading/error/empty/offline primitives; no Gmail/OAuth/product feature implementation; clean build, Simulator launch/relaunch, multiple orientations/window sizes, keyboard/pointer, dark mode, Dynamic Type; STOP.
+Establish the real iPadOS project target and toolchain without implementing the mailbox. Configure bundle/module boundaries, Swift/KMP framework consumption path, Debug/Release separation, simulator/device destinations, build settings and dependency resolution. Verify Apple Silicon simulator and physical-device architecture where available. Keep all iPad-specific files under iPadOS/. Do not duplicate common KMP code. Add only scaffolding required to make later phases deterministic. Validate clean build, install, launch and termination on multiple simulator configurations. Inspect logs for secrets.
 
-## Required completion protocol
+## REQUIRED VALIDATION
 
-Inspect root instructions and iPadOS requirements/spec/design/editor-rules. Inspect actual repository before implementation. Implement only this phase. Build and run. Exercise realistic and failure states. Fix failures. Rebuild and retest. Update status and permanent rules only when genuinely required. Never claim unrun tests or fabricate evidence.
+Inspect the actual repository before deciding. Implement only this phase. Run exact relevant build and automated tests, then runtime validation on iPad Simulator and a real iPad when available. Test failure and recovery states relevant to the phase. Fix failures, rebuild/reinstall/retest, record evidence, update status and permanent editor rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
