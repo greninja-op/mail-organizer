@@ -1,15 +1,15 @@
-# Phase 17 — iPadOS Production Signing, App Store & OAuth Preparation
+# Phase 17 — Priority, Action Required & Explainability
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data source remains common.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission and required work
+## MISSION
 
-Prepare production iPad release without publishing. Verify bundle identity, release configuration, Apple Developer/App Store Connect, signing/provisioning, capabilities/entitlements, production Google OAuth release identity, least-privilege scopes, URL/deep links, privacy/data declarations, permission strings, iPad screenshots/assets, version/build numbers, crash/logging configuration, network security, AI disclosure, backup/data behavior and archive reproducibility. Remove debug/test bypasses. Never commit signing keys, certificates, OAuth secrets or API keys. Inspect clean archive and release runtime.
+Expose common priority and Action Required intelligence in the iPad workspace. Show explainable indicators in list/detail without overwhelming dense layouts. Ensure deterministic precedence, account scope, stale/unknown states and user corrections can be represented. Test borderline messages, missing metadata, deadlines/meeting signals not yet available, conflicting signals, sorting/filtering interactions and accessibility labels. Do not create a second priority engine.
 
-## Completion protocol
+## ACCEPTANCE / VALIDATION
 
-Read root instructions and iPadOS master documents. Inspect actual repository and previous phase evidence. Implement only this phase. Build, automated-test, run on iPad Simulator and real iPad where available, inspect logs/screenshots and perform viewport/accessibility/input/security QA. Fix failures, rebuild and retest. Update status and permanent rules only when genuinely required. Never claim unrun tests.
+Inspect actual repository and prior evidence. Implement only this phase. Run targeted unit/integration tests plus iPad Simulator and real iPad validation where available. Test multiple viewport modes, accessibility and relevant failure/recovery paths. Fix, rebuild/reinstall/retest and record exact evidence. Update status/rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
