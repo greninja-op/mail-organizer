@@ -1,24 +1,20 @@
 # macOS Specification
 
 ## Authority
-Use this order when resolving implementation questions: requirements > spec > design > editor-rules > existing architecture/decisions > official platform/API documentation > engineering judgment. Do not silently discard newer repository decisions.
+requirements > spec > design > editor-rules > existing architecture/decisions > official documentation > engineering judgment. Preserve newer repository decisions.
 
-Statuses: `[ ]` not started, `[-]` in progress, `[x]` verified complete, `[!]` blocked.
+## Architecture contract
+Rust is the primary implementation layer. The Rust core owns platform-neutral domain/data/business logic, application/use cases, Gmail normalization and sync, classification/company intelligence, search, priority, temporal/conversation intelligence, rules, Action Engine, integrations, persistence, automation, and AI routing. The core must be reusable by Windows.
 
-## Architecture
-KMP owns platform-neutral domain/data/business behavior. macOS owns SwiftUI presentation, macOS lifecycle/scenes, commands, menu bar integration where approved, Keychain, OS notifications, background mechanisms, native windowing, accessibility integration, and release/signing/notarization.
+Swift/SwiftUI owns native macOS presentation and OS integration: app/scenes, windows, menus/commands, accessibility, pointer/keyboard interaction, Keychain glue where required, notifications, and macOS-specific lifecycle APIs. Swift must not fork Rust business logic.
 
-The macOS application must consume shared behavior through a deliberate adapter boundary. Do not fork business logic into Swift merely because an API is easier there.
+The Rust↔Swift boundary must be explicit, narrow, testable, cancellation-aware, and safe for ownership/threading. Prefer generated bindings or stable FFI value/handle contracts.
 
 ## Desktop contract
-The main workspace should provide mailbox/category context, company/category context, a rich message list, selected message/conversation detail, and optional contextual inspector. The layout must adapt to window width instead of relying on a fixed phone-style screen.
+Adaptive sidebar + message list + detail + optional inspector; Gmail-familiar hierarchy without cloning proprietary artwork/source. Companies remain category filters. Search is primary. Native menus, split views, keyboard commands and selection state must remain coherent.
 
-Navigation must preserve Gmail familiarity without cloning proprietary artwork or source. Search belongs in the primary desktop hierarchy. Toolbar, sidebar, split view, keyboard commands, context menus, and selection state must remain coherent.
+## Security
+Official OAuth, least privilege, secure credential storage, no secrets in source/logs. Email HTML, links, attachments, sender text, and AI output are untrusted. AI is optional, schema/domain validated, isolated, and cannot authorize external effects.
 
-## Security contract
-Use official OAuth/browser flows and least privilege. Store credentials/tokens in Keychain or an appropriate secure mechanism; never source-control or log secrets. Treat email HTML, links, attachments, sender text, and model output as untrusted.
-
-AI is optional and secondary. It may classify/extract/suggest only through validated schemas and domain rules. It cannot call Gmail, Calendar, Tasks, filesystem, shell, browser, or OS automation tools and cannot authorize external effects.
-
-## Execution contract
-Implement one phase only. Inspect the actual repository before edits. Build, test, run, inspect, fix, rebuild/retest, update status/rules, and stop. Never claim unrun evidence. Never publish automatically.
+## Execution
+One phase only: inspect, implement, test, build, run, inspect, fix, rebuild/retest, update status/rules, stop. Never claim unrun evidence and never publish automatically.
