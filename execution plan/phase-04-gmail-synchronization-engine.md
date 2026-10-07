@@ -1,389 +1,174 @@
-# Phase 04 — Gmail Synchronization Engine
+# PHASE 4 — GMAIL SYNCHRONIZATION ENGINE
 
-## Execution contract
+## EXECUTION CONTRACT
 
-Read all source-of-truth documents before editing and confirm Phase 04 is the first incomplete phase.
+Confirm Phase 4 is the first incomplete phase and Phase 3 is verified. Read all source-of-truth documents and this prompt. Implement Gmail synchronization only. Do not implement classification, company intelligence, search, Calendar, Tasks, AI, automation or Gmail write operations.
 
-Implement **read-only Gmail synchronization only**.
+## 1. DISCOVER INSTRUCTION FOLDER
+Locate instructions and Mail Organizer root before tooling.
 
-Do not implement parsing intelligence, classification, search, Calendar, Tasks, Gmail writes, AI or automation.
+## 2. CONFIRM PHASE 3
+Verify OAuth/account authorization is actually complete. If not, stop.
 
----
+## 3. WORKSPACE ISOLATION
+Never modify sibling projects, SDKs, builds or unrelated Google Cloud resources.
 
-## 1. Synchronization contract
+## 4. GIT BASELINE
+Inspect status/diff and preserve existing work.
 
-Gmail remains the cloud source of truth.
+## 5. CLOUD SOURCE OF TRUTH
+Gmail remains authoritative for Gmail data. Local DB is a rebuildable synchronized representation plus Mail Organizer state.
 
-The local database is an account-scoped, rebuildable representation used for:
+## 6. SYNC BOUNDARY
+Define SyncEngine → Gmail API → normalized local persistence boundaries.
 
-- offline access;
-- local organization;
-- search/indexing later;
-- derived intelligence later;
-- sync state.
+## 7. ACCOUNT SCOPE
+Every sync operation must execute inside one explicit account context.
 
-Synchronization must be:
+## 8. INITIAL SYNC
+Implement controlled initial mailbox retrieval with pagination.
 
-- account-scoped;
-- idempotent;
-- resumable;
-- cancellable;
-- retryable;
-- observable;
-- safe under interruption;
-- safe under repeated execution.
+## 9. PAGINATION
+Handle Gmail pagination tokens safely. Never assume one page contains the mailbox.
 
----
+## 10. BATCHING
+Use bounded batches appropriate to API limits and device resources.
 
-## 2. Initial synchronization
+## 11. STABLE IDENTITIES
+Persist stable Gmail message/thread/label/account identifiers.
 
-Implement the initial mailbox recovery pipeline.
+## 12. IDEMPOTENT UPSERTS
+Repeated sync must not create duplicate records.
 
-It should:
+## 13. THREAD HANDLING
+Preserve Gmail thread identity. Do not infer threads solely from subjects.
 
-1. establish account sync state;
-2. determine required mailbox data;
-3. retrieve Gmail data using official read-only APIs;
-4. paginate safely;
-5. persist batches transactionally;
-6. update sync state only after successful persistence;
-7. recover after interruption;
-8. expose accurate progress/state to the application.
+## 14. LABEL/METADATA FIDELITY
+Persist only metadata required by product behavior and later parsing.
 
-Do not claim completion before the local transaction has succeeded.
+## 15. BODY/ATTACHMENT BOUNDARY
+Do not indiscriminately download attachment binaries. Respect Phase 5 parsing boundaries.
 
-Do not fake progress.
+## 16. SYNC STATE MACHINE
+Represent idle, preparing, retrieving, persisting, complete, paused, retrying, auth-required, offline and failed states.
 
----
+## 17. CURSOR STATE
+Persist incremental sync/history cursor state per account.
 
-## 3. Pagination and batching
+## 18. INCREMENTAL SYNC
+Use Gmail history mechanisms where supported by the architecture.
 
-Handle Gmail pagination correctly.
+## 19. STALE CURSOR
+Handle invalid/expired history state by safely falling back to an appropriate resynchronization path.
 
-Requirements:
+## 20. INTERRUPT/RESUME
+Persist enough state to recover from process death or cancellation without corrupting data.
 
-- continue until the API indicates completion;
-- never assume one page is complete;
-- persist page/batch boundaries safely;
-- avoid unbounded memory use;
-- retry transient page failures;
-- avoid duplicate records.
+## 21. RETRY
+Implement bounded retry/backoff for transient failures. Never retry indefinitely.
 
-Batch sizes should be configurable and compatible with the PerformanceProfile.
+## 22. ERROR CLASSIFICATION
+Differentiate network, authorization, quota/rate, invalid state and unexpected failures.
 
-Do not load the entire mailbox into memory.
+## 23. OFFLINE
+Do not claim synchronization while offline. Preserve local data and truthful state.
 
----
+## 24. RATE LIMITS
+Respect Gmail API quotas and server responses. Avoid aggressive polling.
 
-## 4. Message/thread/label identity
+## 25. CONCURRENCY
+Bound per-account and cross-account concurrency. Do not starve the UI.
 
-Use stable Gmail identifiers.
+## 26. MULTI-ACCOUNT
+Sync accounts independently. A failure in Account A must not corrupt or disable Account B.
 
-Correctly maintain:
+## 27. TRANSACTIONS
+Persist each logical batch transactionally where appropriate.
 
-- account ID;
-- message ID;
-- thread ID;
-- label IDs;
-- internal/local IDs where needed.
+## 28. CONSISTENCY
+Ensure partial batches cannot leave impossible account/message relationships.
 
-Use account + remote identifier as the effective identity boundary.
+## 29. PROGRESS
+Expose real sync progress to the Phase 1 recovery animation. Never fabricate percentages.
 
-Do not assume Gmail message IDs are globally sufficient across all local data contexts without account scoping.
+## 30. INDETERMINATE PROGRESS
+Use indeterminate state when total work is not trustworthy.
 
----
+## 31. UI ENTRY
+Provide a state-driven sync status surface without putting Gmail API calls in composables.
 
-## 5. Idempotent persistence
+## 32. LOGGING
+Log safe stages/counts/errors only. Never log tokens, authorization headers or full email bodies.
 
-Repeated sync of the same data must not create duplicate logical messages/threads.
+## 33. PRIVACY
+Minimize local copies and avoid unnecessary payload retention.
 
-Implement:
+## 34. TEST FAKES
+Build fake Gmail API responses for deterministic tests.
 
-- upsert/update behavior;
-- stable uniqueness constraints;
-- safe transaction boundaries;
-- reconciliation of changed message metadata.
+## 35. PAGINATION TESTS
+Test empty, single-page, multi-page, duplicate-page and malformed-page responses.
 
-Test:
+## 36. RETRY TESTS
+Test transient failure, quota, network loss, cancellation and bounded retry.
 
-- same page twice;
-- interrupted batch retry;
-- duplicate API response;
-- message metadata update.
+## 37. CURSOR TESTS
+Test incremental history, stale cursor and recovery.
 
----
+## 38. ACCOUNT ISOLATION TESTS
+Prove data and sync state never cross account boundaries.
 
-## 6. Incremental synchronization foundation
+## 39. DATABASE TESTS
+Verify transactions, idempotent upserts and recovery after interruption.
 
-Implement the Gmail incremental synchronization mechanism appropriate to the authorized API.
+## 40. LIVE DEVELOPMENT TEST
+Where an authorized test account exists, perform a controlled initial sync and repeat it to verify no duplicates.
 
-Persist the required history/cursor state.
+## 41. INCREMENTAL TEST
+Make a controlled non-destructive mailbox change and verify incremental sync where appropriate.
 
-The engine must distinguish:
+## 42. DEVICE VALIDATION
+Build, install Mail Organizer only, launch, connect/sync, inspect progress, force-stop safely, relaunch and verify durable state.
 
-- no prior sync;
-- initial sync;
-- incremental sync;
-- stale/invalid cursor requiring recovery;
-- interrupted sync;
-- failed sync.
+## 43. ADB/LOGCAT
+Use package-scoped ADB, screenshots/screenrecord where useful, logcat and dumpsys. Do not alter unrelated mappings.
 
-When incremental history cannot safely be applied, recover through the appropriate rebuild/resync path rather than silently losing changes.
+## 44. PERFORMANCE
+Test large synthetic mailboxes, UI responsiveness, memory and bounded concurrency.
 
-Do not move into background scheduling; that belongs to Phase 19.
+## 45. SECURITY
+Confirm OAuth tokens remain outside ordinary DB/log/UI state and Gmail remains read-only.
 
----
+## 46. FINAL BUILD
+Run Gradle compilation, shared tests, Android tests and configured static checks.
 
-## 7. Sync state machine
+## 47. FINAL RETEST
+Fix phase-caused failures, rebuild, reinstall and repeat runtime/device validation.
 
-Represent states such as:
+## 48. GIT REVIEW
+Inspect status/diff and confirm only Mail Organizer files changed.
 
-- idle;
-- preparing;
-- initial_sync;
-- incremental_sync;
-- persisting;
-- completed;
-- paused;
-- retrying;
-- cancelled;
-- authentication_required;
-- network_unavailable;
-- failed;
-- recovery_required.
+## 49. DOCUMENTATION
+Update spec.md and development-status with real sync architecture, cursor/recovery strategy and limitations.
 
-State transitions must be deterministic.
+## 50. EDITOR RULES
+Add only permanent synchronization/privacy rules discovered.
 
-Expose safe progress information.
+## 51. ACCEPTANCE CRITERIA
+- initial sync works;
+- pagination works;
+- persistence is idempotent;
+- incremental cursor exists;
+- stale cursor recovery exists;
+- retry/backoff bounded;
+- multi-account isolation verified;
+- truthful progress works;
+- offline/error states work;
+- tests and device validation pass;
+- no classification/search/write/AI/future phase implemented.
 
-Only expose determinate percentages when the engine has a trustworthy denominator.
+## 52. FINAL REPORT
+Report sync architecture, API behavior, cursor strategy, test results, device/API level, screenshots/logcat, security, workspace isolation, files, known issues and deferred work.
 
-Otherwise expose stage-based/indeterminate progress.
-
----
-
-## 8. Retry and backoff
-
-Handle transient failures with bounded retry/backoff.
-
-Differentiate:
-
-- authentication failure;
-- permission failure;
-- rate limiting;
-- transient network failure;
-- server error;
-- malformed/unexpected response;
-- local database failure;
-- cancellation.
-
-Do not retry permanent authorization errors indefinitely.
-
-Do not retry after explicit cancellation.
-
-Do not create retry storms across multiple accounts.
-
----
-
-## 9. Concurrency and account isolation
-
-Protect each account's sync state from concurrent conflicting runs.
-
-Requirements:
-
-- at most one conflicting sync operation per account;
-- multiple accounts may sync independently where safe;
-- one account failure must not corrupt another account's state;
-- cancellation must be account-scoped;
-- database transactions must preserve account boundaries.
-
-Do not implement the final multi-account UX here.
-
----
-
-## 10. Local data fidelity
-
-Persist only what the current synchronization phase actually needs.
-
-Store:
-
-- message/thread identity;
-- relevant Gmail metadata;
-- labels;
-- timestamps;
-- basic sender/recipient references;
-- state needed for later parsing/normalization.
-
-Do not duplicate raw Gmail payloads unnecessarily.
-
-Do not download attachment binaries automatically.
-
-Do not perform classification.
-
----
-
-## 11. Network/offline behavior
-
-The engine must distinguish:
-
-- offline before sync;
-- network lost during sync;
-- server unavailable;
-- authorization expired;
-- local persistence failure.
-
-A network failure must not leave the account falsely marked as fully synchronized.
-
-Successful persisted batches may remain available locally.
-
-Resume from the correct durable state rather than starting over unnecessarily.
-
----
-
-## 12. Sync progress and UI integration
-
-Expose a testable sync-status stream/state model for the Android UI.
-
-The Phase 01 recovery animation must consume this real state.
-
-When synchronization is effectively instant, the UI should be able to skip the blocking animation.
-
-When synchronization is slow:
-
-- show truthful stage text;
-- show determinate progress only when trustworthy;
-- otherwise show indeterminate progress;
-- allow safe entry into the app if the architecture supports it;
-- never fabricate percentages.
-
-Do not create a second independent sync-progress system in the UI.
-
----
-
-## 13. Logging and privacy
-
-Logs may contain:
-
-- safe account-local diagnostic identifiers;
-- sync stage;
-- counts where not sensitive;
-- error categories;
-- timing metrics.
-
-Never log:
-
-- OAuth tokens;
-- full email bodies;
-- complete sensitive headers;
-- attachment contents;
-- authorization codes.
-
-Be conservative with account email addresses in logs.
-
----
-
-## 14. Testing
-
-Build deterministic tests for:
-
-- pagination;
-- empty mailbox;
-- multi-page mailbox;
-- duplicate pages;
-- idempotent upserts;
-- interrupted sync;
-- retry;
-- cancellation;
-- rate limiting;
-- authorization failure;
-- network loss;
-- stale history cursor;
-- incremental history;
-- account isolation;
-- transaction rollback;
-- sync-state restoration.
-
-Use fake Gmail API responses.
-
-Do not make unit tests depend on live Gmail.
-
----
-
-## 15. Integration/manual validation
-
-Where an authorized development Gmail account is available:
-
-- connect;
-- perform initial sync;
-- verify local counts;
-- repeat sync;
-- confirm no duplicates;
-- make a controlled Gmail-side metadata change where appropriate;
-- run incremental sync;
-- confirm local state updates;
-- interrupt sync;
-- resume;
-- test network/auth failure safely.
-
-Never use a destructive Gmail write merely to create a test condition.
-
----
-
-## 16. Mandatory verification
-
-Run:
-
-- shared tests;
-- database tests;
-- synchronization tests;
-- Android build;
-- relevant UI/runtime tests.
-
-On device:
-
-- install;
-- launch;
-- initiate sync;
-- observe recovery animation;
-- inspect logcat;
-- force-stop during sync where safe;
-- relaunch;
-- verify durable sync state;
-- inspect local DB;
-- repeat sync.
-
-Fix, rebuild, reinstall and retest.
-
----
-
-## 17. Explicit non-goals
-
-Do not implement:
-
-- classification;
-- company intelligence;
-- search;
-- Calendar;
-- Tasks;
-- background scheduling;
-- Gmail writes;
-- AI;
-- automation.
-
-Parsing/normalization beyond the minimum storage needed for synchronization belongs to Phase 05.
-
----
-
-## 18. Completion
-
-Update permanent editor rules only where genuinely justified.
-
-Update `spec.md` only after actual verification.
-
-Document sync-state decisions, cursor/recovery strategy and known limitations.
-
-Final sequence:
-
-`diff review → build → tests → live/fake sync verification → DB/log inspection → fix → rebuild/retest → docs/status → commit → stop`
-
-Do not continue to Phase 05.
+## 53. STOP
+Do not execute Phase 5.
