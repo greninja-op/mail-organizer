@@ -1,413 +1,183 @@
-# Phase 06 — Core Inbox & Email Viewer
+# PHASE 6 — CORE INBOX & EMAIL VIEWER
 
-## Execution contract
+## EXECUTION CONTRACT
 
-Read all source-of-truth documents and confirm Phase 06 is the first incomplete phase.
+Confirm Phase 6 is first incomplete and Phase 5 is verified. Read all project rules. Implement the core local mailbox/thread viewer only. Do not add sync, classifier, company intelligence, search, Calendar, Tasks, AI, automation or Gmail writes.
 
-Implement the **core local-data mailbox and email/thread viewer**.
+## 1. DISCOVER ROOT
+Locate instruction folder and Mail Organizer root before tooling.
 
-Use synchronized local data and the normalized models from earlier phases.
+## 2. CONFIRM PHASE 5
+Verify normalized parsing/security foundation is complete.
 
-Do not add new Gmail synchronization logic, classification intelligence, Calendar, Tasks, search engine, automation, AI or Gmail write behavior.
+## 3. WORKSPACE ISOLATION
+Never modify sibling projects.
 
----
+## 4. GIT BASELINE
+Inspect status/diff and preserve unrelated work.
 
-## 1. Product objective
+## 5. LOCAL-FIRST UI
+UI reads local repositories/database. Never call Gmail APIs from composables.
 
-Make Mail Organizer's core mail experience usable with real synchronized local data.
+## 6. STATE ARCHITECTURE
+Use UI state → ViewModel/use case → repository → local DB.
 
-Users must be able to:
+## 7. ALL INBOX
+Implement unified cross-account presentation with receiving-account identity on every row.
 
-- enter the mailbox;
-- see message/thread lists;
-- understand sender, subject, preview and time;
-- distinguish unread/read;
-- identify the receiving Gmail account in All Inbox;
-- open a thread/message;
-- safely read normalized email content;
-- see attachment metadata;
-- use Starred state;
-- navigate category context;
-- handle loading/empty/error/offline states.
+## 8. ACCOUNT IDENTITY
+Receiving Gmail account must remain distinct from sender, avatar and company.
 
-The UI must use the Android shell established in Phase 01.
+## 9. PRIMARY
+Display local Primary category state where available.
 
----
+## 10. PROMOTIONAL
+Display organized Promotional state without deleting or hiding promotional mail.
 
-## 2. Mailbox data source
+## 11. SOCIAL
+Display Social state from available local labels/state.
 
-Use local repositories/database as the primary UI source.
+## 12. SPAM
+Provide first-class Spam destination and safe red attention/new indicator where applicable.
 
-Do not call Gmail APIs directly from composables.
+## 13. STARRED
+Provide global Starred view. Starred messages remain in original category.
 
-Use a state-driven architecture:
+## 14. STAR ACTION
+Implement local Star state without pretending Gmail has been modified.
 
-`UI → ViewModel/use case → repository → local database`
+## 15. COMPANY CONTEXT
+Preserve selected category/company context if already represented, without implementing company intelligence.
 
-Gmail synchronization remains responsible for populating local state.
+## 16. MAILBOX ROW
+Render sender, subject, preview, time, unread state, Star and source account.
 
-The viewer should remain useful offline when local data exists.
+## 17. THREAD INDICATION
+Represent thread/message relationships without inventing thread identity.
 
----
+## 18. PAGINATION
+Use local pagination/windowing and stable lazy-list keys.
 
-## 3. Inbox list
+## 19. EMPTY STATES
+Distinguish no local mail, empty category and not-yet-synchronized state.
 
-Implement a reusable mailbox list.
+## 20. ERROR STATES
+Distinguish repository/database/parse failures from network unavailability.
 
-Each row should support:
+## 21. OFFLINE
+Allow local mail reading offline where local data exists.
 
-- sender;
-- subject;
-- preview;
-- timestamp;
-- unread emphasis;
-- Star;
-- thread/message indication where appropriate;
-- safe account/source identity.
+## 22. THREAD VIEWER
+Open a thread and display participants, message order, timestamps and normalized bodies.
 
-Do not make rows unnecessarily dense.
+## 23. READABILITY
+Maintain Gmail familiarity while preserving Mail Organizer identity.
 
-Preserve Gmail familiarity while maintaining Mail Organizer's visual identity.
+## 24. HTML RENDERING
+Render Phase 5 sanitized content only. Never execute email scripts.
 
-Use lazy lists with stable keys.
+## 25. LINK SAFETY
+Require deliberate interaction before navigation. Never auto-open links or execute javascript URLs.
 
----
+## 26. ATTACHMENTS
+Display metadata only. Do not auto-download binaries.
 
-## 4. All Inbox
+## 27. READ/UNREAD
+Display state clearly. Local mutations must not be represented as Gmail writes.
 
-All Inbox is a unified cross-account presentation.
+## 28. ACCOUNT SCOPING
+Every mailbox/thread action must preserve account ownership.
 
-Every message row must expose the receiving/source Gmail account using a compact circular account indicator or equivalent.
+## 29. LARGE THREADS
+Avoid loading unnecessarily large content into memory.
 
-The indicator represents:
+## 30. PERFORMANCE PROFILE
+Respect the adaptive PerformanceProfile and motion tiers from Phase 1.
 
-**receiving Gmail account ≠ sender ≠ company**
+## 31. ACCESSIBILITY
+Provide semantics for sender/subject/preview, Star, account identity, unread, Spam, links and attachments.
 
-The UI must make these identities distinguishable.
+## 32. LARGE TEXT
+Validate message rows/thread layout at large font scales.
 
-A user should be able to determine the receiving account without opening the message.
+## 33. REDUCED MOTION
+Ensure transitions remain understandable without expressive motion.
 
-Unified presentation must not bypass account-scoped repository boundaries.
+## 34. LIGHT/DARK
+Validate themes, dynamic color and semantic attention colors.
 
----
+## 35. RESPONSIVE
+Validate supported portrait, landscape and window widths.
 
-## 5. Categories
+## 36. TEST DATA
+Use synthetic local data for ordinary tests; never depend on a personal Gmail account.
 
-Respect the navigation shell from Phase 01:
+## 37. UNIT TESTS
+Test list state, Star, category preservation, account identity and repository errors.
 
-- All Inbox;
-- Primary;
-- Promotional;
-- Social;
-- Spam;
-- Starred.
+## 38. THREAD TESTS
+Test ordering, multiple messages, malformed content and attachment metadata.
 
-Use the actual local state/labels available from synchronization.
+## 39. SECURITY TESTS
+Prove sanitized HTML, unsafe links and account boundaries remain safe.
 
-Do not invent classification categories beyond what previous phases provide.
+## 40. PERFORMANCE TESTS
+Use large synthetic datasets to detect excessive allocations/recomposition.
 
-Do not implement the full deterministic classifier here.
+## 41. DEVICE INSTALL
+Build and install only the Mail Organizer APK.
 
----
+## 42. DEVICE FLOW
+Launch → All Inbox → categories → Star → Starred → thread → back navigation.
 
-## 6. Starred
+## 43. OFFLINE FLOW
+Force offline/local-only conditions and verify local data remains readable.
 
-Implement the user-facing Star state using local state.
+## 44. RESTART FLOW
+Force-stop/relaunch and verify state restoration.
 
-Requirements:
+## 45. SCREENSHOTS
+Capture important mailbox/thread states for visual inspection without retaining unnecessary private data.
 
-- Star control is available from message rows;
-- starred messages remain in their original category;
-- Starred is a global view;
-- starring does not mean company pinning;
-- account ownership remains preserved.
+## 46. SCREEN RECORDING
+Use where helpful to inspect navigation, transitions and duplicate taps.
 
-If Gmail write access does not exist yet, the local Star action must remain explicitly local/pending rather than pretending Gmail has been modified.
+## 47. LOGCAT
+Inspect crashes, renderer errors, DB errors and confirm no tokens/private bodies leak.
 
-Do not implement Gmail write APIs in this phase.
+## 48. ADB SAFETY
+Use package-scoped commands; no unrelated uninstall/data clearing/reverse mapping changes.
 
----
+## 49. FINAL BUILD
+Run Gradle, shared/unit/UI/static checks and fix phase-caused failures.
 
-## 7. Company/category context
+## 50. FINAL RETEST
+Rebuild, reinstall and repeat device/visual/security tests after fixes.
 
-The company intelligence engine is a later phase, but the UI must preserve category context.
+## 51. GIT REVIEW
+Confirm only Mail Organizer files changed and no secrets/generated artifacts are committed.
 
-If a company-filter state is already represented by fixture/domain state:
+## 52. DOCUMENTATION
+Update spec/status with real viewer behavior, limitations and validation results.
 
-- show the current category;
-- show the selected company;
-- keep filtering scoped to that category.
+## 53. EDITOR RULES
+Add only permanent viewer/security/accessibility rules genuinely discovered.
 
-Do not build company detection here.
+## 54. ACCEPTANCE CRITERIA
+- local mailbox works;
+- required categories work;
+- All Inbox account indicator works;
+- Starred/global Star works locally;
+- thread viewer works;
+- sanitized email renders safely;
+- attachment metadata works without auto-download;
+- offline/empty/error states work;
+- accessibility/themes/responsive behavior verified;
+- tests/build/device QA pass;
+- no later phase implemented.
 
-Do not turn companies into top-level drawer destinations.
+## 55. FINAL REPORT
+Report mailbox architecture, UI states, thread viewer, security, tests, device/API, screenshots/logcat, workspace isolation, files, known issues, deferred work and acceptance status.
 
----
-
-## 8. Thread viewer
-
-Implement thread-oriented reading using local normalized data.
-
-Show:
-
-- participants;
-- message order;
-- sender identity;
-- timestamp;
-- normalized body;
-- read/unread state where available;
-- attachments metadata;
-- safe links.
-
-Handle long threads efficiently.
-
-Avoid loading the entire thread into memory unnecessarily when data is large.
-
----
-
-## 9. Safe HTML rendering
-
-Use the sanitized output from Phase 05.
-
-The viewer must never execute email JavaScript.
-
-Unsafe links/content must remain blocked or require deliberate safe interaction.
-
-Do not inject unsanitized HTML into a WebView or equivalent renderer.
-
-If a WebView is used for rendering, harden it appropriately and keep navigation under explicit application control.
-
----
-
-## 10. Links
-
-Links are user actions.
-
-Provide a deliberate interaction before leaving the app where appropriate.
-
-Do not automatically open links on message load.
-
-Do not execute javascript URLs.
-
-Do not allow an email to invoke application actions simply by containing a crafted URL.
-
----
-
-## 11. Attachments
-
-Display attachment metadata such as:
-
-- filename;
-- type;
-- size;
-- inline/attachment state.
-
-Do not automatically download attachment contents.
-
-A later user-driven download/open flow must be architected separately.
-
-Do not make opening an attachment an automatic side effect of viewing a message.
-
----
-
-## 12. Read/unread state
-
-Display unread state clearly.
-
-Where local state permits a local read-state mutation, keep it account-scoped.
-
-Do not claim Gmail state has changed unless Gmail write capability exists and has actually succeeded.
-
-Do not add Gmail write calls in this phase.
-
----
-
-## 13. Loading/empty/error/offline states
-
-Implement deliberate states for:
-
-- initial loading;
-- empty mailbox;
-- empty category;
-- thread loading;
-- message parse failure;
-- offline local-data availability;
-- no local data;
-- repository/database error.
-
-The UI should distinguish:
-
-- “there is no local mail”;
-- “the account has not synchronized yet”;
-- “the local database is unavailable”;
-- “the network is unavailable.”
-
-Do not use a generic infinite spinner for all failures.
-
----
-
-## 14. Pagination and large mailboxes
-
-Use local pagination/windowing.
-
-Do not load an entire mailbox into memory.
-
-Use stable lazy-list keys.
-
-Avoid unnecessary recomputation during scrolling.
-
-Ensure the UI remains responsive with large synthetic datasets.
-
----
-
-## 15. Accessibility
-
-Validate:
-
-- message sender/subject/preview semantics;
-- Star state;
-- source-account identity;
-- unread state;
-- navigation drawer;
-- thread controls;
-- links;
-- attachment controls.
-
-Do not rely solely on color for:
-
-- account identity;
-- unread;
-- Starred;
-- Spam;
-- errors.
-
-Support large text and reduced motion.
-
----
-
-## 16. Visual consistency
-
-Review against `design.md`:
-
-- top app bar/search/account shell;
-- drawer;
-- message-row density;
-- typography;
-- spacing;
-- surfaces;
-- icons;
-- account identity treatment;
-- Star treatment;
-- thread layout;
-- dark mode;
-- dynamic color;
-- responsive windows.
-
-Fix inconsistencies instead of adding one-off styling.
-
----
-
-## 17. Performance
-
-Profile/inspect:
-
-- scrolling;
-- opening a thread;
-- large thread rendering;
-- HTML rendering;
-- account switching context;
-- Star interaction.
-
-Avoid:
-
-- synchronous database calls on UI thread;
-- expensive parsing during composition;
-- unnecessary recomposition;
-- unbounded WebView/resource loading;
-- large image decoding.
-
-Respect the existing PerformanceProfile.
-
----
-
-## 18. Testing
-
-Create tests for:
-
-- mailbox list state;
-- account identity rendering;
-- account isolation;
-- Star state;
-- category preservation after starring;
-- Starred query;
-- empty/error/offline states;
-- thread ordering;
-- malformed/sanitized content rendering;
-- attachment metadata;
-- safe link behavior.
-
-Use synthetic local data.
-
-Do not require Gmail access for ordinary UI/unit tests.
-
----
-
-## 19. Mandatory runtime/device verification
-
-Use Gradle wrapper.
-
-Run all relevant unit/database/UI tests.
-
-On emulator/real device:
-
-1. install;
-2. launch;
-3. open All Inbox;
-4. open each applicable category;
-5. verify source-account indicators;
-6. star/unstar messages;
-7. open Starred;
-8. open a thread;
-9. inspect HTML safety;
-10. inspect attachments metadata;
-11. test empty/error/offline states;
-12. force-stop/relaunch;
-13. inspect logcat;
-14. capture screenshots;
-15. test light/dark and large font;
-16. verify no sensitive content leaks into logs.
-
-Fix defects, rebuild, reinstall and retest.
-
----
-
-## 20. Explicit non-goals
-
-Do not implement:
-
-- new Gmail sync engine;
-- deterministic classification;
-- company intelligence;
-- search;
-- Calendar;
-- Tasks;
-- Gmail writes;
-- AI;
-- automation;
-- background sync.
-
----
-
-## 21. Completion
-
-Update permanent editor rules only when genuinely justified.
-
-Update `spec.md` only after real verification.
-
-Document any local-viewer limitations and real verification results.
-
-Final sequence:
-
-`diff review → build → tests → runtime/visual/security QA → fix → rebuild/reinstall/retest → docs/status → commit → stop`
-
-Do not continue to Phase 07.
+## 56. STOP
+Do not execute Phase 7.
