@@ -1,19 +1,15 @@
-# Phase 10 — iPadOS Multi-Account & Unified Inbox
+# Phase 10 — Gmail Data Access & API Adapter
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-iPadOS only. All iPadOS-specific work belongs under iPadOS/. Never modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Keep business/data logic in shared KMP.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission
+## MISSION
 
-Build tablet account workspace: current/connected/add account, unified All Inbox, source receiving-account identity, account-specific sync/recovery/search/rules/company/actions, account removal cleanup, cross-account action protection. Use the real OAuth→sync→recovery path. Test cross-account search/cache/notifications/rules/actions/company filters and unified selection/detail state; fail closed.
+Build the iPad-facing Gmail API/data adapter boundary on top of existing common architecture. Normalize Gmail message/thread/label/profile/history/page tokens into shared domain contracts. Handle pagination, rate limits, transient errors, authorization failures and malformed responses. Never expose raw provider objects throughout SwiftUI. Add deterministic mapping tests for missing fields, malformed headers, duplicate IDs, deleted messages and partial responses. Do not implement the full sync workflow yet.
 
-## iPad workspace requirement
+## ACCEPTANCE / VALIDATION
 
-Use the larger viewport for meaningful contextual information, not decoration. Prefer adaptive sidebar/list/detail/inspector layouts when available. Preserve a usable fallback at narrow split widths. Pointer, keyboard, touch, Dynamic Type and VoiceOver must remain first-class.
-
-## Completion protocol
-
-Inspect actual repository. Implement only this phase. Build and test. Exercise multiple window sizes, orientations and relevant input modes. Fix and retest. Record exact evidence. Update documentation/status and permanent rules only when required.
+Inspect the actual repository and prior evidence. Implement only this phase. Run targeted automated tests, then iPad Simulator and real iPad validation where available. Test multiple viewport states relevant to the feature and exercise failure/recovery paths. Fix, rebuild/reinstall/retest and record exact evidence. Update status/rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
