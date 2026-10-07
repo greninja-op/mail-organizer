@@ -1,15 +1,15 @@
-# Phase 8 — iPadOS Rules, Temporal & Conversation Workspace
+# Phase 8 — Secure Storage & Account State
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is iPadOS only. iPadOS-specific work belongs under iPadOS/. Never modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Common KMP business/data logic must remain shared.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission and required work
+## MISSION
 
-Expose corrections/rules plus deadline, meeting, waiting-for-reply and conversation intelligence in a workspace suited to larger screens; use common engines; show rule/explanation context alongside affected content where useful; account-scoped rule editing; precedence and audit; test contradictory rules, corrections, ambiguous dates, timezones/DST, forwarded/quoted content, duplicate threads and account isolation; email cannot authorize rules/actions; STOP.
+Implement/verify iPad Keychain-backed credential/token state and account metadata boundaries. Define secure storage adapter through common interface, token refresh state, logout/disconnect cleanup and lock/privacy behavior. Verify no secrets enter logs, screenshots, analytics, ordinary DB or SwiftUI state dumps. Test account add/remove, revoked credentials, corrupted secure state, duplicate accounts and cross-account access attempts. Do not build the OAuth UI yet.
 
-## Validation and completion
+## ACCEPTANCE / VALIDATION
 
-Inspect actual repository and all master iPadOS documents first. Implement only this phase. Build, automated-test, run on iPad Simulator and real iPad where available. Test multiple widths/orientations, narrow split, full screen, Stage Manager, Dynamic Type, VoiceOver, pointer and keyboard where relevant. Fix and retest. Record exact evidence. Update status/permanent rules only when genuinely required.
+Inspect actual repository and prior phase evidence. Implement only this phase. Run targeted unit/integration tests and runtime tests on iPad Simulator and real iPad where available. Exercise success, failure, cancellation and recovery paths appropriate to the phase. Inspect logs and persisted state. Fix, rebuild/reinstall/retest. Record exact evidence. Update status and permanent rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
