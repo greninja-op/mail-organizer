@@ -1,10 +1,14 @@
+## Mandatory Rust desktop architecture
+
+**Rust is the primary implementation language for this macOS phase.** All platform-neutral business/data/application logic must live in the reusable Rust desktop core. Swift/SwiftUI is reserved for native macOS UI and OS-facing integration. Swift must not duplicate Rust business rules. The Rust core must be designed for reuse by Windows.
+
 # Phase 00 — macOS Architecture, Shared-Core & Desktop Audit
 
 ## Mission
 Implement and verify **only Phase 00** of the Mail Organizer macOS execution plan. This phase is part of a sequential 31-phase roadmap. Do not implement Phase 01 or any later phase early.
 
 ## Mandatory macOS isolation
-All macOS-specific implementation, SwiftUI UI, resources, tests, entitlements, configuration, scripts, and release artifacts must remain inside the macOS platform boundary. Never create, edit, delete, rename, or reorganize `iOS/`, `iPadOS/`, `AndroidTablet/`, `Android/`, `Windows/`, `Linux/`, or another sibling platform area during this phase. Shared KMP changes are allowed only when they are genuinely platform-neutral and directly required by this phase.
+All macOS-specific implementation, SwiftUI UI, resources, tests, entitlements, configuration, scripts, and release artifacts must remain inside the macOS platform boundary. Never create, edit, delete, rename, or reorganize `iOS/`, `iPadOS/`, `AndroidTablet/`, `Android/`, `Windows/`, `Linux/`, or another sibling platform area during this phase. Shared Rust desktop core changes are allowed only when they are genuinely platform-neutral and directly required by this phase.
 
 ## Required reading and state discovery
 Before editing:
@@ -16,11 +20,11 @@ Before editing:
 6. Preserve newer repository decisions. Do not replace master documents with stale external copies.
 
 ## Phase objective
-Audit repository structure, current KMP modules, existing Android/iOS decisions, Gradle/Xcode integration, package identifiers, shared domain/data boundaries, existing macOS targets if any, dependency graph, build scripts, tests, persistence, OAuth, and release assumptions. Produce a concrete gap list without redesigning unrelated systems.
+Audit repository structure, current Rust desktop core modules, existing Android/iOS decisions, Gradle/Xcode integration, package identifiers, shared domain/data boundaries, existing macOS targets if any, dependency graph, build scripts, tests, persistence, OAuth, and release assumptions. Produce a concrete gap list without redesigning unrelated systems.
 
 ## Implementation requirements
 - Keep the implementation production-oriented rather than a mock or screenshot-only prototype.
-- Reuse existing shared KMP/domain/data infrastructure where it is correct.
+- Reuse existing shared Rust desktop core/domain/data infrastructure where it is correct.
 - Do not duplicate business logic in SwiftUI merely for convenience.
 - Define explicit boundaries between UI state, application/use-case state, domain models, persistence, and external APIs.
 - Handle loading, success, empty, error, cancellation, offline, stale-data, and recovery states wherever applicable.
