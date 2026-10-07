@@ -1,31 +1,22 @@
 # macOS Requirements
 
-## Product role
-Mail Organizer is a privacy-first personal email organization and action layer over Gmail. Gmail remains the authoritative cloud source of truth; Mail Organizer provides local organization, intelligence, search, prioritization, action suggestions, and optional integrations.
+Mail Organizer is a privacy-first personal email organization and action layer over Gmail. Gmail remains the authoritative cloud source of truth.
 
-## macOS scope
-- Native macOS desktop application using SwiftUI.
-- Shared KMP core wherever business/data behavior is platform-neutral.
-- Native macOS presentation and OS integration rather than stretched mobile layouts.
-- Gmail official APIs and OAuth; no password collection, cookie reuse, scraping, or AccessibilityService-style mailbox control.
-- Local persistence for Mail Organizer state: classification, corrections, rules, company intelligence, Action Required state, deadlines/meetings, conversation intelligence, sync cursors, local search/index data, analytics, automation state, and integration relationships as appropriate.
-- Gmail remains cloud source of truth.
-- Local processing is preferred. Remote AI is optional and explicitly controlled.
+## Implementation stack
+- Rust is the primary language for the macOS product core and shared desktop core.
+- SwiftUI/Swift is the native macOS presentation and OS-integration layer.
+- Rust owns domain, application/use-case, data, sync, classification, intelligence, search, rules, actions, automation, AI routing, and persistence behavior wherever platform-neutral.
+- Swift calls Rust through a narrow, tested FFI/binding layer and owns native UI, scenes/windows, menus, accessibility integration, Keychain-facing glue where needed, notifications, and macOS-specific lifecycle APIs.
+- The Rust desktop core must remain reusable by the future Windows client.
+
+## Privacy and Gmail
+Use official Gmail APIs and OAuth; never collect passwords, reuse cookies, scrape Gmail, or use accessibility automation as the primary mailbox mechanism. Minimize local data and keep account boundaries explicit.
 
 ## Information architecture
-Primary destinations include All Inbox, Primary, Promotional, Social, Spam, and Starred. Companies are filters/grouping inside the selected category, not a replacement for mailbox navigation.
-
-All Inbox unifies connected Gmail accounts. Each message must expose the receiving Gmail account identity separately from sender/company identity. Individual email starring remains independent of company pinning and does not remove the email from its category.
-
-Promotional and Social mail remain organized and accessible. Spam is first-class and supports recovery/Not Spam. Search should be local-index-first and support sender, subject, body/thread, company/domain, category, priority, Action Required, Gmail labels, and other supported indexed fields.
+All Inbox, Primary, Promotional, Social, Spam, and Starred are primary destinations. Companies are filters/grouping inside the selected category. All Inbox preserves receiving Gmail account identity per message. Individual email starring is separate from company pinning. Promotional/Social remain accessible; Spam is first-class with recovery.
 
 ## Intelligence and actions
-Deterministic/local/explainable logic is authoritative before optional AI. User corrections and explicit rules outrank deterministic classification; AI is fallback, never authority for external actions. Action Engine operations are explainable, traceable, account-scoped, deduplicated, and confirmed before consequential external effects.
+Deterministic/local/explainable behavior is authoritative before optional AI. User correction > user rule > deterministic > AI fallback > unknown. Email content is untrusted and can never authorize external actions. Calendar, Tasks, Gmail writes, automation, and AI remain modular and require appropriate confirmation.
 
-Calendar, Tasks, Gmail writes, automation, AI, and future integrations remain modular. Email content is untrusted input and can never itself authorize sending, deletion, calendar/task creation, automation escalation, shell commands, browser actions, or credential use.
-
-## macOS interaction
-Support resizable windows, large desktop layouts, keyboard navigation, menu commands, shortcuts, pointer/trackpad, context menus, drag/drop only where safe and intentional, multiple windows/scenes where useful, dark mode, Dynamic Type/accessibility text sizing, VoiceOver, reduced motion, and responsive split layouts.
-
-## Quality
-Every feature must be tested beyond build success: automated tests, runtime behavior, realistic loading/empty/error/offline/cancellation/recovery states, account isolation, privacy/security, accessibility, performance, battery/power behavior where applicable, data integrity, and release configuration. Production signing/notarization must be a dedicated final gate and must never be faked.
+## macOS UX and quality
+Use native resizable desktop windows, split views, menus, shortcuts, pointer/trackpad, context menus, multiple windows/scenes, dark mode, VoiceOver, accessibility text sizing, reduced motion, and responsive layouts. Every feature requires tests beyond compilation: runtime, failure/recovery, security, account isolation, accessibility, data integrity, performance, and release checks as applicable.
