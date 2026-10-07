@@ -1,19 +1,15 @@
-# Phase 11 — iPadOS Offline, Background Refresh & Notifications
+# Phase 11 — Initial Gmail Sync
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-iPadOS only. All iPadOS-specific work belongs under iPadOS/. Never modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Keep business/data logic in shared KMP.
+This is iPadOS only. All iPadOS-specific artifacts belong under iPadOS/. Never touch iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP business/data logic remains common.
 
-## Mission
+## MISSION
 
-Make the workspace truthful through offline/suspension/termination. Cached list/detail, stale indicators, reconnect/reconcile, background refresh where justified, notification categories/actions, privacy, deduplication, deep links, auth-required states, battery-aware scheduling. Test airplane mode, flaky network, suspension, force termination, delayed background execution, duplicate notifications, denied notification permission and stale cache. Never promise exact background cadence.
+Implement first-account/full synchronization using the existing shared sync architecture. Fetch in bounded pages, persist atomically, expose per-account progress/state and support cancellation/resume. Define honest determinate progress only where a trustworthy denominator exists; otherwise indeterminate. Test empty mailbox, large mailbox, pagination boundaries, duplicate prevention, partial failure, expired auth, cancellation and restart. Validate unified data does not leak between accounts.
 
-## iPad workspace requirement
+## ACCEPTANCE / VALIDATION
 
-Use the larger viewport for meaningful contextual information, not decoration. Prefer adaptive sidebar/list/detail/inspector layouts when available. Preserve a usable fallback at narrow split widths. Pointer, keyboard, touch, Dynamic Type and VoiceOver must remain first-class.
-
-## Completion protocol
-
-Inspect actual repository. Implement only this phase. Build and test. Exercise multiple window sizes, orientations and relevant input modes. Fix and retest. Record exact evidence. Update documentation/status and permanent rules only when required.
+Inspect the actual repository and prior evidence. Implement only this phase. Run targeted automated tests, then iPad Simulator and real iPad validation where available. Test multiple viewport states relevant to the feature and exercise failure/recovery paths. Fix, rebuild/reinstall/retest and record exact evidence. Update status/rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
