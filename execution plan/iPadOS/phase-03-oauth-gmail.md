@@ -1,15 +1,15 @@
-# Phase 3 — Google OAuth & Gmail iPadOS Connection
+# Phase 3 — iPadOS SwiftUI Shell & Scene Lifecycle
 
 ## MANDATORY PLATFORM ISOLATION — READ FIRST
 
-This is an iPadOS-only phase. All iPadOS-specific work belongs under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP/common source remains shared; never duplicate common business logic into iPadOS.
+This is an iPadOS-only phase. All iPadOS-specific implementation, tests and documents belong under iPadOS/. Never create or modify iOS/, AndroidTablet/, macOS/, Windows/ or Linux/. Shared KMP/mobile business and data logic remains common.
 
-## Mission
+## MISSION
 
-Official Google OAuth/browser flow; iPad presentation; callback/deep-link boundary; Keychain; token refresh/expiry; account identity; least privilege/incremental scopes; disconnect/revoke; cancellation/retry; no password form; inspect entitlements/URL schemes/logs/account isolation; test success/cancel/error/expired token/revocation; do not implement broad sync; STOP.
+Build the iPad SwiftUI application shell and scene lifecycle. Establish app entry, scene/window state, dependency/bootstrap boundary, navigation root, selection state and restoration foundation. Create reusable loading/empty/error/offline/auth-required state primitives. Keep business logic outside views and consume shared KMP use cases through explicit interfaces. Do not implement Gmail/OAuth/mail features beyond compile-time contracts. Validate cold launch, warm launch, terminate/relaunch, scene activation/deactivation, orientation changes, Dynamic Type, dark mode and multiple iPad simulator sizes.
 
-## Required completion protocol
+## REQUIRED VALIDATION
 
-Inspect root instructions and iPadOS requirements/spec/design/editor-rules. Inspect actual repository before implementation. Implement only this phase. Build and run. Exercise realistic and failure states. Fix failures. Rebuild and retest. Update status and permanent rules only when genuinely required. Never claim unrun tests or fabricate evidence.
+Inspect the actual repository before deciding. Implement only this phase. Run exact relevant build and automated tests, then runtime validation on iPad Simulator and a real iPad when available. Test failure and recovery states relevant to the phase. Fix failures, rebuild/reinstall/retest, record evidence, update status and permanent editor rules only when genuinely required.
 
 **STOP AFTER THIS PHASE.**
