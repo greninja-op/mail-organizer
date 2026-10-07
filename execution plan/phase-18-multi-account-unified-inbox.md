@@ -6,6 +6,14 @@ Read requirements.md, spec.md, design.md and editor-rules.md first. Confirm this
 ## Phase objective
 Make account identity a first-class boundary across every entity, repository, use case, search result, rule, action and integration. Add multiple-account switching and unified inbox as a presentation layer over account-owned data. Preserve source-account context everywhere, isolate OAuth/sync state, handle partial failures and make cross-account destinations explicit and safe.
 
+## UI requirements
+- All Inbox rows visibly identify their source Gmail account with the shared compact circular account indicator.
+- The account/profile affordance opens the account switcher with current account, connected accounts and add-account.
+- Swiping the profile affordance can immediately switch to the next account where supported.
+- Adding an account uses the shared Gmail → Mail Organizer recovery/sync animation when actual retrieval takes meaningful time.
+- Unified Inbox must never visually or logically mix account identity with sender/company identity.
+- Account-specific unread/count state remains isolated while aggregate All Inbox counts may be shown.
+
 ## Mandatory verification
 - Build with the repository's official Gradle/KMP tooling.
 - Run relevant automated tests and record real results.
