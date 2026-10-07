@@ -29,6 +29,22 @@ Before broad backend/integration expansion, the Android UI foundation must be tr
 - Real-data, loading, empty, error, offline and partial-sync states.
 - Repeatable visual QA and frame/jank/performance checks.
 
+### Android mailbox UX contract
+The Android mailbox information architecture must also establish:
+- top app bar with navigation drawer affordance, Gmail-familiar search affordance and account/profile affordance;
+- drawer destinations: All Inbox, Primary, Promotional, Social, Spam and Starred;
+- All Inbox rows expose the receiving/source Gmail account identity through a compact circular account indicator;
+- account switcher supports connected accounts, add-account flow and immediate swipe-to-next-account interaction where supported;
+- adding an account reuses the real Gmail → Mail Organizer recovery/sync UX;
+- Promotional is organized and accessible but should not dominate the Primary experience;
+- Spam is visible as a dedicated destination and may show a red new/unread indicator;
+- Starred is a global view of individually starred messages;
+- starring a message does not change its category;
+- company grouping/filtering is inside a selected category rather than a drawer destination;
+- company pinning moves a company to the top of that category's company filter list, not into the global navigation;
+- company pinning and email starring are independent concepts;
+- company filters preserve category context.
+
 Do not interpret this as permission to implement later Gmail synchronization phases early. UI may use clearly labeled fixtures during the UI-only phase, but production screens must switch to real data as the relevant data phases become available.
 
 ## Phases
