@@ -1,208 +1,1000 @@
 # PHASE 11 — DASHBOARD & INFORMATION ARCHITECTURE
 
-## EXECUTION CONTRACT
+You are now executing:
+
+**Phase 11 — Dashboard & Information Architecture**
+
+This phase may begin only after Phase 10 — Search & Local Indexing has been completed and verified.
+
+Do not execute Phase 12 or any later phase automatically.
 
-Confirm Phase 11 is first incomplete and Phase 10 is verified. Read requirements.md, spec.md, design.md, editor-rules.md and relevant status/architecture files. Implement the dashboard and information architecture only. Do not implement Calendar, Tasks, Gmail writes, AI or automation.
+The project continues to use strict sequential phase execution.
 
-## 1. DISCOVER ROOT
-Locate the instruction folder and Mail Organizer root before tooling.
+```text
+Phase 0
+  ↓
+Phase 1
+  ↓
+Phase 2
+  ↓
+Phase 3
+  ↓
+Phase 4
+  ↓
+Phase 5
+  ↓
+Phase 6
+  ↓
+Phase 7
+  ↓
+Phase 8
+  ↓
+Phase 9
+  ↓
+Phase 10
+  ↓
+Phase 11 ← YOU ARE HERE
+  ↓
+Phase 12
+  ↓
+...
+```
 
-## 2. CONFIRM PHASE 10
-Stop if local search/indexing is not verified.
+Complete only Phase 11.
 
-## 3. WORKSPACE ISOLATION
-Protect sibling projects, device apps, SDK configuration and unrelated cloud resources.
+Verify it.
 
-## 4. GIT BASELINE
-Inspect branch/status/diff.
+Update persistent project rules and documentation.
 
-## 5. IA OBJECTIVE
-Consolidate the mailbox hierarchy into a clear Android Gmail-familiar Mail Organizer information architecture.
+Then STOP.
 
-## 6. PRIMARY NAVIGATION
-Required drawer destinations are All Inbox, Primary, Promotional, Social, Spam and Starred.
+---
 
-## 7. DRAWER IS NOT COMPANY DIRECTORY
-Companies must remain inside selected category filters, never become top-level drawer destinations.
+# 1. DISCOVER THE PROJECT INSTRUCTION FOLDER
 
-## 8. ALL INBOX
-All Inbox is unified across connected accounts. Every row exposes the receiving Gmail account through the established compact source-account indicator.
+Before modifying anything:
 
-## 9. SOURCE ACCOUNT IDENTITY
-Receiving account identity must remain distinct from sender/company identity.
+1. Locate the Mail Organizer instruction folder.
+2. Read:
+    - `requirements.md`
+    - `spec.md`
+    - `design.md`
+    - `editor-rules.md`
+    - development-status documentation
+    - architecture documentation
+    - Phase 11 instructions
+3. Inspect the actual repository.
+4. Verify Phase 10 is genuinely complete.
+5. Identify:
+    - Mail Organizer project root
+    - Git root
+    - Gradle root
+    - Android package ID
+6. Confirm all operations target only Mail Organizer.
 
-## 10. PRIMARY
-Primary is a first-class mailbox destination using real local state.
+Do not assume the current directory is the project root.
 
-## 11. PROMOTIONAL
-Promotional mail remains accessible and organized rather than silently deleted.
+---
 
-## 12. SOCIAL
-Social mail remains a first-class destination using available local state.
+# 2. STRICT MULTI-PROJECT ISOLATION
 
-## 13. SPAM
-Spam is a first-class destination with clear red new/unread attention semantics where appropriate.
+The workspace may contain multiple Android projects.
 
-## 14. SPAM RECOVERY
-Provide a clear user-driven Not Spam/recovery boundary without implementing Gmail write operations early.
+Only Mail Organizer may be modified.
 
-## 15. STARRED
-Starred is a global view of individually starred messages. A starred message remains in its original category.
+Never modify sibling:
 
-## 16. COMPANY GROUPING
-Within the selected category, show company filters/groups from Phase 8.
+- source code
+- Gradle files
+- dependencies
+- manifests
+- resources
+- tests
+- generated artifacts
+- SDK/JDK configuration
+- signing configuration
+- Git repositories
 
-## 17. PINNED COMPANIES
-Pinned companies appear at the top of the category's company filter list.
+ADB operations must target only the Mail Organizer package.
 
-## 18. COMPANY PIN VS STAR
-Company pinning is separate from individual email starring. Do not conflate them.
+Do not install, uninstall, clear, force-stop, launch, or inspect unrelated applications.
 
-## 19. CATEGORY CONTEXT
-Selecting a company must preserve the current category context.
+---
 
-## 20. SEARCH
-Top app bar search uses Phase 10 local index and preserves account/category/company context.
+# 3. PHASE OBJECTIVE
 
-## 21. ACCOUNT SWITCHER
-Profile/account affordance opens current account, connected accounts and add-account.
+This phase consolidates the functionality built in Phases 1–10 into a coherent product information architecture.
 
-## 22. PROFILE SWIPE
-Where supported, profile swipe can move to the next account without confusing sender/company identity.
+The application should stop feeling like a collection of independently built screens.
 
-## 23. ADD ACCOUNT
-Add account uses the real OAuth/recovery foundation, not a fake credential form.
+It should now communicate a clear product model:
 
-## 24. ACCOUNT STATUS
-Authentication state and synchronization state must remain separate.
+```text
+MAIL
+ ↓
+UNDERSTAND
+ ↓
+ORGANIZE
+ ↓
+PRIORITIZE
+ ↓
+ACT
+```
 
-## 25. HOME/DASHBOARD
-Create an attention-first dashboard/home surface only from real existing data. It must not replace explicit mailbox destinations.
+The interface should make the most important information accessible quickly while preserving deeper functionality through progressive disclosure.
 
-## 26. ATTENTION PRIORITY
-Use Action Required and Priority from Phase 9 to surface meaningful attention without fabricating tasks.
+---
 
-## 27. NO DUPLICATE ENGINES
-Do not implement a second classifier, company resolver or search index inside the dashboard.
+# 4. PRODUCT IDENTITY
 
-## 28. REAL DATA ONLY
-Counts, unread indicators, company counts and dashboard summaries must use real local state or truthful empty/zero state.
+Mail Organizer is not intended to be:
 
-## 29. LOADING
-Dashboard and destinations need deliberate loading states.
+- a Gmail clone
+- a generic email client
+- a spreadsheet of messages
+- an analytics dashboard
+- an AI chatbot
 
-## 30. EMPTY
-Provide meaningful empty states for no accounts, no mail, empty categories and no actionable mail.
+It is a:
 
-## 31. ERROR
-Map repository/index errors to safe user-facing states.
+> Personal email organization and action system.
 
-## 32. OFFLINE
-Show locally available data offline and clearly communicate unavailable network-dependent operations.
+The UI should emphasize:
 
-## 33. ACCOUNT CONTEXT
-Ensure switching accounts updates the visible context without leaking another account's data.
+- clarity
+- organization
+- priority
+- privacy
+- control
+- useful intelligence
+- speed
 
-## 34. UNIFIED VIEWS
-All Inbox/Starred queries must preserve account boundaries.
+---
 
-## 35. COUNTS
-Folder counts/unread indicators must be computed from real state and must not be stale due to duplicate local queries.
+# 5. DESIGN SOURCE OF TRUTH
 
-## 36. PERFORMANCE
-Avoid recomputing dashboard summaries on every recomposition. Use stable state/repository flows.
+Use `design.md` as the visual source of truth.
 
-## 37. RESPONSIVE LAYOUT
-Validate portrait, landscape and supported window widths. Use adaptive layouts rather than device-name checks.
+Preserve:
 
-## 38. ACCESSIBILITY
-Provide semantics for navigation, current destination, counts, account identity, company filters, Starred and Spam attention.
+### Primary
 
-## 39. LARGE TEXT
-Validate drawer, dashboard cards/sections, company filters and top bar at large font scales.
+`#5B5CE2`
 
-## 40. REDUCED MOTION
-Respect the Phase 1 motion/performance system. Dashboard must not animate continuously.
+### Primary Container
 
-## 41. LIGHT/DARK
-Validate themes and semantic attention colors.
+`#E8E8FF`
 
-## 42. DYNAMIC COLOR
-Use dynamic color where appropriate without destroying spam/error/unread semantics.
+### Light Background
 
-## 43. VISUAL CONSISTENCY
-Review against design.md and reuse centralized tokens/components. Do not create one-off visual systems.
+`#F8F9FC`
 
-## 44. NAVIGATION TESTS
-Test every drawer destination, back navigation, deep state restoration and selected-state semantics.
+### Dark Background
 
-## 45. ALL INBOX TESTS
-Test multiple accounts, source-account indicators and cross-account isolation.
+`#101114`
 
-## 46. COMPANY TESTS
-Test category → company filter → results → clear filter → pinned ordering.
+### Light Surface
 
-## 47. STARRED TESTS
-Test star/unstar, category preservation and Starred global results.
+`#FFFFFF`
 
-## 48. SPAM TESTS
-Test unread/red indicator semantics and safe recovery boundary.
+### Dark Surface
 
-## 49. SEARCH TESTS
-Test dashboard/search entry and preservation of context.
+`#1A1B20`
 
-## 50. ACCOUNT TESTS
-Test account switching, add-account entry and authentication/sync state separation.
+### Dark Elevated Surface
 
-## 51. OFFLINE/ERROR TESTS
-Test no network, DB/index error, empty data and partial local data.
+`#222329`
 
-## 52. PERFORMANCE TESTS
-Use realistic synthetic datasets to inspect startup, navigation, scrolling and dashboard recomposition.
+### Success
 
-## 53. DEVICE VALIDATION
-Build/install Mail Organizer only. Launch, navigate drawer, switch account context, search, filter company, open Starred/Spam and inspect screenshots.
+`#16A34A`
 
-## 54. SCREEN RECORDING
-Where useful, record drawer/account/profile interactions and dashboard transitions. Avoid retaining unnecessary private data.
+### Warning
 
-## 55. LOGCAT
-Inspect crashes, navigation failures, DB/index failures and ensure no tokens/private bodies leak.
+`#D97706`
 
-## 56. ADB SAFETY
-Use package-scoped commands; do not alter unrelated apps or reverse mappings.
+### Error
 
-## 57. FINAL BUILD
-Run Gradle, shared/unit/database/UI/static checks.
+`#DC2626`
 
-## 58. FINAL RETEST
-Fix, rebuild, reinstall and repeat full navigation/visual/accessibility/security validation.
+### Info
 
-## 59. GIT REVIEW
-Confirm only Mail Organizer files changed and no secrets/generated artifacts were added.
+`#2563EB`
 
-## 60. DOCUMENTATION
-Update spec/status with the final IA, dashboard behavior, navigation rules and known limitations.
+Do not introduce a competing color system.
 
-## 61. EDITOR RULES
-Add only permanent IA/navigation/accessibility rules genuinely discovered.
+---
 
-## 62. ACCEPTANCE CRITERIA
-- required drawer destinations work;
-- All Inbox is unified and account-aware;
-- Primary/Promotional/Social/Spam/Starred are distinct;
-- company filtering/pinning is category-scoped;
-- email Star and company pin are separate;
-- search entry/context works;
-- account switcher works;
-- dashboard uses real local data;
-- loading/empty/error/offline states work;
-- accessibility/themes/responsive behavior verified;
-- tests/device QA pass;
-- no later phase implemented.
+# 6. DESIGN LANGUAGE
 
-## 63. FINAL REPORT
-Report IA/navigation architecture, dashboard behavior, account handling, company grouping, search integration, tests, device/API, screenshots/logcat, security, workspace isolation, files, known issues, deferred work and acceptance status.
+The product should feel:
 
-## 64. STOP
-Do not execute Phase 12.
+- modern
+- calm
+- intelligent
+- trustworthy
+- privacy-conscious
+- structured
+
+Avoid:
+
+- excessive gradients
+- excessive glassmorphism
+- neon effects
+- unnecessary animations
+- visual clutter
+- Gmail-style imitation
+- excessive cards
+- excessive badges
+
+---
+
+# 7. CORE NAVIGATION
+
+Implement the primary information architecture described in `design.md`.
+
+Primary destinations:
+
+```text
+Home
+Mail
+Categories
+Companies
+Actions
+```
+
+Secondary destinations:
+
+```text
+Search
+Integrations
+Settings
+Privacy
+Accounts
+```
+
+Use the existing navigation architecture rather than replacing it unnecessarily.
+
+---
+
+# 8. HOME
+
+Home is the primary landing experience.
+
+It should answer:
+
+> What should I pay attention to right now?
+
+It should not simply show:
+
+```text
+Inbox
+Inbox
+Inbox
+Inbox
+```
+
+The Home screen should prioritize useful information.
+
+---
+
+# 9. HOME INFORMATION HIERARCHY
+
+A reasonable structure:
+
+```text
+Account context
+        ↓
+Attention / Action Required
+        ↓
+Important / High Priority
+        ↓
+Recent mail
+        ↓
+Category overview
+        ↓
+Company / sender context
+```
+
+Adapt to the actual available data.
+
+Do not invent information that the backend does not yet provide.
+
+---
+
+# 10. HOME SHOULD USE REAL DATA
+
+Do not use fake:
+
+- counts
+- messages
+- companies
+- categories
+- action items
+- priority scores
+
+All displayed data must come from the local data layer.
+
+If there is no data, show a proper empty state.
+
+---
+
+# 11. HOME EMPTY STATE
+
+For a new account with no synchronized email:
+
+Explain:
+
+- account connected
+- synchronization status
+- what the user can do next
+
+Do not display fabricated statistics.
+
+---
+
+# 12. HOME LOADING STATE
+
+Initial loading should distinguish between:
+
+```text
+App loading
+Syncing
+Local data loading
+```
+
+Do not display a meaningless spinner indefinitely.
+
+---
+
+# 13. HOME OFFLINE STATE
+
+If offline:
+
+Show locally available information.
+
+If synchronization is unavailable, communicate it subtly.
+
+Do not disable the entire application.
+
+---
+
+# 14. ATTENTION SECTION
+
+If Action Required data exists:
+
+Display a concise attention section.
+
+For example:
+
+```text
+Needs your attention
+3 emails
+```
+
+The exact UI is up to the design system.
+
+Do not build external action execution here.
+
+---
+
+# 15. PRIORITY SECTION
+
+Show meaningful high-priority mail where appropriate.
+
+Possible:
+
+```text
+High priority
+Interview invitation
+Payment due
+Security alert
+```
+
+Do not show every High item if it creates overwhelming density.
+
+Use sensible limits and allow navigation to the complete filtered list.
+
+---
+
+# 16. RECENT MAIL
+
+Provide a concise recent-mail section.
+
+It should allow the user to quickly access:
+
+- latest messages
+- unread messages
+- important messages
+
+Do not duplicate the entire Mail screen.
+
+---
+
+# 17. CATEGORY OVERVIEW
+
+Show the core Mail Organizer categories.
+
+Possible display:
+
+```text
+Career
+Education
+Security
+Receipts & Orders
+Newsletters
+Promotions
+...
+```
+
+Use actual local counts.
+
+Do not create fake counts.
+
+---
+
+# 18. COMPANY OVERVIEW
+
+If company intelligence is available:
+
+Show a concise company section.
+
+For example:
+
+```text
+GitHub
+University
+Amazon
+```
+
+Only show companies supported by actual data.
+
+Do not create a giant company dashboard.
+
+---
+
+# 19. HOME PERSONALIZATION
+
+Do not implement a complex personalization engine.
+
+Use deterministic product data already available.
+
+Do not use AI to decide Home layout.
+
+---
+
+# 20. MAIL DESTINATION
+
+The Mail destination should be the complete mail-browsing experience from Phase 6.
+
+It should provide access to:
+
+- inbox/list
+- threads
+- messages
+- account context
+- filters where already implemented
+- search entry point
+
+Do not rebuild the mail viewer.
+
+---
+
+# 21. CATEGORIES DESTINATION
+
+Build a category-oriented browsing experience.
+
+The user should be able to select:
+
+```text
+Career
+Education
+Security
+Receipts & Orders
+Notifications
+Newsletters
+Promotions
+Low Value
+...
+```
+
+and see relevant locally stored messages.
+
+Use Phase 7 classification.
+
+---
+
+# 22. CATEGORY DETAIL
+
+A category detail screen should show:
+
+- category name
+- concise description where useful
+- relevant messages
+- count if available
+- filtering/sorting where already supported
+
+Do not implement the Phase 12 custom rules system.
+
+---
+
+# 23. CATEGORY COUNTS
+
+Counts must be derived from local data.
+
+Be explicit about what a count means.
+
+For example:
+
+```text
+12 messages
+```
+
+must not silently mean:
+
+unless the UI explicitly says so.
+
+---
+
+# 24. CATEGORY EMPTY STATES
+
+For:
+
+```text
+Career
+```
+
+with no results:
+
+Show:
+
+> No career emails yet.
+
+Do not show fake examples.
+
+---
+
+# 25. COMPANIES DESTINATION
+
+Build a company-oriented browsing screen using Phase 8 data.
+
+It should allow the user to understand:
+
+```text
+Company
+ ↓
+Senders
+ ↓
+Messages
+```
+
+---
+
+# 26. COMPANY LIST
+
+Display useful information such as:
+
+- company name
+- domain
+- message count
+- most recent message
+- category distribution where useful
+
+Do not overload the list.
+
+---
+
+# 27. COMPANY DETAIL
+
+A company detail screen may show:
+
+- company name
+- domains
+- known senders
+- recent messages
+- categories
+- priority distribution where useful
+
+Do not implement full company analytics.
+
+---
+
+# 28. UNKNOWN SENDERS
+
+Do not hide senders simply because company resolution failed.
+
+Display:
+
+```text
+Unknown company
+```
+
+or simply the sender identity.
+
+Unknown is valid data.
+
+---
+
+# 29. ACTIONS DESTINATION
+
+Phase 9 introduced Action Required.
+
+Phase 11 can create the **Actions destination UI** as an organizational view.
+
+However:
+
+**Do not implement actual external action execution yet.**
+
+The Actions screen can show:
+
+```text
+Needs attention
+Interview invitation
+Payment due
+Verify account
+```
+
+but not automatically perform:
+
+- reply
+- send
+- Calendar creation
+- Tasks creation
+- Gmail modification
+
+---
+
+# 30. ACTIONS vs ACTION ENGINE
+
+This distinction is mandatory.
+
+Phase 11:
+
+```text
+→ view things that need attention
+```
+
+Later Phase 14:
+
+```text
+→ safely execute confirmed actions
+```
+
+Do not merge them.
+
+---
+
+# 31. ACTION ITEM DETAILS
+
+Where appropriate, an action item can show:
+
+- email subject
+- sender
+- category
+- priority
+- reason
+- extracted evidence
+- deadline evidence if available
+
+Do not create fake deadlines.
+
+---
+
+# 32. ACTIONS EMPTY STATE
+
+If nothing requires attention:
+
+Show a positive but calm empty state.
+
+For example:
+
+> You're all caught up.
+
+Do not use excessive celebration animations.
+
+---
+
+# 33. SEARCH INTEGRATION
+
+Search from Phase 10 must remain accessible.
+
+Search should be reachable without navigating through multiple unrelated screens.
+
+Use the existing search implementation.
+
+Do not create a second search engine.
+
+---
+
+# 34. GLOBAL SEARCH ENTRY
+
+If design permits, provide a prominent search entry point.
+
+Do not make search permanently consume excessive screen space.
+
+---
+
+# 35. ACCOUNT SWITCHER
+
+The current account must be understandable.
+
+The account switcher should support the multi-account architecture already created.
+
+If only one account is connected:
+
+Do not make the interface unnecessarily complex.
+
+---
+
+# 36. ACCOUNT IDENTITY
+
+When viewing account-specific data, make it clear which account is active.
+
+This is especially important for:
+
+- Mail
+- Categories
+- Companies
+- Actions
+- Search
+
+---
+
+# 37. UNIFIED VIEW
+
+Do not implement a complex unified inbox unless the existing architecture already supports it safely.
+
+If unified mode is available:
+
+Every item must retain account identity.
+
+Never hide the account context when ambiguity could matter.
+
+---
+
+# 38. PRIVACY DESTINATION
+
+The navigation may expose a Privacy screen.
+
+Phase 11 can create the information architecture and basic presentation.
+
+Do not claim privacy capabilities that are not implemented.
+
+Possible information:
+
+- local-first architecture
+- Gmail permissions
+- data storage explanation
+- external processing status
+- account connections
+
+Be truthful.
+
+---
+
+# 39. SETTINGS DESTINATION
+
+Create the basic Settings structure.
+
+Possible sections:
+
+```text
+Accounts
+Privacy
+Appearance
+Notifications
+Sync
+About
+```
+
+Only expose settings supported by implemented functionality.
+
+Do not build every future setting.
+
+---
+
+# 40. INTEGRATIONS DESTINATION
+
+A basic Integration entry can exist.
+
+However:
+
+Do not implement Calendar or Tasks yet.
+
+The screen may communicate:
+
+> Integrations will be available as they are connected.
+
+Do not present unavailable integrations as active.
+
+---
+
+# 41. NAVIGATION STATES
+
+Test:
+
+```text
+Home
+ ↓
+Mail
+ ↓
+Message
+ ↓
+Back
+ ↓
+Home
+```
+
+and:
+
+```text
+Home
+ ↓
+Categories
+ ↓
+Career
+ ↓
+Message
+ ↓
+Back
+ ↓
+Career
+ ↓
+Back
+ ↓
+Categories
+```
+
+Navigation should preserve sensible state.
+
+---
+
+# 42. DEEP STATE RESTORATION
+
+Where practical, preserve:
+
+- selected account
+- selected category
+- search query
+- list scroll position
+- selected thread
+
+Do not introduce complex state persistence unnecessarily.
+
+---
+
+# 43. RESPONSIVE DESIGN
+
+Test different screen sizes.
+
+At minimum:
+
+- small Android phone
+- normal phone
+- large phone
+- emulator sizes available
+
+If tablet/foldable support exists, adapt appropriately.
+
+Do not design only for one screen width.
+
+---
+
+# 44. DESIGN SYSTEM CONSISTENCY
+
+All screens must use centralized:
+
+- colors
+- typography
+- spacing
+- radii
+- elevation
+- icons
+- components
+
+Do not create one-off styles for each screen.
+
+---
+
+# 45. TYPOGRAPHY
+
+Follow `design.md`.
+
+Preferred:
+
+**Inter**
+
+with system fallback.
+
+Use the established hierarchy:
+
+```text
+36 / 32 Display
+28 Large Title
+22 Title
+18 Section
+16 Body
+13–14 Secondary
+12 Caption
+```
+
+Adapt where necessary for Android UI conventions.
+
+---
+
+# 46. SPACING
+
+Use the 4dp grid:
+
+```text
+4
+8
+12
+16
+20
+24
+32
+40
+48
+64
+```
+
+Avoid arbitrary spacing values unless technically justified.
+
+---
+
+# 47. RADII
+
+Use:
+
+```text
+8
+12
+16
+20
+pill
+```
+
+Avoid mixing many unrelated corner-radius values.
+
+---
+
+# 48. SURFACE HIERARCHY
+
+Use subtle elevation and surfaces.
+
+Do not turn every section into a floating card.
+
+Prefer:
+
+```text
+ ↓
+section
+ ↓
+content
+```
+
+with clear hierarchy.
+
+---
+
+# 49. MOTION
+
+Follow:
+
+```text
+Micro: 100–150ms
+Standard: 200–300ms
+Complex: 300–400ms
+```
+
+Use motion to clarify:
+
+- navigation
+- expansion
+- filtering
+- state changes
+
+Do not animate every component.
+
+---
