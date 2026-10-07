@@ -30,6 +30,21 @@ Deterministic, local and explainable before AI. User correction > user rule > bu
 - Recheck UI consistency across existing screens after every major UI phase.
 - Build the Gmail → Mail Organizer recovery/sync animation only when real sync behavior exists; never fake progress.
 
+## Android mailbox rules
+- The top app bar uses a Gmail-familiar search affordance plus account/profile access and the navigation drawer.
+- The core drawer destinations are All Inbox, Primary, Promotional, Social, Spam and Starred.
+- All Inbox is cross-account and must show the receiving/source Gmail account identity per message, preferably as a compact circular account indicator.
+- Account identity is not the sender/company avatar.
+- Account switching must preserve account isolation; profile swipe-to-next-account should be immediate where supported.
+- Adding an account reuses the real sync/recovery UX when retrieval takes meaningful time.
+- Promotional is organized and accessible, but promotional noise should not dominate Primary.
+- Spam is a first-class destination and can show a red indicator for new/unread spam; legitimate messages need a user-driven Not Spam path.
+- Starred is an independent global view of user-starred messages.
+- Starring an email never changes its classification/category.
+- Companies are grouped/filterable inside the selected category, not exposed as permanent drawer destinations.
+- Company pinning moves the company to the top of that category's company filter list and is independent of starring individual messages.
+- Never confuse company pinning with email starring.
+
 ## Phase protocol
 At session start read requirements/spec/design/rules, determine the current phase and inspect the actual repository. Implement only that phase. Update this file with genuinely permanent rules without deleting unrelated rules. After implementation: build → test → run → inspect → fix → retest → update status → stop.
 
