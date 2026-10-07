@@ -1,10 +1,14 @@
+## Mandatory Rust desktop architecture
+
+**Rust is the primary implementation language for this macOS phase.** Platform-neutral business/data/application logic belongs in the reusable Rust desktop core, which must also serve Windows. Swift/SwiftUI is for native macOS UI and OS integration only and must not duplicate Rust business rules.
+
 # Phase 16 — Search & Local Index
 
 ## Mission
 Implement and verify only Phase 16. Do not implement later phases.
 
 ## Isolation
-Modify only macOS-specific code and genuinely shared KMP code required by this phase. Never modify iOS, iPadOS, AndroidTablet, Android, Windows, Linux, or other sibling areas.
+Modify only macOS-specific code and genuinely shared Rust desktop core code required by this phase. Never modify iOS, iPadOS, AndroidTablet, Android, Windows, Linux, or other sibling areas.
 
 ## Read first
 Read root instructions and all files in `execution plan/macOS/` master docs. Inspect the actual repository, status, architecture, existing tests, and previous evidence before editing.
