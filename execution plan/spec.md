@@ -17,6 +17,20 @@ The editor must execute phases sequentially. At session start read the execution
 ## Shared architecture
 Kotlin Multiplatform is the shared foundation. Shared code should contain domain models, use cases, Gmail normalization, sync state, classification, company intelligence, rules, search, priority, temporal intelligence, conversation intelligence, action models, integration abstractions and KMP-compatible persistence. Platform-specific layers own UI, OAuth/browser presentation, secure credential storage and OS scheduling APIs where necessary.
 
+## Android-first UI milestone
+Before broad backend/integration expansion, the Android UI foundation must be treated as a first-class product milestone. It must establish:
+- Gmail-familiar information hierarchy with Mail Organizer differentiation.
+- Material 3 / Material 3 Expressive based component and motion system.
+- Centralized design tokens and UI consistency rules.
+- Adaptive performance profiling and a capability-based PerformanceProfile.
+- Adaptive motion/visual complexity that prioritizes sustained smoothness, thermals and battery.
+- Google OAuth sign-in experience that uses the official authentication flow rather than a fake credential form.
+- Honest initial Gmail recovery/sync progress UX, including the Gmail → Mail Organizer mail-transfer animation when real synchronization takes long enough to need it.
+- Real-data, loading, empty, error, offline and partial-sync states.
+- Repeatable visual QA and frame/jank/performance checks.
+
+Do not interpret this as permission to implement later Gmail synchronization phases early. UI may use clearly labeled fixtures during the UI-only phase, but production screens must switch to real data as the relevant data phases become available.
+
 ## Phases
 0 Project Audit & Development Foundation
 1 Android Application Foundation
