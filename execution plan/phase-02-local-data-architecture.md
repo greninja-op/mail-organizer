@@ -1,435 +1,173 @@
-# Phase 02 — Local Data Architecture
+# PHASE 2 — LOCAL DATA ARCHITECTURE
 
-## Execution contract
+## EXECUTION CONTRACT
 
-Read `requirements.md`, `spec.md`, `design.md`, `editor-rules.md`, and this phase file completely before editing.
+Confirm Phase 2 is the first incomplete phase. Read requirements.md, spec.md, design.md, editor-rules.md, relevant architecture/status files and this prompt. Implement only local persistence architecture. Do not implement OAuth, synchronization, classification, search, Calendar, Tasks, AI or Gmail writes.
 
-Confirm Phase 02 is the first incomplete phase. Inspect the actual repository and preserve verified work.
+## 1. DISCOVER INSTRUCTION FOLDER
+Locate the instruction folder and Mail Organizer root before Gradle, Git, ADB or edits.
 
-Implement **only the local-data architecture foundation**. Do not implement Gmail OAuth, Gmail synchronization, email parsing, classification, search, UI product features, Calendar, Tasks, AI, automation, or Gmail writes.
+## 2. READ PROJECT RULES
+Reconcile requirements, spec, design and permanent editor rules before implementation.
 
-Mail Organizer is Kotlin Multiplatform. Shared data/domain architecture must remain platform-neutral.
+## 3. CONFIRM PHASE ORDER
+Verify Phase 1 is actually complete. If not, stop and report the blocker.
 
----
+## 4. WORKSPACE ISOLATION
+Inspect sibling projects and protect them from Gradle, SDK, Git and ADB changes.
 
-## 1. Architecture objective
+## 5. GIT BASELINE
+Record branch/status/diff and preserve pre-existing work.
 
-Establish the KMP-compatible local persistence layer that later phases can safely use for:
+## 6. KMP PERSISTENCE BOUNDARY
+Implement persistence through shared KMP-compatible interfaces and platform-neutral domain/data code.
 
-- connected Gmail accounts;
-- normalized messages;
-- threads;
-- senders/recipients;
-- companies;
-- Gmail labels/source metadata;
-- classification results;
-- priority;
-- Action Required;
-- deadlines/meetings;
-- user corrections/rules;
-- sync cursors/state;
-- search/index metadata;
-- action relationships;
-- integration state;
-- analytics/automation state where later phases require it.
+## 7. DATABASE TECHNOLOGY
+Prefer Room Multiplatform or another justified KMP SQLite-backed solution already compatible with the repository. Do not introduce a second database.
 
-Do not build every later feature now. The objective is to create a durable, testable data foundation without speculative schema bloat.
+## 8. DATABASE OWNERSHIP
+Define one Mail Organizer local persistence boundary. Keep UI independent of database implementation.
 
-Gmail remains the cloud source of truth. Local state is a rebuildable representation plus Mail Organizer-owned metadata.
+## 9. ACCOUNT ENTITY
+Create the account model required by future multi-account Gmail support: internal ID, provider, stable external identity where appropriate, display identity, connected state and timestamps.
 
----
+## 10. ACCOUNT ISOLATION
+Every account-owned record must be traceable to exactly the correct account context. Never mix Account A and Account B records.
 
-## 2. Select the persistence technology
+## 11. MESSAGE ENTITY
+Define stable message identity, account ownership, thread identity, subject/preview fields, timestamps, read/star state and minimal metadata needed by later phases.
 
-Inspect the existing project before choosing a database.
+## 12. THREAD ENTITY
+Represent Gmail thread identity and account ownership. Do not infer thread identity solely from subject lines.
 
-Prefer Room Multiplatform or another justified KMP-compatible SQLite-backed solution.
+## 13. PARTICIPANT MODELS
+Define normalized sender/recipient structures without coupling them to company intelligence.
 
-Document:
+## 14. COMPANY FOUNDATION
+Reserve persistence structures for later company intelligence without implementing detection/classification.
 
-- why the chosen technology fits KMP;
-- supported targets;
-- migration strategy;
-- testing strategy;
-- threading/transaction model;
-- platform-specific driver boundaries.
+## 15. CLASSIFICATION STATE
+Reserve deterministic classification/category state and provenance without implementing the classifier.
 
-Do not introduce a second database framework merely because it is familiar.
+## 16. USER INTENT
+Model local user intent separately from Gmail state: Star, company pin, corrections and future rules.
 
-If a suitable persistence solution already exists, preserve it unless it materially violates the architecture.
+## 17. SYNC STATE
+Create account-scoped sync state/cursor/error/status structures for Phase 4 without implementing synchronization.
 
----
+## 18. TEMPORAL/ACTION PLACEHOLDERS
+Only establish extensible boundaries needed by later deadlines/actions. Do not implement those features.
 
-## 3. Establish data-layer boundaries
+## 19. DATA MINIMIZATION
+Persist only what the product needs. Do not duplicate raw Gmail payloads or attachment binaries unnecessarily.
 
-Use the intended layering:
+## 20. IDENTIFIERS
+Use stable identifiers and deterministic uniqueness constraints. Avoid accidental duplicates on reprocessing.
 
-`Presentation → Application/Use Cases → Domain → Data → External APIs`
+## 21. INDEX DESIGN
+Add indexes for account, thread, timestamp, unread/star/category and other verified future query paths without premature over-indexing.
 
-Persistence must not leak directly into Compose UI.
+## 22. RELATIONSHIPS
+Define foreign-key/relationship behavior carefully. Avoid cascade deletion that could cross account boundaries.
 
-Establish clear boundaries for:
+## 23. ACCOUNT-SCOPED QUERIES
+Repository APIs must make account context explicit for account-owned operations.
 
-- entities;
-- domain models;
-- DAOs/query interfaces;
-- repositories;
-- transactions;
-- migrations;
-- database initialization;
-- test database setup.
+## 24. GLOBAL VIEWS
+Unified views such as All Inbox and Starred must be built through safe account-aware queries, not by bypassing isolation.
 
-Repositories should expose domain-oriented operations rather than forcing UI code to understand SQL/database entities.
+## 25. REPOSITORY INTERFACES
+Create clean repository APIs for accounts, messages, threads and sync state.
 
-Do not put Gmail API calls inside DAOs.
+## 26. TRANSACTION BOUNDARIES
+Use transactions for logically atomic multi-table updates.
 
----
+## 27. IDEMPOTENCY
+Repeated inserts/upserts must not create duplicate accounts, messages or threads.
 
-## 4. Account isolation
+## 28. MIGRATIONS
+Establish versioned schema migrations. Never use destructive migration merely to make development build.
 
-Every account-owned entity must carry an explicit account boundary.
+## 29. SEED/FIXTURE DATA
+Use synthetic fixtures only for tests/development. Never present fake Gmail content as connected user mail.
 
-At minimum, design the account relationship for:
+## 30. SERIALIZATION
+Keep transport/API models separate from database/domain models.
 
-- messages;
-- threads;
-- labels;
-- senders where account-specific state exists;
-- companies where account-scoped relationships exist;
-- classification results;
-- rules/corrections where appropriate;
-- sync state;
-- action relationships.
+## 31. ERROR MODEL
+Define deterministic persistence errors and safe user-facing categories.
 
-The database must make accidental cross-account queries difficult.
+## 32. CORRUPTION/RECOVERY
+Establish behavior for migration failure, inaccessible DB and rebuildable local state.
 
-Prefer account-scoped repository APIs and composite keys/indexes where appropriate.
+## 33. PRIVACY
+No tokens, authorization codes, passwords or sensitive credentials in the database.
 
-Tests must prove:
+## 34. LOGGING
+Never log full email bodies or sensitive database rows. Diagnostics must be safe.
 
-- account A cannot retrieve account B's messages through account-scoped queries;
-- counts/filter queries do not silently merge accounts unless the caller explicitly requests a unified view;
-- account deletion/cleanup cannot leave orphaned sensitive data unexpectedly.
+## 35. TEST FIXTURES
+Create deterministic multi-account, duplicate, empty, large and malformed-data fixtures.
 
----
+## 36. UNIT TESTS
+Test entities, mappings, repositories, uniqueness, account isolation, transactions and migrations.
 
-## 5. Core entity model
+## 37. MULTI-ACCOUNT TESTS
+Prove Account A queries cannot accidentally return Account B records.
 
-Create the minimum durable models needed by later phases.
+## 38. REBUILDABILITY
+Document that Gmail/cloud data is the source of truth while local intelligence/user-state may be rebuildable or separately recoverable.
 
-### Account
+## 39. ANDROID INTEGRATION
+Wire the Android application to the shared persistence implementation without putting DB logic in Compose.
 
-Represent:
+## 40. OFFLINE BEHAVIOR
+Verify local reads work without network when data exists. Do not add background sync.
 
-- stable local account identifier;
-- Gmail account identity/email where appropriate;
-- display identity;
-- connection state;
-- timestamps;
-- sync status metadata that belongs locally.
+## 41. PERFORMANCE
+Test realistic synthetic volumes and verify list/query access does not load an entire mailbox into memory.
 
-Never store OAuth access/refresh tokens as ordinary database fields.
+## 42. DEVICE VALIDATION
+Use Gradle wrapper, install Mail Organizer only, launch, inspect DB-backed states, logcat, screenshots and dumpsys as appropriate.
 
-### Message
+## 43. ADB SAFETY
+Use package-scoped commands. Do not uninstall/clear unrelated applications. Use adb reverse only if required.
 
-Support fields needed for:
+## 44. DATABASE INSPECTION
+Inspect schema/data in a controlled development environment. Ensure no credentials/tokens are persisted.
 
-- Gmail message identity;
-- account identity;
-- thread identity;
-- timestamps;
-- sender/recipient references;
-- subject/normalized content references;
-- read/unread;
-- Starred;
-- Gmail labels/source state;
-- normalized body representation;
-- attachment metadata;
-- classification/priority relationships.
+## 45. SECURITY REVIEW
+Verify account isolation, token exclusion, data minimization, migration safety and logging rules.
 
-Do not duplicate every raw Gmail response if normalized data is sufficient.
+## 46. GIT REVIEW
+Inspect git status/diff and confirm only Mail Organizer files changed.
 
-### Thread
+## 47. FINAL BUILD
+Run compilation, shared tests, Android tests and configured static checks. Fix phase-caused failures and rebuild.
 
-Support:
+## 48. TEST MATRIX
+Validate empty DB, migration, duplicate upsert, multi-account isolation, transaction rollback, offline local read and large synthetic dataset.
 
-- account scope;
-- Gmail thread identity;
-- ordered message relationship;
-- thread timestamps/state.
+## 49. DOCUMENTATION
+Update spec.md and development-status documentation only after real verification. Record schema decisions and limitations.
 
-### Sender/recipient
+## 50. EDITOR RULES
+Add only genuinely permanent local-data rules to editor-rules.md; preserve all unrelated rules.
 
-Separate sender identity from:
+## 51. ACCEPTANCE CRITERIA
+- KMP-compatible local DB established;
+- account/message/thread foundations exist;
+- account isolation enforced;
+- repositories are explicit and testable;
+- transactions/idempotency verified;
+- migrations verified;
+- no token/secret storage;
+- deterministic tests pass;
+- Android integration works;
+- no Gmail OAuth/sync/classification/future feature implemented.
 
-- receiving account;
-- company identity;
-- message identity.
+## 52. FINAL REPORT
+Report architecture, schema/entities, repository boundary, migrations, tests, device validation, security, workspace isolation, files changed, known issues and deferred work.
 
-### Company
-
-Support later canonical company grouping without making company detection part of this phase.
-
-### Classification/intelligence state
-
-Create extensible structures for later:
-
-- category;
-- confidence;
-- reason/provenance;
-- model/rule version;
-- timestamp.
-
-Do not run classification here.
-
-### User intent
-
-Support later independent state for:
-
-- email Starred;
-- company pinning;
-- corrections;
-- rules.
-
-Do not collapse company pinning and message starring.
-
-### Sync state
-
-Create a durable account-scoped state model for future Phase 04 use, including the ability to represent:
-
-- initial sync;
-- incremental sync;
-- cursor/history identifier;
-- last successful sync;
-- retry/error state;
-- cancellation/interruption;
-- progress metadata where meaningful.
-
-Do not implement the sync engine.
-
----
-
-## 6. Minimize local data
-
-Follow data minimization.
-
-Do not store:
-
-- passwords;
-- OAuth tokens in ordinary tables;
-- unnecessary raw API payloads;
-- unnecessary attachment binaries;
-- duplicated data that can be rebuilt from Gmail without a product need.
-
-Attachment metadata can be stored; downloading attachment contents belongs to later behavior and must remain user-initiated.
-
-Document what local data is authoritative versus rebuildable.
-
----
-
-## 7. Indexes and query design
-
-Create indexes based on actual expected queries, including where appropriate:
-
-- account + Gmail message ID;
-- account + thread ID;
-- account + timestamp;
-- account + unread;
-- account + starred;
-- account + category;
-- account + sender;
-- account + company;
-- sync cursor/state.
-
-Do not create dozens of speculative indexes.
-
-Review query plans/behavior for the core repository operations.
-
-The schema must support a unified All Inbox query without destroying account isolation.
-
----
-
-## 8. Transactions and consistency
-
-Define transaction boundaries for operations that must remain atomic.
-
-Examples:
-
-- inserting/updating a message and its thread relationship;
-- updating account sync state after a successful batch;
-- deleting/rebuilding account-local derived state;
-- applying a user correction together with its provenance metadata.
-
-Do not perform multi-step database mutations from UI code.
-
-Ensure retries do not produce duplicate logical messages.
-
----
-
-## 9. Migrations
-
-Establish a real migration strategy.
-
-Requirements:
-
-- schema versioning;
-- deterministic migrations;
-- migration tests where supported;
-- destructive migrations avoided unless explicitly justified;
-- no silent data loss;
-- clear development reset path separate from production migration behavior.
-
-Do not create fake migrations merely to satisfy tooling.
-
----
-
-## 10. Repository API
-
-Create testable repositories/interfaces for the foundation.
-
-At minimum cover:
-
-- account access;
-- message/thread access;
-- account-scoped queries;
-- local mutation primitives;
-- sync-state persistence.
-
-Keep future repositories separable for:
-
-- classification;
-- company intelligence;
-- rules/corrections;
-- actions;
-- search;
-- integrations.
-
-Do not implement their feature logic now.
-
----
-
-## 11. Testing
-
-Write deterministic database tests covering:
-
-- insert/read/update;
-- account isolation;
-- thread/message relationships;
-- Starred state independent of category;
-- company-pin state independent of message-Starred state;
-- duplicate/idempotent key behavior;
-- transaction rollback;
-- migration behavior;
-- empty database;
-- account cleanup.
-
-Tests must not require a live Gmail account.
-
-Do not place real email addresses, OAuth credentials, tokens, or sensitive mail in test fixtures.
-
-Use synthetic fixtures.
-
----
-
-## 12. Android integration boundary
-
-Connect the KMP database to Android only through the intended platform driver/initialization boundary.
-
-Verify:
-
-- database initialization;
-- database location;
-- lifecycle behavior;
-- background-safe access;
-- clean debug startup;
-- no UI-thread blocking.
-
-Do not build the mailbox UI in this phase.
-
----
-
-## 13. Privacy/security verification
-
-Inspect logs and error handling.
-
-Database errors must not dump:
-
-- OAuth tokens;
-- credentials;
-- full email bodies;
-- unnecessary headers;
-- sensitive attachment data.
-
-Account identifiers and diagnostic IDs should be logged only when justified and in minimized form.
-
----
-
-## 14. Mandatory validation
-
-Use the Gradle wrapper.
-
-Run:
-
-- shared compilation;
-- database compilation;
-- unit/database tests;
-- Android debug build;
-- relevant Android tests.
-
-If an Android device/emulator is available:
-
-1. install;
-2. launch;
-3. force-stop;
-4. relaunch;
-5. inspect logcat;
-6. inspect package/process state where useful;
-7. verify database initialization;
-8. inspect local DB state with safe synthetic data if practical.
-
-Do not expose real mail content in screenshots/logs.
-
-Fix failures, rebuild, reinstall and retest.
-
----
-
-## 15. Explicit non-goals
-
-Do not implement:
-
-- Gmail OAuth;
-- Gmail API retrieval;
-- synchronization;
-- MIME parsing;
-- classification;
-- company detection;
-- search indexing;
-- mailbox UI;
-- Calendar;
-- Tasks;
-- Gmail writes;
-- AI;
-- automation.
-
----
-
-## 16. Documentation and completion
-
-Update `editor-rules.md` only with genuinely permanent data/persistence rules discovered and verified.
-
-Update `spec.md` status only after actual verification.
-
-Document:
-
-- selected database technology;
-- schema/migration decision;
-- account isolation strategy;
-- important repository conventions;
-- real verification results;
-- blockers as `[!]` when necessary.
-
-Final sequence:
-
-`diff review → build → tests → runtime/database verification → fix → rebuild/retest → docs/status → commit → stop`
-
-Do not continue to Phase 03.
+## 53. STOP
+Do not execute Phase 3.
