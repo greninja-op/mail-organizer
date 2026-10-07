@@ -30,7 +30,155 @@ The following should feel familiar without becoming a Gmail clone:
 - clear unread/important states
 - Google-style sign-in flow using official OAuth UI/components where available
 
-Mail Organizer categories, priority, Action Required, company intelligence and its Home/Categories/Companies/Actions model remain distinct.
+Mail Organizer categories, priority, Action Required, company intelligence and its organization-first information architecture remain distinct.
+
+## Android top app bar
+The main mailbox screen uses a Gmail-familiar top structure:
+- three-line navigation affordance on the left
+- prominent search field/affordance at the top
+- account/profile circle on the right
+- the account affordance is also the entry point for account switching
+
+Search must look native to the surrounding Material/Google-app visual language while retaining Mail Organizer's own tokens and branding.
+
+## Navigation drawer
+The drawer is intentionally compact and stable. Core destinations are:
+1. All Inbox
+2. Primary
+3. Promotional
+4. Social
+5. Spam
+6. Starred
+
+Do not turn the drawer into a permanent list of detected companies. Company grouping belongs inside the selected category.
+
+Folder state may show useful unread/count indicators. Spam should show a red unread/new indicator when applicable. Counts must represent real local state and must not be fabricated.
+
+## All Inbox account identity
+All Inbox is a unified cross-account view. Every message row must expose the source mailbox through a small circular account indicator or equivalent compact identity treatment.
+
+The account indicator represents the receiving Mail Organizer/Gmail account, not the sender/company avatar.
+
+Example:
+- personal Gmail → one account circle
+- college Gmail → another account circle
+- work Gmail → another account circle
+
+The full address may be secondary detail rather than permanent row text, but the user must be able to determine the source account without opening the message.
+
+## Account switcher
+The account switcher should follow familiar Google account-switching interaction patterns without copying inaccessible/proprietary artwork.
+
+It must show:
+- current account
+- other connected accounts
+- add another account
+- account-specific sync/recovery state where relevant
+
+Swiping the profile/account affordance should switch to the next account immediately where supported. Account switching must preserve the current mailbox context safely and never mix account-owned data.
+
+When adding an account, reuse the Gmail → Mail Organizer recovery/sync visual language. Show the transfer animation only when real retrieval takes meaningful time.
+
+## Gmail → Mail Organizer initial sync experience
+When a newly connected account requires non-trivial recovery/synchronization time, show a dedicated progress experience rather than a blank screen.
+
+Visual concept:
+- Gmail mark on the left.
+- Mail Organizer mark on the right.
+- A small mail/message representation travels from Gmail toward Mail Organizer.
+- Progress state shows that mail is being recovered/synchronized/organized.
+- Progress copy communicates what is actually happening.
+- Determinate progress is shown only when a trustworthy estimate/count exists.
+- Otherwise use an honest indeterminate animation with meaningful stage text.
+- Never fake a percentage or pretend all mail has completed when it has not.
+- Allow the user to enter the app when safe while background synchronization continues, where architecture permits.
+- Show per-account and aggregate progress for multi-account recovery.
+- Handle pause/retry/auth/network/error states honestly.
+
+Animation storyboard:
+```
+Gmail                         Mail Organizer
+
+╭───────╮                     ╭───────╮
+│   G   │                     │   ◉   │
+╰───────╯                     ╰───────╯
+
+             ✉  →  →  →  →
+
+        Retrieving your mail...
+        ███████░░░░░░░  54%
+```
+
+When progress cannot be measured honestly:
+```
+Gmail  ──────✉──────→  Mail Organizer
+
+              • • •
+        Retrieving your mail...
+```
+
+When retrieval is effectively instant, skip the blocking animation.
+
+This animation must be lightweight and adaptive. On lower-performance profiles, simplify the moving mail element and reduce effects while preserving the meaning.
+
+## Category company filtering
+Inside a selected category, messages should be grouped or filterable by detected company/sender.
+
+Example:
+```
+PROMOTIONAL
+
+PINNED
+Google          12
+Facebook         7
+Amazon           5
+
+ALL COMPANIES
+Canva             3
+Notion            2
+n8n               1
+```
+
+Selecting Google filters the current category to Google messages. Selecting Facebook filters the current category to Facebook messages. The category context remains visible.
+
+Company filtering is not a new top-level navigation destination.
+
+## Company pinning
+Company pinning is independent from individual email starring.
+
+A user may pin a company from the company grouping/filter UI. Pinned companies appear above unpinned companies within the relevant category's company filter.
+
+Pinning a company:
+- does not move mail to another category
+- does not create a new navigation-drawer destination
+- does not star individual messages
+- should persist as user intent
+- should work across company mail types while respecting the currently selected category
+
+The company identity should be canonicalized so Google messages are grouped together rather than creating separate entries for each sender address where the intelligence engine can reliably determine the same company.
+
+## Individual email starring
+Every message row should have a familiar Star control:
+```
+╭────────────────────────────────────────╮
+│  🟣  Notion Team                 ☆     │
+│      Your temporary login code         │
+╰────────────────────────────────────────╯
+```
+
+Tapping ☆ → ★ marks that specific email as Starred. It remains in its original category and becomes available from the global Starred destination.
+
+Starred state is separate from company pinning and automated classification.
+
+## Promotional and noise handling
+Promotional mail should be organized rather than silently deleted. The main experience should prioritize useful mail and avoid flooding the user with promotional noise, while retaining a deliberate Promotional destination for users who need to inspect it.
+
+Social mail receives the same organized treatment.
+
+## Spam
+Spam is a first-class destination. New/unread spam should produce a visible red indicator. Legitimate mail that lands in Spam must have a clear user-driven recovery path such as Not Spam.
+
+Spam classification must remain distinct from ordinary promotional classification.
 
 ## No AI-generated UI artwork
 Do not use generative AI to create application icons, menu icons, settings icons, navigation icons, Material symbols, Google/Gmail marks, system glyphs or other functional UI artwork. Prefer official Material Symbols, Android system icons, Google-provided assets permitted by their terms, or original vector assets created manually in code/design tools. Do not rasterize or redraw official Google marks unnecessarily.
@@ -74,27 +222,6 @@ Motion tiers:
 - Reduced motion: minimal fades/position changes when accessibility or performance requires it.
 
 Use Material motion schemes where available. Expressive motion should be reserved for meaningful moments, not every click. No animation may block mail interaction or synchronization.
-
-## Gmail → Mail Organizer initial sync experience
-When a newly connected account requires non-trivial recovery/synchronization time, show a dedicated progress experience rather than a blank screen.
-
-The experience should communicate:
-Gmail cloud → Mail Organizer local organization layer.
-
-Visual concept:
-- Gmail mark on the left.
-- Mail Organizer mark on the right.
-- A small mail/message representation travels from Gmail toward Mail Organizer.
-- Progress state shows that mail is being recovered/synchronized/organized.
-- Progress copy communicates what is actually happening.
-- Determinate progress is shown only when a trustworthy estimate/count exists.
-- Otherwise use an honest indeterminate animation with meaningful stage text.
-- Never fake a percentage or pretend all mail has completed when it has not.
-- Allow the user to enter the app when safe while background synchronization continues, where architecture permits.
-- Show per-account and aggregate progress for multi-account recovery.
-- Handle pause/retry/auth/network/error states honestly.
-
-This animation must be lightweight and adaptive. On lower-performance profiles, simplify the moving mail element and reduce effects while preserving the meaning.
 
 ## Login
 The login experience should feel like a native Google/Material Android flow:
