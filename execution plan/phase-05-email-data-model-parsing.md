@@ -1,350 +1,173 @@
-# Phase 05 — Email Data Model & Parsing
+# PHASE 5 — EMAIL DATA MODEL & PARSING
 
-## Execution contract
+## EXECUTION CONTRACT
 
-Read `requirements.md`, `spec.md`, `design.md`, `editor-rules.md`, and this phase file.
+Confirm Phase 5 is first incomplete and Phase 4 is verified. Read all rules. Implement normalization/parsing/security only. Do not implement classification, company intelligence, search, Calendar, Tasks, Gmail writes, AI or automation.
 
-Confirm Phase 05 is the first incomplete phase.
+## 1. DISCOVER ROOT
+Locate instructions and Mail Organizer root before tooling.
 
-Implement **email normalization and safe parsing only**.
+## 2. CONFIRM PHASE 4
+Verify synchronization foundation is complete.
 
-Do not implement classification, company intelligence, search, Calendar, Tasks, Gmail writes, AI or automation.
+## 3. WORKSPACE ISOLATION
+Protect sibling projects and unrelated SDK/Google resources.
 
----
+## 4. GIT BASELINE
+Record status/diff.
 
-## 1. Parsing architecture
+## 5. THREE-LAYER MODEL
+Separate Gmail transport models, normalized domain models and derived intelligence.
 
-Separate three representations:
+## 6. MESSAGE IDENTITY
+Preserve Gmail message/thread/account identity.
 
-1. raw Gmail/API transport models;
-2. normalized Mail Organizer domain models;
-3. derived intelligence.
+## 7. SENDER NORMALIZATION
+Normalize display name, address and domain safely.
 
-Raw API models must not leak through the application UI/domain unnecessarily.
+## 8. RECIPIENT NORMALIZATION
+Support To/Cc/Bcc/Reply-To roles where available.
 
-Parsing must be deterministic and testable.
+## 9. HEADER DECODING
+Handle encoded headers, Unicode and malformed-but-tolerable values.
 
----
+## 10. SUBJECT NORMALIZATION
+Normalize whitespace and reply/forward prefixes without destroying original display value.
 
-## 2. Message normalization
+## 11. MIME FOUNDATION
+Support plain, HTML and multipart MIME structures.
 
-Normalize:
+## 12. NESTED MIME
+Handle nested multipart structures deterministically.
 
-- Gmail message/thread IDs;
-- sender;
-- recipients;
-- reply-to;
-- subject;
-- timestamps;
-- labels;
-- headers required by product behavior;
-- plain-text body;
-- HTML body;
-- snippet/preview;
-- attachment metadata.
+## 13. HTML EXTRACTION
+Choose safe displayable HTML content.
 
-Preserve original values where necessary for traceability, but do not duplicate unnecessary raw payloads.
+## 14. HTML SANITIZATION
+Treat email HTML as hostile input. Remove scripts and active/dangerous content.
 
-Handle missing fields safely.
+## 15. URL SAFETY
+Parse links as data. Block javascript/unsafe schemes and automatic navigation.
 
----
+## 16. PLAIN TEXT FALLBACK
+Use readable plain text when HTML is absent or unsafe.
 
-## 3. Sender and recipient normalization
+## 17. PREVIEW
+Generate deterministic bounded previews from visible safe content.
 
-Create normalized representations for:
+## 18. WHITESPACE
+Normalize excessive whitespace without destroying meaningful formatting.
 
-- display name;
-- email address;
-- domain;
-- sender/recipient role.
+## 19. QUOTED REPLIES
+Detect common quoted sections conservatively.
 
-Correctly handle:
+## 20. SIGNATURES
+Detect common signatures without deleting content when confidence is low.
 
-- quoted display names;
-- Unicode names;
-- malformed-but-tolerable headers;
-- multiple recipients;
-- missing display names;
-- plus-addressing where relevant;
-- case normalization where safe.
+## 21. FORWARDED CONTENT
+Handle forwarded sections without corrupting original message representation.
 
-Do not infer company identity in this phase.
+## 22. ATTACHMENT METADATA
+Persist filename/type/size/reference/disposition only as needed.
 
----
+## 23. NO AUTO-DOWNLOAD
+Parsing must never download attachment binaries automatically.
 
-## 4. Subject normalization
+## 24. UNSUBSCRIBE METADATA
+Detect standard unsubscribe metadata for later UX only.
 
-Support:
+## 25. NO AUTO-UNSUBSCRIBE
+Never execute an unsubscribe action based solely on email content.
 
-- encoded subjects;
-- Unicode;
-- whitespace normalization;
-- empty subjects;
-- reply prefixes;
-- forwarded prefixes.
+## 26. DATE NORMALIZATION
+Preserve the original instant in a stable data-layer representation.
 
-Do not destroy the original subject needed for display/traceability.
+## 27. LOCALE BOUNDARY
+Do not format timestamps using device locale in the data layer.
 
-Thread grouping should remain based on Gmail thread identity rather than a guessed subject alone.
+## 28. MALFORMED INPUT
+Return safe fallback/error representations rather than crashing.
 
----
+## 29. PARSE PROVENANCE
+Record parser/version/source/failure metadata only where useful and privacy-safe.
 
-## 5. MIME parsing
+## 30. ACCOUNT PRESERVATION
+Never lose account ownership during normalization.
 
-Handle common Gmail MIME structures, including:
+## 31. RERUN SAFETY
+Parsing the same message repeatedly must be deterministic and non-corrupting.
 
-- plain text;
-- HTML;
-- multipart/alternative;
-- multipart/mixed;
-- nested multipart content;
-- attachments;
-- inline resources.
+## 32. DATABASE INTEGRATION
+Use Phase 2 persistence. Do not create a second DB.
 
-Choose the best safe representation for application display.
+## 33. SYNCHRONIZATION BOUNDARY
+Integrate with Phase 4 output without adding a new sync engine.
 
-Do not download attachment bodies merely to parse metadata.
+## 34. SECURITY FIXTURES
+Create synthetic malicious HTML, unsafe URLs, malformed MIME and suspicious headers.
 
-Handle malformed MIME gracefully.
+## 35. PARSING FIXTURES
+Create plain, HTML, multipart, nested, Unicode, missing-field and attachment fixtures.
 
----
+## 36. DETERMINISM TESTS
+Same input must produce the same normalized output.
 
-## 6. HTML safety
+## 37. SAFETY TESTS
+Prove scripts do not execute and unsafe links do not become active commands.
 
-Email HTML is untrusted input.
+## 38. PREVIEW TESTS
+Prove previews are bounded, visible-content based and free of raw HTML.
 
-Sanitize before rendering.
+## 39. ATTACHMENT TESTS
+Prove metadata extraction does not trigger binary downloads.
 
-Rules:
+## 40. RUNTIME TEST
+Open representative synthetic messages on Android.
 
-- never execute JavaScript;
-- never execute embedded scripts;
-- remove dangerous active content;
-- neutralize unsafe URLs;
-- avoid automatic navigation;
-- avoid automatic downloads;
-- prevent unsafe resource behavior;
-- preserve readable formatting where possible.
+## 41. LOGCAT TEST
+Confirm parsing diagnostics do not leak email bodies, tokens or secrets.
 
-Do not allow email content to trigger application actions.
+## 42. VISUAL TEST
+Verify sanitized content is readable in light/dark and large-text modes.
 
-Do not automatically unsubscribe from mailing lists.
+## 43. PERFORMANCE
+Avoid expensive parsing on the UI thread and avoid repeated parsing of unchanged content.
 
----
+## 44. DEVICE VALIDATION
+Install Mail Organizer only, render representative messages, inspect logs/screenshots/screenrecord where useful.
 
-## 7. Plain-text fallback
+## 45. FINAL BUILD
+Run Gradle/shared/unit/UI/static checks configured by the repository.
 
-When HTML is absent or unsafe:
+## 46. FINAL SECURITY REVIEW
+Verify no JS, unsafe navigation, secret leakage or automatic external action.
 
-- use plain text;
-- preserve meaningful line breaks;
-- normalize excessive whitespace;
-- retain quoted content safely;
-- preserve Unicode.
+## 47. GIT REVIEW
+Confirm only Mail Organizer files changed.
 
-When both HTML and plain text are malformed/missing, produce a safe empty/error representation rather than crashing.
+## 48. DOCUMENTATION
+Update spec/status with parser boundaries, sanitization policy and known limitations.
 
----
+## 49. EDITOR RULES
+Add permanent email-content security rules only when genuinely new.
 
-## 8. Preview/snippet generation
+## 50. ACCEPTANCE CRITERIA
+- transport/domain separation;
+- sender/recipient/subject normalization;
+- MIME support;
+- safe HTML;
+- plain-text fallback;
+- deterministic previews;
+- attachment metadata only;
+- unsubscribe metadata only;
+- timestamps normalized;
+- malformed input safe;
+- deterministic/security tests pass;
+- device validation completed;
+- no later intelligence/functionality implemented.
 
-Create deterministic preview extraction.
+## 51. FINAL REPORT
+Report parser architecture, security behavior, tests, device/API, logs/screenshots, files, issues, deferred work and acceptance status.
 
-Rules:
-
-- never leak hidden HTML;
-- strip unsafe markup;
-- normalize whitespace;
-- bound preview length;
-- preserve useful visible text;
-- handle empty content.
-
-Do not use AI-generated summaries.
-
----
-
-## 9. URLs and links
-
-Parse links as data, not commands.
-
-The parser may expose safe link metadata to the UI.
-
-The viewer must later require deliberate user action before navigation.
-
-Never:
-
-- auto-open a URL;
-- auto-download a resource;
-- execute JavaScript;
-- treat a URL as an application instruction.
-
----
-
-## 10. Unsubscribe metadata
-
-Detect unsubscribe-related metadata only for later user-facing organization.
-
-Support standard metadata/header forms where available.
-
-Do not send an unsubscribe request.
-
-Do not auto-click unsubscribe links.
-
-Do not let an email's instruction authorize an external action.
-
----
-
-## 11. Attachment metadata
-
-Normalize attachment metadata such as:
-
-- filename;
-- MIME type;
-- size;
-- attachment ID/reference;
-- inline/disposition information.
-
-Do not automatically download attachment binaries.
-
-Avoid storing duplicate attachment data locally.
-
----
-
-## 12. Signatures and quoted replies
-
-Create deterministic handling for:
-
-- common signature separators;
-- quoted reply sections;
-- forwarded-message sections.
-
-Preserve the original body representation.
-
-Do not over-aggressively remove content when confidence is low.
-
-A false removal is worse than retaining a few quoted lines.
-
----
-
-## 13. Date/time handling
-
-Normalize Gmail timestamps to an unambiguous representation.
-
-Preserve the original instant.
-
-Do not silently convert dates based on device locale in the data layer.
-
-UI formatting belongs to presentation.
-
-Handle missing/invalid dates without crashing.
-
----
-
-## 14. Derived parsing provenance
-
-Where parsing transforms content, preserve enough metadata to explain:
-
-- parser/version;
-- source field;
-- transformation result;
-- parse failure category where relevant.
-
-Do not store sensitive diagnostic copies unnecessarily.
-
----
-
-## 15. Testing
-
-Create synthetic fixtures for:
-
-- plain text;
-- HTML;
-- multipart/alternative;
-- multipart/mixed;
-- nested MIME;
-- malformed MIME;
-- Unicode;
-- encoded headers;
-- missing sender;
-- missing subject;
-- signatures;
-- quoted replies;
-- forwarded messages;
-- multiple recipients;
-- dangerous HTML/script;
-- unsafe URLs;
-- attachment metadata;
-- unsubscribe headers;
-- empty content.
-
-Tests must prove:
-
-- no script execution;
-- no unsafe URL activation;
-- deterministic output;
-- bounded previews;
-- no crashes on malformed input;
-- correct account/message identity preservation.
-
-Never use real private email in fixtures.
-
----
-
-## 16. Integration with local data
-
-Persist normalized results through the repositories/database from Phase 02.
-
-Do not create a second database.
-
-Do not let parsing mutate unrelated intelligence state.
-
-Parsing should be rerunnable without corrupting existing records.
-
----
-
-## 17. Runtime/security validation
-
-Build and test with the Gradle wrapper.
-
-On Android:
-
-- install;
-- open representative synthetic messages;
-- verify sanitized rendering;
-- inspect logs;
-- verify no script/network side effect occurs from email content;
-- verify attachment metadata does not trigger downloads.
-
-Use safe test HTML containing deliberately dangerous constructs to validate sanitization.
-
----
-
-## 18. Explicit non-goals
-
-Do not implement:
-
-- category classification;
-- priority;
-- Action Required;
-- company detection;
-- search index;
-- Calendar/Tasks;
-- Gmail writes;
-- AI summaries;
-- automation.
-
----
-
-## 19. Completion
-
-Update permanent editor rules only when a verified parsing/security rule is genuinely new.
-
-Update `spec.md` status only after real verification.
-
-Document parser boundaries, sanitization behavior and known limitations.
-
-Final sequence:
-
-`diff review → build → tests → security/rendering QA → fix → rebuild/retest → docs/status → commit → stop`
-
-Do not continue to Phase 06.
+## 52. STOP
+Do not execute Phase 6.
