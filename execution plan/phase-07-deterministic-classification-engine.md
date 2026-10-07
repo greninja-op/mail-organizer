@@ -1,14 +1,14 @@
-# PHASE 3 — GOOGLE OAUTH & GMAIL CONNECTION
+# PHASE 7 — DETERMINISTIC CLASSIFICATION ENGINE
 
 You are now executing:
 
-**Phase 3 — Google OAuth & Gmail Connection**
+**Phase 7 — Deterministic Classification Engine**
 
-This phase must only begin after Phase 2 has been verified as complete.
+This phase may begin only after Phase 6 — Core Inbox & Email Viewer has been completed and verified.
 
-Do not execute Phase 4 or any later phase automatically.
+Do not execute Phase 8 or any later phase automatically.
 
-The project follows a strict sequential execution model:
+The project continues to use strict sequential phase execution.
 
 ```text
 Phase 0
@@ -17,1222 +17,1636 @@ Phase 1
   ↓
 Phase 2
   ↓
-Phase 3 ← YOU ARE HERE
+Phase 3
   ↓
 Phase 4
+  ↓
+Phase 5
+  ↓
+Phase 6
+  ↓
+Phase 7 ← YOU ARE HERE
+  ↓
+Phase 8
   ↓
 ...
 ```
 
-Complete this phase, verify it, update the project documentation, and STOP.
+Complete only Phase 7.
 
-Do not implement Gmail synchronization, classification, Calendar, Tasks, AI, or other future functionality in this phase.
+Verify it.
+
+Update persistent project rules and documentation.
+
+Then STOP.
 
 ---
 
 # 1. DISCOVER THE PROJECT INSTRUCTION FOLDER
 
-Before doing anything:
+Before changing anything:
 
 1. Locate the Mail Organizer instruction folder.
-2. Read the available project `.md` files.
-3. Read:
+2. Read:
     - `requirements.md`
     - `spec.md`
     - `design.md`
     - `editor-rules.md`
-    - relevant architecture/status documents
-    - this Phase 3 prompt
-4. Determine the actual current implementation state.
-5. Confirm Phase 2 is complete.
-6. Identify the Mail Organizer project root.
+    - development-status documentation
+    - architecture documentation
+    - Phase 7 instructions
+3. Inspect the actual repository.
+4. Verify Phase 6 is genuinely complete.
+5. Identify the Mail Organizer project root.
+6. Identify its Git root.
+7. Identify its Android package ID.
+8. Confirm all build/device/Git operations target only Mail Organizer.
 
-Do not assume the current working directory is the Mail Organizer project.
+Do not assume the current directory is correct.
 
 ---
 
 # 2. STRICT MULTI-PROJECT ISOLATION
 
-The workspace may contain multiple unrelated Android applications.
+The workspace may contain multiple Android projects.
 
-You MUST identify the Mail Organizer project root before running:
+Mail Organizer is the only project permitted to change.
 
-- Gradle
-- Git
-- ADB
-- Android tooling
-- file modifications
-- build commands
-- tests
+Never modify sibling:
 
-Only operate inside the Mail Organizer project.
-
-Never modify sibling projects.
-
-Never modify another project's:
-
-- source
+- source code
 - Gradle files
-- SDK configuration
-- build configuration
+- settings
 - dependencies
 - manifests
-- signing configuration
-- environment files
-- tests
 - resources
+- assets
+- tests
 - generated files
-- Git repository
+- SDK configuration
+- JDK configuration
+- Git repositories
 
-Never upgrade or downgrade global Android SDK components just because another project uses a different version.
+Do not run broad commands such as workspace-wide:
 
-Never run Gradle from a parent workspace directory when that could target another project.
+```text
+clean
+build
+format
+lint
+dependency updates
+```
+
+unless they are explicitly scoped to Mail Organizer.
+
+ADB operations must target only the Mail Organizer package.
+
+Do not uninstall, clear data, force-stop, launch, or inspect unrelated applications.
 
 ---
 
-# 3. UPDATE `editor-rules.md`
+# 3. READ THE PRODUCT PRINCIPLE
 
-Before implementation, update `editor-rules.md` if necessary.
+The classification engine must support the product pipeline:
 
-Add any permanent rules discovered during this phase, especially rules concerning:
+```text
+Gmail
+  ↓
+Synchronization
+  ↓
+Parsing / Normalization
+  ↓
+Classification
+  ↓
+Company / Sender Intelligence
+  ↓
+Priority
+  ↓
+Structured Information
+  ↓
+Actions
+```
 
-- Google OAuth security
-- Gmail API security
-- least-privilege scopes
-- token handling
-- account isolation
-- OAuth disconnect/revocation
-- OAuth failure handling
-- test-account handling
-- no password collection
-- no token logging
-- production-vs-development OAuth configuration
-- Google Cloud project isolation
-- multi-account authorization
-- external permission transparency
+Phase 7 is specifically the **classification** stage.
 
-Do this yourself.
-
-Do not ask the user to manually edit `editor-rules.md`.
-
-Do not replace the whole file unnecessarily.
+Do not prematurely implement later intelligence layers.
 
 ---
 
 # 4. PHASE OBJECTIVE
 
-The objective of Phase 3 is to establish a secure, production-oriented Google authentication and Gmail authorization foundation.
+Build a deterministic, explainable, testable classification engine that assigns normalized emails to the Mail Organizer categories defined in `requirements.md`.
 
-At the end of this phase, a user should be able to:
+The initial categories are:
 
 ```text
-Open Mail Organizer
-        ↓
-Choose "Connect Gmail"
-        ↓
-Google authentication
-        ↓
-Grant the requested Gmail permission
-        ↓
-Return to Mail Organizer
-        ↓
-See the connected Gmail account
+Action Required
+Important
+Career
+Education
+Receipts & Orders
+Security
+Notifications
+Newsletters
+Promotions
+Low Value
 ```
 
-The app must NOT yet synchronize the mailbox.
+Classification must be:
 
-The Gmail connection should only establish authorization and account identity.
-
----
-
-# 5. IMPORTANT: USE OFFICIAL GOOGLE AUTHENTICATION
-
-Use official Google-supported Android authentication mechanisms and APIs.
-
-Do NOT implement:
-
-- Gmail website scraping
-- embedded Gmail login pages
-- username/password collection
-- cookie extraction
-- browser automation for Gmail
-- AccessibilityService-based Gmail control
-- reverse-engineered Gmail APIs
-- unofficial authentication hacks
-
-The user must authenticate through Google's supported OAuth flow.
+- deterministic
+- explainable
+- local-first
+- testable
+- account-safe
+- versioned
+- user-correctable later
+- independent of the UI
+- independent of Gmail write operations
+- independent of external AI services
 
 ---
 
-# 6. DETERMINE THE CURRENT GOOGLE AUTHENTICATION STACK
+# 5. CORE RULE
 
-Inspect the project.
+Do not use an AI/LLM to perform primary classification in this phase.
 
-Determine whether it currently uses:
+Do not send email content to:
 
-- Credential Manager
-- Google Identity Services
-- Google Sign-In
-- OAuth libraries
-- Google API client libraries
-- custom authentication abstractions
+- OpenAI
+- Anthropic
+- Gemini
+- OpenRouter
+- third-party classification APIs
+- analytics services
+- remote ML APIs
 
-Do not introduce redundant authentication systems.
-
-If an existing supported authentication foundation is present, use it where appropriate.
-
-If it is outdated or incompatible with the requirements, document why it must be replaced before doing so.
+The classification engine must work without internet once the email data is locally available.
 
 ---
 
-# 7. GOOGLE CLOUD PROJECT
+# 6. CLASSIFICATION ARCHITECTURE
 
-Establish the development Google Cloud configuration required by Mail Organizer.
-
-Verify or configure the appropriate Google Cloud project.
-
-The project must have the required APIs enabled.
-
-At minimum, Gmail API must be enabled.
-
-Do not enable unrelated Google APIs unnecessarily.
-
-Future APIs such as:
-
-- Google Calendar API
-- Google Tasks API
-
-belong to later phases unless the current implementation requires only preliminary configuration.
-
-Do not request unnecessary permissions now.
-
----
-
-# 8. GOOGLE CLOUD PROJECT ISOLATION
-
-If multiple applications/projects are being developed by the user:
-
-Do not modify another application's Google Cloud configuration.
-
-Verify that the OAuth configuration being used belongs specifically to Mail Organizer.
-
-Do not:
-
-- delete another project's OAuth clients
-- modify another app's consent screen
-- change another application's test users
-- rotate another application's credentials
-- change another project's APIs
-- alter unrelated Google Cloud resources
-
-Document which Google Cloud project belongs to Mail Organizer without exposing sensitive credentials.
-
----
-
-# 9. ANDROID APPLICATION IDENTITY
-
-Verify that the Android OAuth configuration matches the Mail Organizer application.
-
-Confirm:
-
-- package/application ID
-- signing certificate SHA-1/SHA-256 as appropriate
-- debug signing configuration
-- release signing configuration
-- application identity
-
-The Android OAuth client must correspond to the correct application identity.
-
-Do not change the package ID casually.
-
-Do not use another project's certificate fingerprint.
-
----
-
-# 10. DEBUG AND RELEASE OAUTH CONFIGURATION
-
-Clearly distinguish:
-
-### Development
-
-Used for:
-
-- local development
-- debug builds
-- test accounts
-- device testing
-
-### Production
-
-Used later for:
-
-- production release
-- Play Store
-- production OAuth verification
-- real users
-
-Do not mix credentials/configuration between unrelated projects.
-
-Do not commit sensitive OAuth secrets.
-
-Remember:
-
-- OAuth client IDs are generally identifiers, not passwords.
-- access tokens are sensitive.
-- refresh tokens are sensitive.
-- signing private keys are sensitive.
-- client secrets must be protected where applicable.
-
-Never place actual secrets into source code.
-
----
-
-# 11. OAUTH CONSENT SCREEN
-
-Configure the Google OAuth consent experience appropriately for development.
-
-Ensure it clearly identifies:
-
-- application name
-- developer/app identity
-- requested access
-- privacy policy information where required
-- appropriate contact/support information where required
-
-Do not misrepresent the purpose of the application.
-
-The app should request only the access necessary for the current phase.
-
----
-
-# 12. LEAST PRIVILEGE — CRITICAL
-
-For Phase 3, use the minimum Gmail scope required.
-
-The initial Gmail integration should use a read-only scope such as:
+Use a clean architecture similar to:
 
 ```text
-https://www.googleapis.com/auth/gmail.readonly
+Normalized Email
+       ↓
+Classification Input
+       ↓
+Signal Extraction
+       ↓
+Rule Evaluation
+       ↓
+Candidate Categories
+       ↓
+Scoring / Resolution
+       ↓
+Classification Result
+       ↓
+Local Persistence
+       ↓
+UI
 ```
 
-Do NOT request:
+Keep the classifier independent from Android UI.
+
+The classifier should be callable from unit tests without launching the application.
+
+---
+
+# 7. DO NOT PUT CLASSIFICATION LOGIC IN UI
+
+Do not implement rules directly inside:
+
+- Composables
+- Activities
+- Fragments
+- ViewModels
+
+Prefer:
 
 ```text
-gmail.modify
-gmail.send
-gmail.insert
-gmail.compose
+UI
+ ↓
+ViewModel
+ ↓
+Use Case
+ ↓
+Classification Engine
 ```
 
-unless explicitly required by this phase.
-
-They are not required.
-
-Future write capabilities belong to later phases.
+The classification engine must remain independently testable.
 
 ---
 
-# 13. PERMISSION TRANSPARENCY
+# 8. CLASSIFICATION INPUT
 
-The user must be able to understand what access the app is requesting.
+Use the normalized data produced by Phase 5.
 
-Do not display misleading language such as:
+Potential signals include:
 
-> "Sign in to continue"
+- sender name
+- sender email
+- sender domain
+- recipient
+- CC
+- subject
+- normalized plain text
+- sanitized body-derived text
+- Gmail labels
+- Gmail category
+- URLs
+- unsubscribe presence
+- attachment metadata
+- recurring sender information
+- message/thread metadata
 
-if the actual operation is granting access to Gmail data.
-
-Prefer transparent messaging such as:
-
-> Connect your Gmail account so Mail Organizer can read and organize your email locally.
-
-The exact UI copy should follow the product's design language.
-
----
-
-# 14. DO NOT REQUEST EVERYTHING AT ONCE
-
-Do not request:
-
-- Calendar access
-- Tasks access
-- Drive access
-- Contacts access
-- Gmail write access
-- unrelated Google permissions
-
-during this phase.
-
-Each integration should be independently authorized later.
-
-This keeps the permission model understandable and reduces unnecessary access.
+Do not duplicate parsing logic from Phase 5.
 
 ---
 
-# 15. ACCOUNT MODEL INTEGRATION
+# 9. RAW EMAIL IS NOT THE CLASSIFIER'S PRIMARY INPUT
 
-Connect the OAuth result to the Account persistence model created in Phase 2.
+Do not make the classification engine depend directly on raw Gmail API responses.
 
-After successful authorization, create or update the local account record.
+Use the normalized application/domain model.
 
-The account record should contain appropriate identity information such as:
+Architecture should remain:
 
-- internal account ID
-- Google account identity where appropriate
-- email address
-- display name if available
-- provider
-- connected state
-- timestamps
-
-Do not store OAuth tokens as ordinary account fields.
-
----
-
-# 16. TOKEN STORAGE — CRITICAL SECURITY REQUIREMENT
-
-Access tokens and refresh tokens are sensitive.
-
-Do NOT store them in:
-
-- Room email tables
-- ordinary SharedPreferences
-- plaintext files
-- logs
-- UI state
-- analytics
-- screenshots
-- database debug output
-
-Use an appropriate secure credential/token storage strategy for Android.
-
-The authentication layer must own token lifecycle management.
-
-The rest of the application should not directly manipulate raw token storage.
+```text
+Gmail API
+ ↓
+Raw Gmail model
+ ↓
+Parser
+ ↓
+Normalized Email
+ ↓
+Classification Engine
+```
 
 ---
 
-# 17. AUTHENTICATION ABSTRACTION
+# 10. SIGNAL EXTRACTION
 
-Create a clean authentication boundary.
+Create a controlled signal extraction layer.
 
 For example:
 
 ```text
-Authentication
-    ↓
-Google OAuth Provider
-    ↓
-Secure Token Storage
+SenderSignal
+DomainSignal
+SubjectSignal
+BodyKeywordSignal
+GmailCategorySignal
+LabelSignal
+UrlSignal
+UnsubscribeSignal
+AttachmentSignal
+RecurringPatternSignal
 ```
 
-The Gmail client should depend on an authentication abstraction rather than directly knowing where tokens are stored.
+Do not blindly search the entire raw email for random words.
 
-This will make future testing and authentication changes safer.
+Signals must be meaningful and documented.
 
 ---
 
-# 18. TOKEN REFRESH
+# 11. NORMALIZATION BEFORE MATCHING
 
-The authentication layer must support token expiration/refresh appropriately.
-
-Do not implement fragile logic such as:
-
-```text
-if token expired:
-    ask user to log in every time
-```
-
-Instead, use the supported Google authentication/token lifecycle mechanisms.
+Classification should operate on normalized text.
 
 Handle:
 
-- expired access token
-- refresh
-- invalid refresh state
-- revoked authorization
-- account removal
-- user denial
-
-Do not log tokens while debugging these flows.
-
----
-
-# 19. ACCOUNT SELECTION
-
-Support selecting a Google account during connection.
-
-The user should be able to choose the account they want to connect.
-
-Do not assume the currently signed-in Android account is automatically the desired Gmail account.
-
-Do not silently connect a random account.
-
----
-
-# 20. MULTI-ACCOUNT FOUNDATION
-
-The app supports multiple Gmail accounts.
-
-Therefore:
-
-```text
-Account A
-Account B
-Account C
-```
-
-must be treated as independent authorization contexts.
-
-Phase 3 does not need to implement the full unified inbox.
-
-However, it must establish the foundation for:
-
-- connect account
-- disconnect account
-- account identity
-- account status
-- account-specific authorization
-- account-specific token handling
-
-Do not mix authorization state between accounts.
-
----
-
-# 21. CONNECT ACCOUNT UI
-
-Implement a proper connection screen/state.
-
-It should clearly show:
-
-### Not connected
-
-- Connect Gmail action
-- explanation of required access
-
-### Connecting
-
-- loading state
-- no duplicate connection actions
-
-### Connected
-
-- account email
-- connection status
-- disconnect action
-
-### Failed
-
-- useful error
-- retry option
-
-### Permission denied
-
-- clear explanation
-- retry/permission path
-
-Do not show fake connected accounts.
-
----
-
-# 22. DISCONNECT ACCOUNT
-
-Implement a safe disconnect mechanism.
-
-Disconnect should:
-
-- remove the account's active connection state
-- clear associated authentication state appropriately
-- prevent future Gmail API use
-- preserve or delete local data according to the product's explicit data policy
-- clearly communicate what will happen
-
-Do not silently delete local mail data unless the user has explicitly chosen that behavior.
-
-If disconnecting requires local data cleanup, make it explicit.
-
----
-
-# 23. GOOGLE REVOCATION
-
-Where supported and appropriate, provide a proper revocation path.
-
-Understand the difference between:
-
-```text
-Disconnect from Mail Organizer
-```
-
-and:
-
-```text
-Revoke Google's authorization
-```
-
-The UI should not falsely claim that disconnecting locally necessarily revokes Google's authorization.
-
-Handle revocation failures gracefully.
-
----
-
-# 24. OAUTH FAILURE STATES
-
-Handle at minimum:
-
-- user cancels
-- user denies
-- network unavailable
-- Google authentication failure
-- invalid OAuth configuration
-- redirect/configuration mismatch
-- account unavailable
-- token refresh failure
-- authorization revoked
-- API unavailable
-- unsupported account state
-
-Every error must produce a useful user-facing state.
-
-Avoid exposing raw stack traces.
-
----
-
-# 25. DO NOT LEAK GOOGLE ERRORS
-
-Internal errors may contain technical information.
-
-Do not directly show raw exception messages to users.
-
-Instead map errors to safe categories such as:
-
-```text
-Connection cancelled
-Permission denied
-Google authentication failed
-Network unavailable
-Authorization expired
-Configuration problem
-Unexpected error
-```
-
-Log technical details safely without exposing secrets.
-
----
-
-# 26. GMAIL API CLIENT FOUNDATION
-
-Establish the Gmail API client architecture.
-
-The client should eventually support:
-
-```text
-GmailService
-    ↓
-Authenticated Google API Client
-    ↓
-Gmail API
-```
-
-But Phase 3 should not implement mailbox synchronization.
-
-At most, validate that the authorized Gmail API client can perform a minimal safe authenticated operation required to prove authorization.
-
-Do not download the mailbox.
-
----
-
-# 27. AUTHENTICATED API SMOKE TEST
-
-After OAuth succeeds, perform a minimal authenticated Gmail API validation if appropriate.
-
-The test should prove:
-
-```text
-OAuth succeeded
-+
-token works
-+
-Gmail API authorization works
-```
-
-Do not:
-
-- fetch hundreds/thousands of messages
-- synchronize inbox
-- classify email
-- build local search index
-- process email bodies
-
-A minimal account/profile-level request is preferable where supported.
-
----
-
-# 28. API FAILURE HANDLING
-
-If the Gmail API smoke test fails:
-
-- identify authentication vs permission vs network failure
-- show an appropriate UI state
-- log only safe diagnostic information
-- do not crash the application
-- do not retry infinitely
-
-Do not implement the complete retry engine yet.
-
----
-
-# 29. GOOGLE API RATE LIMITING
-
-Do not aggressively poll Gmail during this phase.
-
-There should be no mailbox polling.
-
-If a test API request is necessary, perform only what is required.
-
-Future synchronization will implement appropriate rate-limit handling.
-
----
-
-# 30. NO BACKEND
-
-Do not create a custom authentication backend.
-
-Do not send OAuth tokens through your own server.
-
-The initial architecture should be:
-
-```text
-Android App
-    ↓
-Google OAuth
-    ↓
-Google Gmail API
-```
-
-not:
-
-```text
-Android App
-    ↓
-Mail Organizer Server
-    ↓
-Google
-```
-
-unless a later product requirement explicitly introduces a backend.
-
----
-
-# 31. NETWORK SECURITY
-
-Verify that network communication is appropriate.
-
-Use HTTPS/TLS for network traffic.
-
-Do not enable broad cleartext traffic simply to make development work.
-
-If local development networking is necessary:
-
-- isolate it to debug configuration
-- use ADB reverse where appropriate
-- do not weaken production network security
-
----
-
-# 32. ADB / DEVICE VALIDATION
-
-This phase MUST be validated on an Android device/emulator whenever available.
-
-Use:
-
-- Gradle
-- ADB
-- device installation
-- application launch
-- logcat
-- screenshots
-- screen capture/recording where useful
-
-The validation loop is:
-
-```text
-Code
- ↓
-Gradle build
- ↓
-Install
- ↓
-Launch
- ↓
-Connect Gmail
- ↓
-Observe OAuth flow
- ↓
-Capture screenshots
- ↓
-Inspect logs
- ↓
-Disconnect
- ↓
-Reconnect
- ↓
-Retest
-```
-
----
-
-# 33. INSTALLATION MUST BE PROJECT-SCOPED
-
-Before installing:
-
-1. confirm Mail Organizer package ID
-2. confirm APK belongs to Mail Organizer
-3. install only that APK
-4. do not uninstall unrelated applications
-5. do not clear unrelated app data
-
-Do not use broad device reset operations.
-
----
-
-# 34. ADB REVERSE
-
-If the development environment requires localhost access during OAuth/API development:
-
-Use:
-
-```text
-adb reverse
-```
-
-appropriately.
-
-Before modifying reverse mappings:
-
-- inspect current mappings where possible
-- identify the required Mail Organizer port
-- avoid disturbing mappings belonging to another project
-
-If no reverse connection is needed, do not create one.
-
----
-
-# 35. SCREENSHOT OAUTH STATES
-
-Capture and inspect screenshots for appropriate states:
-
-### State 1
-
-Mail Organizer not connected.
-
-### State 2
-
-Connection explanation.
-
-### State 3
-
-OAuth/account-selection transition if capturable and appropriate.
-
-### State 4
-
-Connected Gmail account.
-
-### State 5
-
-Connection failure.
-
-### State 6
-
-Permission denied.
-
-### State 7
-
-Disconnect confirmation/result.
-
-Do not capture sensitive OAuth tokens or private Google account information unnecessarily.
-
-Blur/redact sensitive information in any documentation if needed.
-
----
-
-# 36. SCREEN RECORDING
-
-Where useful, record the connection flow to validate:
-
-- transitions
-- loading
-- returning from Google
-- duplicate taps
-- navigation
-- failure handling
-
-Do not retain unnecessary recordings containing personal account information.
-
----
-
-# 37. LOGCAT VALIDATION
-
-During OAuth testing inspect logs for:
-
-- crashes
-- token errors
-- configuration errors
-- API errors
-- Activity lifecycle problems
-- authentication failures
-
-Verify that logs do NOT contain:
-
-- access tokens
-- refresh tokens
-- authorization headers
-- passwords
-- sensitive email information
-
-If sensitive logging appears, fix it before completing the phase.
-
----
-
-# 38. TEST ACCOUNT SAFETY
-
-Use a controlled test Gmail account for development where possible.
-
-Do not use a user's primary personal account simply because it is convenient.
-
-Google Cloud OAuth development may require configured test users.
-
-Configure only the Mail Organizer test account(s).
-
-Do not alter unrelated applications' OAuth test users.
-
----
-
-# 39. DEVELOPMENT OAUTH LIMITATIONS
-
-Understand and document any development OAuth limitations, including:
-
-- test-user requirements
-- consent-screen state
-- scope restrictions
-- publishing/verification requirements
-- developer/testing limitations
-
-Do not work around Google's OAuth security mechanisms.
-
-Do not use unofficial bypasses.
-
----
-
-# 40. PRODUCTION OAUTH PREPARATION
-
-Do not attempt full production verification during this phase unless required.
-
-However, document what will eventually be needed:
-
-- production consent configuration
-- verified domains where applicable
-- privacy policy
-- app identity
-- production OAuth client
-- release signing certificate
-- Google verification for sensitive/restricted scopes if applicable
-- Play Store release configuration
-
-Do not claim production approval has been obtained.
-
----
-
-# 41. NO GMAIL WRITE ACCESS
-
-This is mandatory.
-
-Phase 3 must not request or implement:
-
-- archive
-- delete
-- mark read/unread
-- label modification
-- send
-- reply
-- move
-- trash
-
-Those require additional permissions and belong to later phases.
-
-The current Gmail permission should remain read-only.
-
----
-
-# 42. NO EMAIL CONTENT PROCESSING
-
-Do not process mailbox contents during Phase 3.
-
-Do not:
-
-- classify messages
-- detect companies
-- extract meetings
-- extract deadlines
-- build action cards
-- index email
-- run AI
-- download attachments
-
-The application only needs to establish:
-
-```text
-Google account
-+
-Gmail authorization
-+
-authenticated API capability
-```
-
----
-
-# 43. TEST MATRIX
-
-Test at minimum:
-
-### Successful authorization
-
-```text
-Install→ Launch
-→ Connect
-→ Google account
-→ Grant
-→ Return
-→ Connected
-```
-
-### Cancel
-
-```text
-Connect
-→ Cancel
-→ Return
-→ Not connected
-```
-
-### Denied
-
-```text
-Connect
-→ Deny
-→ Return
-→ Permission denied state
-```
-
-### Reconnect
-
-```text
-Connect
-→ Success
-→ Disconnect
-→ Connect again
-→ Success
-```
-
-### Restart
-
-```text
-Connected
-→ Force stop
-→ Relaunch
-→ Correct connection state
-```
-
-### Token/auth state
-
-Where safely testable:
-
-```text
-Expired/invalid authorization
-→ appropriate recovery
-```
-
-### Offline
-
-```text
-No network
-→ Connect attempt
-→ graceful failure
-```
-
-Do not endlessly retry.
-
----
-
-# 44. MULTI-ACCOUNT TESTING
-
-If the environment permits, test:
-
-```text
-Account A → connect
-Account B → connect
-Account A → remains connected
-Account B → remains connected
-```
-
-Verify that:
-
-- identities remain distinct
-- token state does not mix
-- account records remain distinct
-- disconnecting A does not disconnect B
-
-Do not implement the full unified inbox yet.
-
----
-
-# 45. DATABASE VALIDATION
-
-Verify that OAuth/account connection updates the correct account record.
+- case differences
+- whitespace
+- Unicode normalization where appropriate
+- punctuation
+- common formatting noise
 
 For example:
 
 ```text
-Google Account A
-      ↓
-Local Account A
+"Your   ORDER Confirmation!"
 ```
 
-and:
+should be comparable to:
 
 ```text
-Google Account B
-      ↓
-Local Account B
+"your order confirmation"
 ```
 
-Never create duplicate account records unnecessarily for the same connected account.
+Do not aggressively stem or rewrite text unless justified.
+
+Avoid damaging names, product identifiers, URLs, or company names.
 
 ---
 
-# 46. SECURITY REVIEW
+# 12. CATEGORY DEFINITIONS
 
-Before completion verify:
+Create explicit definitions for every category.
 
-- [ ] no Gmail password collection
-- [ ] no Gmail scraping
-- [ ] no AccessibilityService
-- [ ] no cookies
-- [ ] no unofficial Gmail authentication
-- [ ] minimum OAuth scope
-- [ ] no Gmail write scope
-- [ ] no tokens in logs
-- [ ] no tokens in Room
-- [ ] no tokens in SharedPreferences
-- [ ] no tokens in UI state
-- [ ] no secrets committed
-- [ ] account isolation
-- [ ] OAuth errors handled
-- [ ] disconnect handled
-- [ ] revocation behavior understood
+### Action Required
 
----
+Messages that plausibly require a meaningful user action.
 
-# 47. PERFORMANCE / BATTERY
+Examples:
 
-Do not create background Gmail polling in Phase 3.
+- application deadline
+- payment due
+- document request
+- interview scheduling
+- account verification
+- required response
+- important request
 
-The app should not:
-
-- continuously poll Gmail
-- wake the device unnecessarily
-- repeatedly refresh OAuth state
-- make repeated API calls
-
-Synchronization belongs to Phase 4 and later.
+Do not make every notification Action Required.
 
 ---
 
-# 48. DO NOT TOUCH OTHER PROJECTS
+### Important
 
-Before final verification, inspect the workspace and Git state again.
+Messages that appear materially important but do not clearly fit a more specific category.
 
-Confirm:
+Examples:
 
-- only Mail Organizer files changed
-- only Mail Organizer Gradle files changed
-- no sibling project SDK configuration changed
-- no sibling project dependencies changed
-- no sibling project build was modified
-- no unrelated APK was installed/uninstalled
-- no unrelated device data was cleared
-- no unrelated Google Cloud project was changed
-
-If you discover an accidental modification:
-
-STOP.
-
-Identify it.
-
-Restore only the accidental change if it is safe to do so.
-
-Do not destroy legitimate work belonging to another project.
+- high-value personal correspondence
+- critical service communication
+- significant account communication
 
 ---
 
-# 49. FINAL BUILD
+### Career
 
-Run the Mail Organizer project's own Gradle build.
+Messages related to:
 
-Use its own Gradle wrapper.
+- jobs
+- internships
+- recruiters
+- interviews
+- employment
+- career opportunities
+- professional networking
+- hiring processes
+
+---
+
+### Education
+
+Messages related to:
+
+- college
+- university
+- classes
+- assignments
+- exams
+- courses
+- learning platforms
+- academic administration
+- educational events
+
+---
+
+### Receipts & Orders
+
+Messages related to:
+
+- purchases
+- order confirmation
+- shipping
+- delivery
+- invoices
+- receipts
+- refunds
+- subscriptions with transaction evidence
+
+---
+
+### Security
+
+Messages related to:
+
+- login alerts
+- password changes
+- verification codes
+- suspicious activity
+- account security
+- two-factor authentication
+- security warnings
+- identity verification
+
+Security should receive strong treatment.
+
+---
+
+### Notifications
+
+Routine service/application notifications.
+
+Examples:
+
+- GitHub notifications
+- application alerts
+- account activity notifications
+- system notifications
+- status notifications
+
+---
+
+### Newsletters
+
+Recurring informational emails intentionally distributed to subscribers.
+
+Signals may include:
+
+- unsubscribe information
+- newsletter indicators
+- recurring sender patterns
+- known newsletter formats
+- marketing-style content
+
+Do not classify every promotional email as Newsletter.
+
+---
+
+### Promotions
+
+Marketing and promotional communication.
+
+Examples:
+
+- sales
+- discounts
+- product promotions
+- offers
+- marketing campaigns
+
+---
+
+### Low Value
+
+Low-priority/noisy messages that do not fit a more meaningful category.
+
+This should be conservative.
+
+Do not dump unfamiliar emails into Low Value simply because the classifier is uncertain.
+
+---
+
+# 13. CATEGORY PRIORITY / CONFLICT RESOLUTION
+
+Emails may match multiple categories.
+
+For example:
+
+```text
+"Your Amazon order has shipped"
+```
+
+could match:
+
+- Receipts & Orders
+- Notifications
+- Promotions
+
+The classifier must resolve conflicts deterministically.
+
+Create an explicit precedence strategy.
+
+For example, security-sensitive messages should normally outrank generic notification/promotional matches.
+
+Do not rely on random rule order.
+
+Document the precedence.
+
+---
+
+# 14. CLASSIFICATION RESULT MODEL
+
+Create a structured classification result.
+
+Conceptually:
+
+```text
+ClassificationResult
+ ├── category
+ ├── confidence
+ ├── matchedSignals
+ ├── ruleId
+ ├── classifierVersion
+ └── timestamp
+```
+
+Adapt naming to the existing project conventions.
+
+Do not blindly copy this structure if the existing architecture has a better equivalent.
+
+---
+
+# 15. CONFIDENCE
+
+Classification should expose confidence.
+
+Confidence does not need to be machine-learning probability.
+
+It can represent deterministic rule strength.
+
+For example:
+
+```text
+HIGH
+MEDIUM
+LOW
+```
+
+or a bounded numeric representation.
+
+The meaning must be documented.
+
+Do not present deterministic confidence as statistical certainty.
+
+---
+
+# 16. EXPLAINABILITY
+
+Every non-trivial classification should be explainable.
+
+For example:
+
+```text
+Category:
+Career
+
+Why:
+Sender domain matches a known recruiting domain.
+Subject contains "interview".
+```
+
+Or:
+
+```text
+Category:
+Receipts & Orders
+
+Why:
+Detected order confirmation language and transaction-related sender.
+```
+
+The exact UI explanation can be implemented later.
+
+The classification result must contain enough structured information to support it.
+
+---
+
+# 17. RULE IDENTIFIERS
+
+Give meaningful rules identifiers.
+
+Examples:
+
+```text
+SECURITY_OTP
+SECURITY_LOGIN_ALERT
+CAREER_JOB_APPLICATION
+CAREER_RECRUITER
+EDUCATION_COLLEGE
+ORDER_CONFIRMATION
+SHIPPING_NOTIFICATION
+NEWSLETTER_UNSUBSCRIBE
+PROMOTION_DISCOUNT
+```
+
+Use a consistent naming convention.
+
+Avoid anonymous rules such as:
+
+```text
+RULE_1
+RULE_2
+RULE_3
+```
+
+---
+
+# 18. RULE VERSIONING
+
+The classifier must have a version.
+
+For example:
+
+```text
+classifierVersion = 1
+```
+
+or an equivalent project-specific mechanism.
+
+When classification logic changes materially, future phases should be able to determine which classifier version produced a result.
+
+Do not silently overwrite classification history without version awareness.
+
+---
+
+# 19. DETERMINISM
+
+The same normalized email and same rule configuration must produce the same classification result.
+
+For:
+
+```text
+same input
++
+same rules
++
+same classifier version
+```
+
+the output must be deterministic.
+
+Do not use:
+
+- randomness
+- network state
+- current time
+- model sampling
+- device state
+
+to influence classification.
+
+---
+
+# 20. SENDER / DOMAIN SIGNALS
+
+Sender/domain matching can be highly useful.
+
+Support controlled matching for known domains and sender patterns.
+
+Examples:
+
+```text
+linkedin.com
+github.com
+coursera.org
+university domain
+bank domain
+```
+
+Do not hardcode an enormous arbitrary database.
+
+Create an architecture that can grow.
+
+---
+
+# 21. SUBJECT SIGNALS
+
+Use subject signals carefully.
+
+Examples:
+
+```text
+"verification code"
+"password reset"
+"interview"
+"application"
+"order confirmed"
+"invoice"
+"shipped"
+"delivery"
+"exam"
+"assignment"
+"sale"
+"discount"
+"newsletter"
+```
+
+Avoid classifying solely from one weak keyword.
+
+For example:
+
+```text
+"sale"
+```
+
+inside an unrelated sentence should not automatically mean Promotion.
+
+---
+
+# 22. BODY SIGNALS
+
+Body signals may be used when subject/sender information is insufficient.
+
+Use normalized text.
+
+Do not scan enormous raw HTML.
+
+Do not render the body merely to classify it.
+
+Classification must remain local and computationally controlled.
+
+---
+
+# 23. GMAIL CATEGORY SIGNALS
+
+Use Gmail's existing categories when available as a signal.
+
+For example:
+
+- PRIMARY
+- SOCIAL
+- PROMOTIONS
+- UPDATES
+- FORUMS
+
+However:
+
+**Gmail category must not automatically become the Mail Organizer category.**
+
+Mail Organizer has its own classification model.
+
+Use Gmail metadata as one signal among several.
+
+---
+
+# 24. LABEL SIGNALS
+
+Existing Gmail labels can provide useful context.
+
+Do not assume every label is trustworthy or semantically identical across accounts.
+
+Account-specific labels must remain account-scoped.
+
+---
+
+# 25. UNSUBSCRIBE SIGNAL
+
+Presence of unsubscribe information may strongly suggest:
+
+- Newsletter
+- Promotion
+
+But unsubscribe alone must not determine the final category.
+
+For example, legitimate account/service emails may contain unsubscribe mechanisms.
+
+Use it as a supporting signal.
+
+---
+
+# 26. URL SIGNALS
+
+URLs can provide contextual information.
+
+For example:
+
+- job platforms
+- educational platforms
+- shopping platforms
+- security/account domains
+
+Do not visit URLs.
+
+Do not make network requests to classify an email.
+
+Analyze only normalized URL information already present locally.
+
+---
+
+# 27. ATTACHMENT SIGNALS
+
+Attachment metadata can support classification.
+
+Examples:
+
+- invoice PDF
+- resume document
+- academic document
+
+Do not download attachments for classification.
+
+Do not inspect arbitrary attachment binaries in this phase unless the existing normalized model already safely exposes relevant metadata.
+
+---
+
+# 28. RECURRING SENDER SIGNAL
+
+If the local data model already contains recurring sender information, it may be used.
+
+Do not build the complete sender/company intelligence system yet.
+
+That belongs to Phase 8.
+
+Keep this signal minimal and architecture-friendly.
+
+---
+
+# 29. ACTION REQUIRED IS A CATEGORY, NOT A SECOND ENGINE
+
+Phase 9 will implement the richer Action Required and priority system.
+
+For Phase 7, only establish enough category semantics to avoid architecture conflicts.
+
+Do not build deadline extraction.
+
+Do not build meeting detection.
+
+Do not build action cards.
+
+Do not build task creation.
+
+---
+
+# 30. USER CORRECTIONS
+
+The classification engine must be designed so that later user corrections can override deterministic classification.
+
+Do not implement the complete correction UI yet.
+
+However, the architecture must support:
+
+```text
+Classifier result
+        ↓
+User correction
+        ↓
+Override
+        ↓
+Final effective category
+```
+
+Do not make classifier output permanently immutable.
+
+---
+
+# 31. CLASSIFIER VS USER OVERRIDE
+
+Never confuse:
+
+```text
+Predicted category
+```
+
+with:
+
+```text
+Effective category
+```
+
+Future architecture should be capable of preserving both.
+
+For example:
+
+```text
+classifierCategory = Promotions
+userOverride = Career
+effectiveCategory = Career
+```
+
+Do not destroy the original classifier result when implementing future corrections.
+
+---
+
+# 32. PERSISTENCE
+
+Store classification results locally.
+
+Use the data architecture from Phase 2.
+
+Classification must remain account-scoped.
+
+Do not store classification in a global table without account ownership.
+
+---
+
+# 33. RECLASSIFICATION
+
+When classifier rules change:
+
+The architecture should support reclassification.
+
+Do not require a complete Gmail resynchronization.
+
+Classification is a local derived operation.
+
+Conceptually:
+
+```text
+Existing normalized email
+        ↓
+New classifier version
+        ↓
+New classification
+```
+
+---
+
+# 34. IDEMPOTENCY
+
+Running classification twice on the same unchanged input must not create duplicate records.
+
+Use deterministic updates/upserts.
+
+Do not create:
+
+```text
+classification #1
+classification #2
+classification #3
+```
+
+for the same email unless explicit history is intentionally designed.
+
+---
+
+# 35. THREAD VS MESSAGE CLASSIFICATION
+
+Decide explicitly whether classification is:
+
+- message-level
+- thread-level
+- or both
+
+The preferred architecture should preserve message-level evidence while allowing thread-level presentation later.
+
+Do not destroy individual message classification context.
+
+Document the decision.
+
+---
+
+# 36. ACCOUNT ISOLATION
+
+The same sender or domain may behave differently across accounts.
+
+Classification data must remain account-aware.
+
+Never allow:
+
+```text
+Account A correction
+```
+
+to silently affect:
+
+```text
+Account B
+```
+
+unless the product explicitly defines a global rule later.
+
+---
+
+# 37. RULE CONFIGURATION
+
+Keep classification rules structured.
+Avoid a giant function such as:
+
+```text
+if (...) {
+...
+} else if (...) {
+...
+} else if (...) {
+...
+}
+```
+
+Prefer a maintainable rule architecture.
+
+The exact implementation is up to the existing codebase.
+
+The architecture should support:
+
+- rule registration
+- rule IDs
+- signals
+- scores/weights
+- precedence
+- explanations
+- versioning
+- future user rules
+
+---
+
+# 38. SCORING
+
+A scoring model is acceptable if it remains deterministic.
+
+For example:
+
+```text
+Security signal      +100
+Career strong signal  +80
+Education strong      +80
+Order confirmation    +80
+Newsletter            +50
+Promotion             +40
+Generic notification  +30
+```
+
+These numbers are examples only.
+
+Do not blindly use them.
+
+Choose values based on the product requirements and document them.
+
+---
+
+# 39. STRONG VS WEAK SIGNALS
+
+Distinguish:
+
+### Strong signals
+
+- known security pattern
+- OTP/verification code
+- explicit order confirmation
+- explicit interview invitation
+- explicit university communication
+
+### Weak signals
+
+- generic words
+- generic unsubscribe
+- generic marketing language
+- isolated keywords
+
+A strong signal should generally outweigh multiple weak unrelated signals.
+
+---
+
+# 40. NEGATIVE SIGNALS
+
+Where necessary, rules may contain negative signals.
+
+Example:
+
+A generic "sale" keyword should not override a strong educational sender/domain signal.
+
+Use negative evidence carefully.
+
+Do not make the system unnecessarily complex.
+
+---
+
+# 41. UNKNOWN / UNCERTAIN EMAILS
+
+When confidence is low:
+
+Do not force an arbitrary category simply to avoid uncertainty.
+
+If the product contract allows an "unclassified" internal state, use it.
+
+If the visible category set requires one of the defined categories, choose the safest fallback and preserve low confidence.
+
+Document the behavior.
+
+Do not use Low Value as a universal unknown bucket.
+
+---
+
+# 42. NO REMOTE AI FALLBACK
+
+Do not add:
+
+```text
+Classifier fails
+ ↓
+send email to AI
+```
+
+Not in Phase 7.
+
+Optional AI fallback is Phase 26.
+
+---
+
+# 43. NO USER TRACKING
+
+Do not add classification telemetry.
+
+Do not send:
+
+- subjects
+- senders
+- body text
+- categories
+- URLs
+
+to external analytics.
+
+---
+
+# 44. TEST-FIRST CLASSIFICATION
+
+Build comprehensive unit tests.
+
+At minimum include:
+
+### Security
+
+- OTP
+- password reset
+- login alert
+- suspicious login
+- account verification
+
+### Career
+
+- job opening
+- recruiter email
+- interview invitation
+- application status
+
+### Education
+
+- college notice
+- assignment
+- exam
+- course update
+
+### Orders
+
+- order confirmation
+- shipping
+- delivery
+- invoice
+- refund
+
+### Newsletter
+
+- recurring newsletter
+- unsubscribe footer
+
+### Promotion
+
+- discount
+- sale
+- promotional campaign
+
+### Notification
+
+- routine service notification
+
+### Low Value
+
+- clearly low-value/noisy content
+
+---
+
+# 45. CONFLICT TESTS
+
+Explicitly test overlapping signals.
+
+Examples:
+
+```text
+Promotion + Order
+Newsletter + Security
+Notification + Career
+Promotion + Career
+Education + Notification
+Security + Notification
+```
+
+Verify the precedence strategy.
+
+---
+
+# 46. ADVERSARIAL TESTS
+
+Test misleading messages.
+
+For example:
+
+```text
+Subject:
+"Your account security sale is here!"
+```
+
+Do not blindly classify from one word.
+
+Also test:
+
+```text
+"Interview tips newsletter"
+```
+
+which may contain both Career and Newsletter signals.
+
+The result must follow documented rules.
+
+---
+
+# 47. MALICIOUS CONTENT TESTING
+
+Classification must safely handle:
+
+- HTML
+- script-like text
+- JavaScript URLs
+- huge strings
+- Unicode
+- unusual punctuation
+- encoded text
+
+Classification must never execute content.
+
+---
+
+# 48. PERFORMANCE TESTING
+
+Test classification with:
+
+- 100 emails
+- 1,000 emails
+- 10,000 emails where practical
+
+Measure whether classification remains reasonable.
+
+Do not block the main UI thread.
+
+If batch classification is required, use appropriate background execution.
+
+---
+
+# 49. INCREMENTAL CLASSIFICATION
+
+When new email arrives:
+
+Only classify newly changed/new normalized messages when possible.
+
+Do not reclassify the entire mailbox on every sync.
+
+However, design the system so a full reclassification can be requested later.
+
+---
+
+# 50. CLASSIFIER CACHE / DERIVED DATA
+
+Treat classification as derived data.
+
+If normalized email content changes:
+
+the classification may become stale.
+
+Design appropriate invalidation/reclassification behavior.
+
+Do not allow stale results to silently persist forever.
+
+---
+
+# 51. DATABASE INDEXING
+
+If classification queries become frequent, add appropriate indexes.
+
+Possible fields:
+
+- account ID
+- message ID
+- thread ID
+- category
+- classifier version
+
+Do not create indexes without a query/use case.
+
+---
+
+# 52. UI INTEGRATION
+
+Connect classification to the existing mail UI only enough to make the result visible/useful.
+
+For example:
+
+- category label
+- category filter entry if already appropriate
+- category shown on message detail
+
+Do not redesign the entire dashboard.
+
+Phase 11 will handle the broader information architecture.
+
+---
+
+# 53. CATEGORY VISUALS
+
+Use `design.md`.
+
+Category colors:
+
+- Action Required → red
+- Important → primary
+- Career → blue
+- Education → purple
+- Receipts & Orders → green
+- Security → amber
+- Notifications → blue/neutral
+- Newsletters → teal
+- Promotions → orange
+- Low Value → gray
+
+Do not use color as the only category indicator.
+
+Include text/icon/accessible semantics.
+
+---
+
+# 54. DARK MODE
+
+Verify category presentation in:
+
+- light mode
+- dark mode
+
+Ensure category colors remain readable and do not become overly saturated.
+
+Follow the design tokens.
+
+---
+
+# 55. EXPLANATION UI
+
+If the current UI architecture makes it straightforward, provide a basic way to inspect why an email received its category.
+
+For example:
+
+```text
+Career
+
+Why this category?
+• Sender matches a recruiting domain
+• Subject indicates an interview
+```
+
+If full explanation UI would exceed Phase 7 scope, expose the data through the domain/application layer and defer polished presentation.
+
+Do not build a complete intelligence dashboard.
+
+---
+
+# 56. CLASSIFICATION FAILURE
+
+If classification fails for one message:
+
+- do not crash synchronization
+- preserve normalized email
+- record a safe diagnostic
+- continue processing other messages
+
+Do not lose the mailbox because one email is malformed.
+
+---
+
+# 57. LOGGING
+
+Never log:
+
+- email body
+- full subject
+- sender email
+- recipient email
+- URLs
+- authentication tokens
+
+Diagnostics should use safe identifiers such as:
+
+```text
+classification rule ID
+classifier version
+internal message ID/hash where safe
+error category
+```
+
+---
+
+# 58. PRIVACY
+
+Classification must run locally.
+
+The default architecture should allow:
+
+```text
+email data
+ ↓
+local parser
+ ↓
+local classifier
+ ↓
+local database
+```
+
+No external service should receive email content.
+
+---
+
+# 59. SECURITY REVIEW
 
 Verify:
 
-- compilation
-- unit tests
-- relevant Android tests
-- lint/static checks where configured
-- debug APK generation
-
-Fix all issues introduced during Phase 3.
+- no arbitrary code execution
+- no network calls from classifier
+- no email-content logging
+- no account mixing
+- no unsafe regex behavior
+- no catastrophic regex backtracking on attacker-controlled text
+- bounded processing of very large messages
+- safe Unicode handling
 
 ---
 
-# 50. FINAL DEVICE VALIDATION
+# 60. REGEX SAFETY
 
-Install the final debug APK on the test device/emulator.
+If regular expressions are used:
 
-Run:
+- keep them simple
+- avoid catastrophic patterns
+- test worst-case strings
+- do not compile dynamic attacker-controlled regexes
+
+Do not allow user-provided content to become executable regex configuration.
+
+---
+
+# 61. RULE DOCUMENTATION
+
+Document each production rule with:
 
 ```text
+Rule ID
+Purpose
+Signals
+Strength
+Category
+Precedence
+Explanation
+Known limitations
+```
+
+This documentation may live in code comments, structured rule definitions, or project documentation depending on architecture.
+
+Avoid duplicating the same rule definition in multiple places.
+
+---
+
+# 62. SOURCE TRACEABILITY
+
+For each classification result, retain enough information to determine:
+
+```text
+Which email?
+Which account?
+Which classifier version?
+Which rule?
+Which signals?
+When classified?
+```
+
+Do not require raw email content to explain a classification.
+
+---
+
+# 63. TEST FIXTURES
+
+Create safe synthetic fixtures.
+
+Do not commit:
+
+- real user emails
+- private addresses
+- real tokens
+- private attachments
+- production mailbox dumps
+
+Use fictional test data.
+
+---
+
+# 64. DEVICE VALIDATION
+
+This is still an Android development phase.
+
+Use the complete toolchain.
+
+Perform:
+
+```text
+Gradle build
+↓
+Install Mail Organizer APK
+↓
 Launch
-→ Connect Gmail
-→ Authenticate
-→ Grant permission
-→ Return
-→ Verify connected account
-→ Restart app
-→ Verify state
-→ Disconnect
-→ Verify disconnected state
-```
-
-Capture screenshots of important states.
-
-Inspect logcat.
-
-If anything fails:
-
-```text
+↓
+Use synchronized/local test data
+↓
+Verify category presentation
+↓
+Open message
+↓
+Verify explanation where implemented
+↓
+Test account isolation
+↓
+Test offline behavior
+↓
+Capture screenshots
+↓
+Use screen recording where useful
+↓
+Inspect logcat
+↓
 Fix
-→ Build
-→ Install
-→ Retest
+↓
+Rebuild
+↓
+Reinstall
+↓
+Retest
 ```
 
-Do not mark the phase complete until the flow works.
+Do not consider unit tests alone sufficient.
 
 ---
 
-# 51. FINAL GIT REVIEW
+# 65. ADB ISOLATION
 
-From the Mail Organizer Git root:
+All ADB operations must target the Mail Organizer package.
+
+Do not:
+
+- uninstall another app
+- clear another app's data
+- inspect another app's private storage
+- alter another project's runtime
+- overwrite another project's reverse proxy
+
+---
+
+# 66. SCREENSHOT QA
 
 Inspect:
+
+- category labels
+- typography
+- category colors
+- spacing
+- unread state
+- dark mode
+- long category names
+- small screen sizes
+- large text
+
+Fix visual issues.
+
+---
+
+# 67. ACCESSIBILITY QA
+
+Verify:
+
+- category is not communicated by color alone
+- screen reader can identify category
+- explanations are understandable
+- touch targets remain usable
+- text scaling works
+- contrast remains acceptable
+
+---
+
+# 68. REGRESSION TESTING
+
+After classification is integrated, verify Phase 6 still works.
+
+Test:
+
+- Mail list
+- Thread view
+- Message detail
+- Offline viewing
+- Account switching
+- HTML rendering
+- Back navigation
+
+Classification must not break the core mail experience.
+
+---
+
+# 69. BUILD AND TEST
+
+Run the Mail Organizer project's own:
+
+- Gradle build
+- unit tests
+- Android tests
+- lint/static analysis where configured
+
+Fix errors caused by this phase.
+
+Do not modify unrelated project configurations to make the build pass.
+
+---
+
+# 70. GIT REVIEW
+
+From the Mail Organizer Git root:
 
 ```text
 git status
@@ -1241,189 +1655,218 @@ git diff
 
 Verify:
 
-- only intended Mail Organizer files changed
-- no secrets
-- no OAuth tokens
-- no generated credentials
-- no APK artifacts accidentally committed
-- no unrelated project modifications
+- only Mail Organizer files changed
+- no private email data added
+- no secrets added
+- no unrelated project files changed
+- no generated artifacts accidentally committed
 
 Do not commit unless explicitly instructed.
 
 ---
 
-# 52. UPDATE `spec.md`
+# 71. UPDATE `editor-rules.md`
 
-After verification:
+Before completing the phase, update `editor-rules.md` with any permanent classification rules discovered.
 
-Update the Phase 3 section in `spec.md`.
+At minimum preserve:
 
-Only mark tasks complete after actual verification.
-
-Do not mark Phase 4 or future phases complete.
-
----
-
-# 53. UPDATE PROJECT STATUS
-
-Update `docs/development-status.md` if present.
-
-Record:
-
-- OAuth implementation state
-- Gmail API authorization state
-- test configuration
-- known limitations
-- security decisions
-- unresolved issues
-
-Do not record sensitive credentials.
-
----
-
-# 54. UPDATE `editor-rules.md`
-
-Before closing Phase 3, update `editor-rules.md` with any permanent rules discovered during this implementation.
-
-Especially preserve:
-
-- OAuth least privilege
-- Gmail read-only by default
-- token security
-- Google Cloud project isolation
-- multi-account authorization isolation
-- no password collection
-- no Gmail scraping
-- no AccessibilityService
+- deterministic-first classification
+- local-only classification
+- explainability
+- versioning
+- account isolation
+- user override compatibility
+- no remote AI
+- safe signal extraction
+- bounded processing
 - no sensitive logging
-- development/production OAuth separation
-- device/package isolation
-- multi-project workspace isolation
-- sequential phase execution
 
 Do this yourself.
 
-Do not ask the user to manually copy anything.
+---
+
+# 72. UPDATE `spec.md`
+
+Only after verification:
+
+- mark Phase 7 tasks complete
+- record implementation decisions
+- record deferred work
+- record known limitations
+
+Do not mark Phase 8 or later complete.
 
 ---
 
-# 55. PHASE 3 ACCEPTANCE CRITERIA
+# 73. UPDATE DEVELOPMENT STATUS
 
-Phase 3 is complete only when:
+If `docs/development-status.md` exists, update it with:
 
-### Google Cloud
+- classifier architecture
+- category definitions
+- precedence strategy
+- classifier version
+- persistence model
+- test coverage
+- known limitations
+- deferred improvements
 
-- [ ] correct Mail Organizer Google Cloud project identified
-- [ ] Gmail API enabled
-- [ ] OAuth configuration established
-- [ ] Android OAuth identity verified
-- [ ] development/test configuration established
+Do not include private email content.
 
-### Authentication
+---
 
-- [ ] official Google OAuth flow works
-- [ ] account selection works
-- [ ] successful authorization works
-- [ ] cancellation handled
-- [ ] denial handled
-- [ ] refresh/invalid authorization handled appropriately
-- [ ] disconnect works
-- [ ] account identity persisted correctly
+# 74. PHASE 7 ACCEPTANCE CRITERIA
 
-### Permissions
+Phase 7 is complete only when:
 
-- [ ] least-privilege Gmail scope used
-- [ ] read-only Gmail access only
-- [ ] no Gmail write scope
-- [ ] no unrelated Google scopes
+### Architecture
 
-### Security
+- [ ] classification engine is independent of UI
+- [ ] normalized email model is the classifier input
+- [ ] deterministic rules are structured
+- [ ] rule IDs exist
+- [ ] classifier version exists
+- [ ] result model exists
+- [ ] explanation data exists
+- [ ] account scope is preserved
 
-- [ ] tokens securely handled
-- [ ] tokens never logged
-- [ ] tokens not stored in ordinary Room tables
-- [ ] no passwords
-- [ ] no cookies
-- [ ] no Gmail scraping
-- [ ] no AccessibilityService
-- [ ] no secrets committed
+### Categories
 
-### Gmail API
+- [ ] Action Required
+- [ ] Important
+- [ ] Career
+- [ ] Education
+- [ ] Receipts & Orders
+- [ ] Security
+- [ ] Notifications
+- [ ] Newsletters
+- [ ] Promotions
+- [ ] Low Value
 
-- [ ] authenticated Gmail API client established
-- [ ] minimal API smoke test works
-- [ ] API failure handled
-- [ ] no mailbox synchronization implemented
+are supported according to the product contract.
 
-### Multi-account
+### Determinism
 
-- [ ] account identity isolated
-- [ ] authorization state isolated
-- [ ] Account A/B testing performed where possible
+- [ ] same input produces same result
+- [ ] no randomness
+- [ ] no network dependency
+- [ ] no remote AI
 
-### UI
+### Signals
 
-- [ ] connect state
-- [ ] connecting state
-- [ ] connected state
-- [ ] denied state
-- [ ] error state
-- [ ] disconnect flow
-- [ ] accessibility
-- [ ] light/dark theme
+- [ ] sender
+- [ ] domain
+- [ ] subject
+- [ ] normalized body
+- [ ] Gmail category
+- [ ] labels
+- [ ] URLs
+- [ ] unsubscribe
+- [ ] attachment metadata where applicable
 
-### Device
+are supported appropriately.
 
-- [ ] Gradle build passes
-- [ ] APK installed
-- [ ] app launched
-- [ ] OAuth tested on device/emulator
+### Safety
+
+- [ ] no email content sent externally
+- [ ] no unsafe code execution
+- [ ] regex safety reviewed
+- [ ] large inputs handled safely
+- [ ] malformed messages do not crash classifier
+- [ ] sensitive email content not logged
+
+### Persistence
+
+- [ ] classification stored locally
+- [ ] idempotent updates
+- [ ] classifier version retained
+- [ ] account isolation verified
+- [ ] reclassification architecture supported
+
+### Testing
+
+- [ ] security tests
+- [ ] career tests
+- [ ] education tests
+- [ ] order tests
+- [ ] newsletter tests
+- [ ] promotion tests
+- [ ] notification tests
+- [ ] low-value tests
+- [ ] conflict tests
+- [ ] adversarial tests
+- [ ] Unicode tests
+- [ ] malformed-content tests
+- [ ] performance tests
+
+### Android/device
+
+- [ ] Gradle build succeeds
+- [ ] APK installs
+- [ ] app launches
+- [ ] classifications appear correctly
 - [ ] screenshots inspected
+- [ ] screen recording used where useful
 - [ ] logcat inspected
-- [ ] runtime issues fixed
+- [ ] Phase 6 functionality still works
+- [ ] offline behavior still works
 
 ### Workspace safety
 
-- [ ] only Mail Organizer project modified
 - [ ] sibling projects untouched
-- [ ] sibling Gradle configurations untouched
-- [ ] unrelated SDK configurations untouched
-- [ ] unrelated device applications untouched
-- [ ] unrelated Google Cloud projects untouched
+- [ ] sibling Gradle files untouched
+- [ ] sibling SDK configuration untouched
+- [ ] unrelated apps untouched
+- [ ] unrelated Git repositories untouched
 
 ---
 
-# 56. FINAL PHASE REPORT
+# 75. FINAL PHASE REPORT
 
 Provide:
 
-## Phase 3 Status
+## Phase 7 Status
 
 `COMPLETE` / `PARTIAL` / `BLOCKED`
 
-## OAuth Architecture
+## Classification Architecture
 
-Explain the implemented authentication flow.
+Explain the implemented pipeline.
 
-## Gmail Permission
+## Categories
 
-State exactly which Gmail scope is currently requested.
+List the supported categories and their behavior.
 
-## Google Cloud Configuration
+## Rule System
 
-Describe the configured components without exposing secrets.
+Explain:
 
-## Account Handling
+- rule IDs
+- signal extraction
+- precedence
+- scoring if used
+- classifier version
 
-Explain account persistence and isolation.
+## Explainability
 
-## Token Security
+Explain how the engine records why a category was selected.
 
-Explain where token handling occurs without exposing credentials.
+## Persistence
 
-## Gmail API
+Explain how classification is stored and associated with accounts/messages.
 
-Report the minimal authenticated API test.
+## User Override Readiness
+
+Explain how later corrections can override classifier output without destroying the original result.
+
+## Privacy
+
+Confirm that classification is local and no email content is sent to external services.
+
+## Testing
+
+Report classification test coverage and important edge cases.
 
 ## Device Validation
 
@@ -1433,18 +1876,19 @@ Report:
 - Android/API level
 - build
 - installation
-- OAuth test
-- disconnect/reconnect
+- runtime validation
 - screenshots
-- logcat
+- screen recording where used
+- logcat review
+- regression results
 
-## Security Validation
+## Security
 
-Report the security checks.
+Report the security review.
 
 ## Workspace Isolation
 
-Explicitly confirm that sibling Android projects were not modified.
+Explicitly confirm unrelated projects were not modified.
 
 ## Files Changed
 
@@ -1458,56 +1902,78 @@ List unresolved issues.
 
 Especially:
 
-- mailbox synchronization
-- classification
-- search
+- Company & Sender Intelligence
+- advanced priority
+- Action Required engine
+- user corrections UI
+- rules UI
+- advanced search
 - Calendar
 - Tasks
-- AI
+- AI fallback
+- automation
 - Gmail write operations
 
 ## Acceptance Criteria
 
-Show every Phase 3 criterion and its status.
+Show every Phase 7 criterion and its status.
 
 ## Next Phase
 
 The next incomplete phase is:
 
-**Phase 4 — Gmail Synchronization Engine**
+**Phase 8 — Company & Sender Intelligence**
 
-Do not execute Phase 4 automatically.
+Do not execute it automatically.
 
 ---
 
 # FINAL OPERATING MODEL
 
-Continue following this exact lifecycle:
+Continue following this exact workflow:
 
 ```text
 DISCOVER INSTRUCTION FOLDER
         ↓
-READ PROJECT RULES
+READ REQUIREMENTS
+        ↓
+READ SPEC
+        ↓
+READ DESIGN
+        ↓
+READ EDITOR RULES
         ↓
 IDENTIFY MAIL ORGANIZER ROOT
         ↓
-IDENTIFY CURRENT PHASE
+VERIFY PREVIOUS PHASE
         ↓
-READ CURRENT PHASE PROMPT
+READ ONLY CURRENT PHASE
         ↓
-IMPLEMENT ONLY CURRENT PHASE
+INSPECT ACTUAL PROJECT STATE
+        ↓
+IMPLEMENT PHASE 7 ONLY
+        ↓
+RUN UNIT TESTS
+        ↓
+RUN ANDROID TESTS
         ↓
 GRADLE BUILD
         ↓
 INSTALL ONLY MAIL ORGANIZER
         ↓
-RUN ON DEVICE
+RUN ON DEVICE / EMULATOR
         ↓
-SCREENSHOT / SCREEN RECORD
+VERIFY CLASSIFICATION
+        ↓
+VERIFY OFFLINE BEHAVIOR
+        ↓
+VERIFY ACCOUNT ISOLATION
+        ↓
+CAPTURE SCREENSHOTS
+        ↓
+SCREEN RECORD WHERE USEFUL
         ↓
 INSPECT LOGCAT
-        ↓
-TEST
         ↓
 FIX
         ↓
@@ -1517,31 +1983,40 @@ REINSTALL
         ↓
 RETEST
         ↓
+REGRESSION TEST PHASE 6
+        ↓
 SECURITY REVIEW
         ↓
-GIT REVIEW
+MULTI-PROJECT ISOLATION REVIEW
         ↓
-UPDATE RULES + STATUS
+UPDATE EDITOR-RULES.MD
+        ↓
+UPDATE SPEC.MD
+        ↓
+UPDATE DEVELOPMENT STATUS
         ↓
 STOP
 ```
+**Do not implement Phase 8.**
 
-Do not implement the entire application in one shot.
+**Do not implement company intelligence.**
 
-Do not skip phases.
+**Do not implement advanced priority.**
 
-Do not touch sibling projects.
+**Do not implement the full Action Required engine.**
 
-Do not alter unrelated Android SDK/build configuration.
+**Do not implement user correction UI.**
 
-Do not install/uninstall unrelated applications.
+**Do not implement Calendar or Tasks.**
 
-Do not weaken Google's OAuth security.
+**Do not implement AI classification.**
 
-Do not request permissions that the current phase does not need.
+**Do not implement Gmail write operations.**
 
-Do not mark a phase complete without real verification.
+**Do not touch sibling Android projects.**
 
-**Phase 3 ends after Gmail authorization is working and verified.**
+**Do not send email content to external services.**
 
-Stop there.
+**Do not consider Gradle success alone sufficient.**
+
+Phase 7 is complete only when deterministic classification works reliably on the actual Mail Organizer application, is explainable, locally processed, persisted safely, tested against conflicting/malformed inputs, and verified on an Android device/emulator.
