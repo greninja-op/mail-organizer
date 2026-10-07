@@ -1,3 +1,7 @@
+## Rust-first desktop requirement
+
+Rust is the primary implementation language for this phase and for the reusable Windows/macOS desktop core. Swift/SwiftUI is limited to native macOS UI and OS integration.
+
 ## Mandatory Rust desktop architecture
 
 **Rust is the primary implementation language for this macOS phase.** All platform-neutral business/data/application logic must live in the reusable Rust desktop core. Swift/SwiftUI is reserved for native macOS UI and OS-facing integration. Swift must not duplicate Rust business rules. The Rust core must be designed for reuse by Windows.
