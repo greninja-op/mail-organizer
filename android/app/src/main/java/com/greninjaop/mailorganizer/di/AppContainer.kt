@@ -445,6 +445,16 @@ class AppContainer(private val appContext: Context) {
         )
     }
 
+    // ---- Phase 21: Waiting-for-Reply & Conversation Intelligence ----
+    val conversationUseCase: com.greninjaop.mailorganizer.domain.conversation.ConversationIntelligenceUseCase by lazy {
+        com.greninjaop.mailorganizer.domain.conversation.ConversationIntelligenceUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            accounts = accountRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
     private companion object {
         const val DATABASE_NAME = "mail_organizer.db"
     }
