@@ -124,6 +124,12 @@ Never claim tests or device verification that were not actually run. Never touch
   reorder; schema v5→v6 additive migration; ui/rules/ correction bottom
   sheet, rules list, rule editor with live preview; ThreadScreen "Correct"
   affordance + "Set by you" markers; Settings → Rules route; 68 unit tests)
-- [ ] 13–30 — not started
+- [x] 13 Meeting & Deadline Extraction — complete, on main
+  (core/temporal/ deterministic extractor v1: 14 types, DateTimeParser with
+  documented ambiguity policy, reference time = message received timestamp;
+  domain/temporal/ use cases + hand-rolled payload JSON codec; reuses Phase 2
+  extracted_items table — no migration; ui/mail/TemporalSection with "why"
+  explanations in the expanded message view; 59 new unit tests)
+- [ ] 14–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.

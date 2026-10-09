@@ -179,3 +179,24 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
   not a transient empty initial value.
 - Actions screen is view-only: no external execution (Phase 14 seam);
   never let email content authorize external actions.
+
+## Phase 13 — Meeting & deadline extraction (permanent rules)
+- Temporal intelligence is deterministic and on-device: total regexes with
+  bounded quantifiers, no network, no LLM, no fake AI. Ambiguity is
+  documented policy, never silent guessing.
+- Reference time for relative dates is the message's received timestamp
+  (never "now" — mail is history). Record it in the extraction context;
+  any future re-interpretation must re-resolve from that same instant.
+- Never invent: no end times, no timezones, no precision beyond what the
+  text states. 12AM = midnight, 12PM = noon (documented). Ambiguous
+  numeric dates (`03/04/2026`) resolve day-first with LOW confidence.
+- Extraction writes structured intelligence only (extracted_items) — no
+  calendar/task/email side effects. Those are later phases' clean seams.
+- Schema rule (Phase 13): enum extension is safe (stored by name, additive
+  only) — reusing an existing table avoids a migration. Queryable
+  attributes stay typed columns; verbose detail lives in versioned JSON
+  payloads (hand-rolled codec; never the query key).
+- Extractor is versioned: VERSION bumps when behavior changes;
+  idempotent re-extraction skips rows at the current version; user-completed
+  rows are never replaced. Account-isolated; failures degrade silently to
+  the UI.

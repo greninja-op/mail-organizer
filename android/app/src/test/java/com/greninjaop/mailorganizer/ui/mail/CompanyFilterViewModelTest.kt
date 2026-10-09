@@ -17,6 +17,8 @@ import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMessageUseCase
+import com.greninjaop.mailorganizer.domain.temporal.ExtractMailboxUseCase
+import com.greninjaop.mailorganizer.domain.temporal.ExtractTemporalUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -91,6 +93,16 @@ class CompanyFilterViewModelTest {
             prioritizeMailbox = PrioritizeMailboxUseCase(
                 mail = mail,
                 prioritizeMessage = PrioritizeMessageUseCase(
+                    mail = mail,
+                    intelligence = intelligence,
+                    dispatchers = dispatchers(),
+                    clock = { 1_800_000_000_000L },
+                ),
+                dispatchers = dispatchers(),
+            ),
+            extractMailbox = ExtractMailboxUseCase(
+                mail = mail,
+                extractMessage = ExtractTemporalUseCase(
                     mail = mail,
                     intelligence = intelligence,
                     dispatchers = dispatchers(),
