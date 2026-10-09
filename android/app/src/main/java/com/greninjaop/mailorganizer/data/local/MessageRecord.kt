@@ -74,4 +74,12 @@ data class MessageRecord(
     val starred: Boolean = false,
     val labels: List<String> = emptyList(),
     val sizeBytes: Long? = null,
+    /**
+     * Detected company id (Phase 8, [CompanyDetector]); null when the
+     * sender is not attributable to a company (personal mailbox) or the
+     * message hasn't been through company intelligence yet. Set by
+     * [com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase],
+     * never by sync or classification directly.
+     */
+    val companyId: String? = null,
 )

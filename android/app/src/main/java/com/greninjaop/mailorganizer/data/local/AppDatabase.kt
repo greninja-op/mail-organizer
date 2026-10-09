@@ -18,6 +18,8 @@ import androidx.room.TypeConverters
  *   user rules/corrections, extracted items. See [Migrations].
  * - v3 (Phase 5): parser output columns on `messages` (`bodyHtml`,
  *   `attachments` metadata). See [Migrations.MIGRATION_2_3].
+ * - v4 (Phase 8): company-intelligence link on `messages` (`companyId`,
+ *   nullable) plus its index. See [Migrations.MIGRATION_3_4].
  *
  * Schema is exported to `app/schemas` so migrations stay verifiable.
  * Destructive fallback is deliberately NOT enabled: production migrations
@@ -38,7 +40,7 @@ import androidx.room.TypeConverters
         UserCorrectionRecord::class,
         ExtractedItemRecord::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)

@@ -15,6 +15,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * for the parser output (`bodyHtml`, `attachments`). Existing rows keep
  * their data; the new columns default to NULL/empty.
  *
+ * v3 → v4 (Phase 8) is purely additive: one nullable column on `messages`
+ * (`companyId`, the detected company link) plus its index. Existing rows
+ * keep their data; `companyId` defaults to NULL ("not yet processed").
+ *
  * Production migrations must preserve user data; destructive fallback is
  * deliberately NOT enabled (see AppDatabase builder configuration).
  */
@@ -331,6 +335,24 @@ object Migrations {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE messages ADD COLUMN bodyHtml TEXT")
             db.execSQL("ALTER TABLE messages ADD COLUMN attachments TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
+    /**
+     * v3 → v4 (Phase 8): company-intelligence link on `messages`.
+     *
+     * Purely additive — existing rows are untouched; `companyId` defaults
+     * to NULL ("not yet processed by company intelligence"). The index
+     * supports the company filter queries (`observeByCompany`,
+     * per-category company counts).
+     */
+    val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN companyId TEXT")
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_messages_companyId " +
+                    "ON messages(companyId)",
+            )
         }
     }
 }
