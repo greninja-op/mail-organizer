@@ -144,6 +144,54 @@ interface MessageDao {
     )
     suspend fun getUnprioritized(accountId: String, limit: Int): List<MessageRecord>
 
+    // ---- Phase 12 rule engine support ----
+    // Candidate-message lookups for rule preview and safe reprocessing.
+    // All account-scoped, bounded, newest-first. fromAddress holds the raw
+    // address; domain matching is case-insensitive via LOWER.
+
+    /** Message ids from one exact sender address (Phase 12). */
+    @Query(
+        "SELECT messageId FROM messages WHERE accountId = :accountId " +
+            "AND LOWER(fromAddress) = LOWER(:email) " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getIdsBySenderEmail(
+        accountId: String,
+        email: String,
+        limit: Int,
+    ): List<String>
+
+    /** Message ids from one sender domain (Phase 12). */
+    @Query(
+        "SELECT messageId FROM messages WHERE accountId = :accountId " +
+            "AND LOWER(fromAddress) LIKE '%@' || LOWER(:domain) " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getIdsBySenderDomain(
+        accountId: String,
+        domain: String,
+        limit: Int,
+    ): List<String>
+
+    /** Message ids attributed to one company (Phase 12). */
+    @Query(
+        "SELECT messageId FROM messages WHERE accountId = :accountId " +
+            "AND companyId = :companyId " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getIdsByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int,
+    ): List<String>
+
+    /** All message ids for an account, bounded (Phase 12 fallback scan). */
+    @Query(
+        "SELECT messageId FROM messages WHERE accountId = :accountId " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getIdsByAccount(accountId: String, limit: Int): List<String>
+
     /**
      * Messages carrying one Gmail label. Labels are stored as a U+001F
      * (char(31)) delimited string ([MoConverters]); wrapping both sides in

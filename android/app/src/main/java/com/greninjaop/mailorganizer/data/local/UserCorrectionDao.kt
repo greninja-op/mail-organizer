@@ -50,4 +50,20 @@ interface UserCorrectionDao {
         scopeKey: String,
         field: CorrectionField,
     ): UserCorrectionRecord?
+
+    /** All corrections for one account (Phase 12 batch lookup). */
+    @Query("SELECT * FROM user_corrections WHERE accountId = :accountId")
+    suspend fun getAllByAccount(accountId: String): List<UserCorrectionRecord>
+
+    /** Deletes one correction (Phase 12 undo). No-op when absent. */
+    @Query(
+        "DELETE FROM user_corrections WHERE accountId = :accountId AND scope = :scope " +
+            "AND scopeKey = :scopeKey AND field = :field",
+    )
+    suspend fun delete(
+        accountId: String,
+        scope: CorrectionScope,
+        scopeKey: String,
+        field: CorrectionField,
+    )
 }

@@ -386,4 +386,28 @@ object Migrations {
             )
         }
     }
+
+    /**
+     * v5 → v6 (Phase 12): user rules & corrections engine columns.
+     *
+     * - `user_rules`: structured rule vocabulary — `name`, `conditionsJson`,
+     *   `actionsJson` (see `RuleJson`), explicit `ruleOrder` precedence,
+     *   `ruleVersion`, and `source`. Legacy columns stay untouched; existing
+     *   rows get `ruleOrder = id` so their relative precedence is the
+     *   deterministic insertion order they already had.
+     *
+     * Purely additive — no mail, classification, sender, company, priority,
+     * or search data is touched.
+     */
+    val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN conditionsJson TEXT NOT NULL DEFAULT '[]'")
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN actionsJson TEXT NOT NULL DEFAULT '[]'")
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN ruleOrder INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN ruleVersion INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("ALTER TABLE user_rules ADD COLUMN source TEXT NOT NULL DEFAULT 'MANUAL'")
+            db.execSQL("UPDATE user_rules SET ruleOrder = id")
+        }
+    }
 }

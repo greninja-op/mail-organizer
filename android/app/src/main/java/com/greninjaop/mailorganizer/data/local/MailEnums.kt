@@ -85,6 +85,15 @@ enum class RuleType {
     SENDER_TO_ACTION_REQUIRED,
 }
 
+/** Where a user-defined rule came from (Phase 12). */
+enum class RuleSource {
+    /** Created manually in the Rules UI. */
+    MANUAL,
+
+    /** Created from a correction via "also create a rule". */
+    FROM_CORRECTION,
+}
+
 /** What a user correction applies to. */
 enum class CorrectionScope {
     SENDER,
@@ -93,11 +102,19 @@ enum class CorrectionScope {
     MESSAGE,
 }
 
-/** Which field a user correction overrides. */
+/**
+ * Which field a user correction overrides.
+ *
+ * ACTION_REQUIRED is reserved for the Phase 14 action-item engine; in
+ * Phase 12 the user expresses action-required intent through CATEGORY
+ * (correcting to/from [MailCategory.ACTION_REQUIRED]).
+ */
 enum class CorrectionField {
     CATEGORY,
     PRIORITY,
     ACTION_REQUIRED,
+    /** Company display-name override (Phase 12; maps to CompanyRecord.userOverrideName). */
+    COMPANY_NAME,
 }
 
 /** Structured-extraction item kinds (extraction engine is Phase 13). */
