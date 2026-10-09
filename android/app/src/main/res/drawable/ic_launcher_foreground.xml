@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hand-authored abstract mark for the Phase 0 launcher icon.
+     A simple geometric "M" — not a Google/Gmail mark, not AI-generated.
+     Final product iconography is a design task for a later phase. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M30,74 L30,36 L54,56 L78,36 L78,74" />
+</vector>

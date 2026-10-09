@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base activity theme. The real visual system lives in Compose
+         (ui.theme.MailOrganizerTheme); this only avoids an action bar flash. -->
+    <style name="Theme.MailOrganizer" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
