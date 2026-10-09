@@ -21,6 +21,17 @@ interface CompanyDao {
     @Query("SELECT * FROM companies WHERE companyId = :companyId")
     suspend fun getById(companyId: String): CompanyRecord?
 
+    /**
+     * Company row for one canonical domain in one account (Phase 8).
+     * The (accountId, normalizedDomain) unique index makes this the
+     * canonical lookup for detection output.
+     */
+    @Query(
+        "SELECT * FROM companies WHERE accountId = :accountId " +
+            "AND normalizedDomain = :normalizedDomain",
+    )
+    suspend fun getByDomain(accountId: String, normalizedDomain: String): CompanyRecord?
+
     @Query(
         "SELECT * FROM companies WHERE accountId = :accountId " +
             "ORDER BY pinned DESC, canonicalName ASC LIMIT :limit",

@@ -3,6 +3,7 @@ package com.greninjaop.mailorganizer.data.repository
 import androidx.room.withTransaction
 import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.data.local.AppDatabase
+import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.local.MessageRecord
 import com.greninjaop.mailorganizer.data.local.ThreadRecord
 import kotlinx.coroutines.flow.Flow
@@ -67,6 +68,61 @@ interface MailRepository {
 
     /** Messages carrying one Gmail label (e.g. "SPAM", "CATEGORY_SOCIAL"). */
     fun observeByLabel(accountId: String, label: String, limit: Int = 50): Flow<List<MessageRecord>>
+
+    // ---- Phase 8 company intelligence support ----
+
+    /**
+     * Links a message to its detected company (null clears the link).
+     * Written only by the company intelligence use case.
+     */
+    suspend fun setMessageCompanyId(messageId: String, companyId: String?)
+
+    /**
+     * Messages not yet processed by company intelligence. Bounded; newest
+     * first. Used by the incremental attribution pass.
+     */
+    suspend fun getMessagesWithoutCompany(accountId: String, limit: Int): List<MessageRecord>
+
+    /** One company's mail, newest first, bounded (company filter). */
+    fun observeMessagesByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int = 50,
+    ): Flow<List<MessageRecord>>
+
+    /**
+     * One company's mail inside one classification category — queried
+     * directly so the list always matches the filter-chip counts.
+     */
+    fun observeMessagesByCompanyAndCategory(
+        accountId: String,
+        category: MailCategory,
+        companyId: String,
+        limit: Int = 50,
+    ): Flow<List<MessageRecord>>
+
+    /** One company's mail inside one Gmail-label destination. */
+    fun observeMessagesByCompanyAndLabel(
+        accountId: String,
+        companyId: String,
+        label: String,
+        limit: Int = 50,
+    ): Flow<List<MessageRecord>>
+
+    /**
+     * Global per-company message counts inside one classification category.
+     * Never page-limited — filter chips must show honest numbers.
+     */
+    suspend fun companyCountsForCategory(
+        accountId: String,
+        category: MailCategory,
+    ): Map<String, Int>
+
+    /** Global per-company counts inside one Gmail-label destination. */
+    suspend fun companyCountsForLabel(
+        accountId: String,
+        label: String,
+    ): Map<String, Int>
 }
 
 class RoomMailRepository(
@@ -182,5 +238,58 @@ class RoomMailRepository(
             for (gmailId in gmailIds) db.messageDao().deleteByGmailId(accountId, gmailId)
             threadIds
         }
+    }
+
+    // ---- Phase 8 company intelligence support ----
+
+    override suspend fun setMessageCompanyId(messageId: String, companyId: String?) =
+        withContext(dispatchers.io) {
+            db.messageDao().setCompanyId(messageId, companyId)
+        }
+
+    override suspend fun getMessagesWithoutCompany(
+        accountId: String,
+        limit: Int,
+    ): List<MessageRecord> = withContext(dispatchers.io) {
+        db.messageDao().getWithoutCompany(accountId, limit)
+    }
+
+    override fun observeMessagesByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> =
+        db.messageDao().observeByCompany(accountId, companyId, limit)
+
+    override fun observeMessagesByCompanyAndCategory(
+        accountId: String,
+        category: MailCategory,
+        companyId: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> =
+        db.messageDao().observeByCompanyAndCategory(accountId, category, companyId, limit)
+
+    override fun observeMessagesByCompanyAndLabel(
+        accountId: String,
+        companyId: String,
+        label: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> =
+        db.messageDao().observeByCompanyAndLabel(accountId, companyId, label, limit)
+
+    override suspend fun companyCountsForCategory(
+        accountId: String,
+        category: MailCategory,
+    ): Map<String, Int> = withContext(dispatchers.io) {
+        db.messageDao().companyCountsForCategory(accountId, category)
+            .associate { it.companyId to it.messageCount }
+    }
+
+    override suspend fun companyCountsForLabel(
+        accountId: String,
+        label: String,
+    ): Map<String, Int> = withContext(dispatchers.io) {
+        db.messageDao().companyCountsForLabel(accountId, label)
+            .associate { it.companyId to it.messageCount }
     }
 }

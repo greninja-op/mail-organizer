@@ -128,4 +128,104 @@ interface MessageDao {
             "ORDER BY timestampEpochMs DESC LIMIT :limit",
     )
     fun observeByLabel(accountId: String, label: String, limit: Int): Flow<List<MessageRecord>>
+
+    // ---- Phase 8 company intelligence support ----
+
+    /**
+     * Links a message to its detected company (Phase 8). Null clears the
+     * link (personal sender, or re-processing). Set only by
+     * [com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase].
+     */
+    @Query("UPDATE messages SET companyId = :companyId WHERE messageId = :messageId")
+    suspend fun setCompanyId(messageId: String, companyId: String?)
+
+    /**
+     * Messages not yet processed by company intelligence (incremental,
+     * phase-style bounded pass). Newest first so fresh mail is
+     * attributed first.
+     */
+    @Query(
+        "SELECT * FROM messages WHERE accountId = :accountId AND companyId IS NULL " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getWithoutCompany(accountId: String, limit: Int): List<MessageRecord>
+
+    /** One company's mail, newest first, bounded (company filter UI). */
+    @Query(
+        "SELECT * FROM messages WHERE accountId = :accountId AND companyId = :companyId " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>>
+
+    /**
+     * One company's mail inside one classification category (company
+     * filter applied to a category destination). Queried directly — never
+     * derived by filtering a page — so the list always matches the chip
+     * counts.
+     */
+    @Query(
+        "SELECT m.* FROM messages m JOIN classifications c ON c.messageId = m.messageId " +
+            "WHERE m.accountId = :accountId AND c.category = :category " +
+            "AND m.companyId = :companyId ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeByCompanyAndCategory(
+        accountId: String,
+        category: MailCategory,
+        companyId: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>>
+
+    /**
+     * One company's mail inside one Gmail-label destination (Social/Spam).
+     * Same direct-query contract as [observeByCompanyAndCategory].
+     */
+    @Query(
+        "SELECT * FROM messages WHERE accountId = :accountId AND companyId = :companyId AND " +
+            "instr(char(31) || labels || char(31), char(31) || :label || char(31)) > 0 " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeByCompanyAndLabel(
+        accountId: String,
+        companyId: String,
+        label: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>>
+
+    /**
+     * Per-company message counts inside one classification category
+     * (company filter chips, e.g. Promotional → Google 12). Counts are
+     * global for the account+category, not page-limited — the chips must
+     * never show fabricated numbers.
+     */
+    @Query(
+        "SELECT m.companyId AS companyId, COUNT(*) AS messageCount " +
+            "FROM messages m JOIN classifications c ON c.messageId = m.messageId " +
+            "WHERE m.accountId = :accountId AND c.category = :category " +
+            "AND m.companyId IS NOT NULL GROUP BY m.companyId",
+    )
+    suspend fun companyCountsForCategory(
+        accountId: String,
+        category: MailCategory,
+    ): List<CompanyMessageCount>
+
+    /**
+     * Per-company message counts inside one Gmail-label destination
+     * (Social → CATEGORY_SOCIAL, Spam → SPAM). Same honesty contract as
+     * [companyCountsForCategory]; the label match reuses the exact
+     * char(31)-delimited matching from [observeByLabel].
+     */
+    @Query(
+        "SELECT m.companyId AS companyId, COUNT(*) AS messageCount FROM messages m " +
+            "WHERE m.accountId = :accountId AND " +
+            "instr(char(31) || m.labels || char(31), char(31) || :label || char(31)) > 0 " +
+            "AND m.companyId IS NOT NULL GROUP BY m.companyId",
+    )
+    suspend fun companyCountsForLabel(
+        accountId: String,
+        label: String,
+    ): List<CompanyMessageCount>
 }

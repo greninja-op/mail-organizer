@@ -43,8 +43,12 @@ object DeterministicClassifier {
      * the use case reclassifies rows stamped with an older version.
      *
      * v1 (2026-10-09): initial 30-rule deterministic set.
+     * v2 (2026-10-09, Phase 8): added IMPORTANT_RECURRING_SENDER — the
+     *   recurring-sender signal is now real (sender frequency from local
+     *   mail) instead of hard-coded false. v1 rows are eligible for
+     *   reclassification so the new signal applies without a resync.
      */
-    const val VERSION = 1
+    const val VERSION = 2
 
     /**
      * Explicit conflict-resolution precedence, highest first (phase §13).
@@ -74,15 +78,20 @@ object DeterministicClassifier {
      * failures degrade to UNCLASSIFIED/LOW instead of crashing the caller
      * (phase §56).
      *
+     * @param isRecurringSender real sender-frequency signal (Phase 8):
+     *   true when the sender has crossed [SenderIntelligence]'s recurring
+     *   threshold in this account's local mail. Defaults to false so
+     *   callers without sender history keep Phase 7 behavior.
      * @param clock injected timestamp source (tests fix it; production
      *   passes System::currentTimeMillis).
      */
     fun classify(
         input: ClassificationInput,
+        isRecurringSender: Boolean = false,
         clock: () -> Long = System::currentTimeMillis,
     ): ClassificationResult {
         return try {
-            classifyOrThrow(input, clock)
+            classifyOrThrow(input, isRecurringSender, clock)
         } catch (t: Throwable) {
             ClassificationResult(
                 category = ClassifierCategory.UNCLASSIFIED,
@@ -99,9 +108,10 @@ object DeterministicClassifier {
 
     private fun classifyOrThrow(
         input: ClassificationInput,
+        isRecurringSender: Boolean,
         clock: () -> Long,
     ): ClassificationResult {
-        val signals = SignalExtractor.extract(input)
+        val signals = SignalExtractor.extract(input, isRecurringSender)
         val now = safeClock(clock)
 
         // 1. Evaluate every rule independently (order-independent).

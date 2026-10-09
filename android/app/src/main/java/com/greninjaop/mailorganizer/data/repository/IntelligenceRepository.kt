@@ -35,10 +35,31 @@ interface IntelligenceRepository {
     suspend fun upsertSender(sender: SenderRecord)
     fun observeTopSenders(accountId: String, limit: Int = 50): Flow<List<SenderRecord>>
 
+    /**
+     * Sender row for one normalized address (Phase 8), or null when never
+     * seen. Used to derive the real recurring-sender signal.
+     */
+    suspend fun getSenderByEmail(accountId: String, normalizedEmail: String): SenderRecord?
+
+    /**
+     * Records one observed message from a sender (Phase 8) — insert or
+     * atomic increment. Returns the stored row.
+     */
+    suspend fun recordSenderMessage(
+        accountId: String,
+        emailAddress: String,
+        normalizedEmail: String,
+        displayName: String?,
+        domain: String,
+    ): SenderRecord
+
     // companies
     suspend fun upsertCompany(company: CompanyRecord)
     fun observeCompanyFilterList(accountId: String, limit: Int = 100): Flow<List<CompanyRecord>>
     suspend fun setCompanyPinned(companyId: String, pinned: Boolean)
+
+    /** Company row for one canonical domain (Phase 8), or null. */
+    suspend fun getCompanyByDomain(accountId: String, normalizedDomain: String): CompanyRecord?
 
     // classification
     suspend fun setClassification(record: ClassificationRecord)
@@ -86,6 +107,37 @@ class RoomIntelligenceRepository(
 
     override fun observeTopSenders(accountId: String, limit: Int) =
         senders.observeTopByAccount(accountId, limit)
+
+    override suspend fun getSenderByEmail(
+        accountId: String,
+        normalizedEmail: String,
+    ): SenderRecord? = withContext(dispatchers.io) {
+        senders.getByEmail(accountId, normalizedEmail)
+    }
+
+    override suspend fun recordSenderMessage(
+        accountId: String,
+        emailAddress: String,
+        normalizedEmail: String,
+        displayName: String?,
+        domain: String,
+    ): SenderRecord = withContext(dispatchers.io) {
+        senders.recordMessage(
+            accountId = accountId,
+            emailAddress = emailAddress,
+            normalizedEmail = normalizedEmail,
+            displayName = displayName,
+            domain = domain,
+            nowEpochMs = clock(),
+        )
+    }
+
+    override suspend fun getCompanyByDomain(
+        accountId: String,
+        normalizedDomain: String,
+    ): CompanyRecord? = withContext(dispatchers.io) {
+        companies.getByDomain(accountId, normalizedDomain)
+    }
 
     override suspend fun upsertCompany(company: CompanyRecord) =
         withContext(dispatchers.io) { companies.upsert(company) }

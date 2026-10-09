@@ -22,6 +22,7 @@ import com.greninjaop.mailorganizer.data.sync.GmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
+import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import com.greninjaop.mailorganizer.ui.mail.AndroidConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
@@ -57,8 +58,13 @@ class AppContainer(private val appContext: Context) {
         )
             // Production migrations must preserve user data: no destructive
             // fallback. v1 -> v2 is covered by Migrations.MIGRATION_1_2;
-            // v2 -> v3 (Phase 5 parser columns) by Migrations.MIGRATION_2_3.
-            .addMigrations(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3)
+            // v2 -> v3 (Phase 5 parser columns) by Migrations.MIGRATION_2_3;
+            // v3 -> v4 (Phase 8 company link) by Migrations.MIGRATION_3_4.
+            .addMigrations(
+                Migrations.MIGRATION_1_2,
+                Migrations.MIGRATION_2_3,
+                Migrations.MIGRATION_3_4,
+            )
             .build()
     }
 
@@ -109,11 +115,24 @@ class AppContainer(private val appContext: Context) {
     // Pure-Kotlin engine (core.classify) driven through use cases so the UI
     // never holds classification logic. Local-only: no network, no AI.
 
+    // ---- Phase 8: company & sender intelligence ----
+    // Pure-Kotlin detection (core.company) driven through a use case.
+    // Also feeds the classifier's real recurring-sender signal.
+
+    val companyIntelligenceUseCase: CompanyIntelligenceUseCase by lazy {
+        CompanyIntelligenceUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
     val classifyMessageUseCase: ClassifyMessageUseCase by lazy {
         ClassifyMessageUseCase(
             mail = mailRepository,
             intelligence = intelligenceRepository,
             dispatchers = dispatchers,
+            recurringSenderProvider = companyIntelligenceUseCase,
         )
     }
 
