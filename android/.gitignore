@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Keystores and secrets — never commit
+*.jks
+*.keystore
+google-services.json
+
+# OS
+.DS_Store
