@@ -202,4 +202,104 @@ class MigrationTest {
             dbFile.delete()
         }
     }
+
+    @Test
+    fun `v3 to v4 adds company link and preserves message data`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbFile = File(context.cacheDir, "migration-v3-v4-test.db")
+        if (dbFile.exists()) dbFile.delete()
+
+        // ---- Build a v3 database (v2 schema + Phase 5 parser columns) ----
+        val raw = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
+        raw.execSQL(
+            "CREATE TABLE accounts (" +
+                "accountId TEXT NOT NULL PRIMARY KEY, " +
+                "emailAddress TEXT NOT NULL, " +
+                "displayName TEXT, " +
+                "createdAtEpochMs INTEGER NOT NULL, " +
+                "googleAccountId TEXT, " +
+                "provider TEXT NOT NULL DEFAULT 'google', " +
+                "connectionState TEXT NOT NULL DEFAULT 'DISCONNECTED', " +
+                "lastSyncEpochMs INTEGER, " +
+                "updatedAtEpochMs INTEGER NOT NULL DEFAULT 0, " +
+                "isEnabled INTEGER NOT NULL DEFAULT 1)",
+        )
+        raw.execSQL(
+            "INSERT INTO accounts VALUES " +
+                "('acc-1', 'a@example.test', NULL, 1, NULL, 'google', " +
+                "'DISCONNECTED', NULL, 0, 1)",
+        )
+        raw.execSQL(
+            "CREATE TABLE threads (" +
+                "threadId TEXT NOT NULL PRIMARY KEY, " +
+                "gmailThreadId TEXT, " +
+                "accountId TEXT NOT NULL, " +
+                "subject TEXT NOT NULL, " +
+                "participantDisplayNames TEXT NOT NULL, " +
+                "messageCount INTEGER NOT NULL DEFAULT 0, " +
+                "unreadCount INTEGER NOT NULL DEFAULT 0, " +
+                "latestMessageId TEXT, " +
+                "latestMessageEpochMs INTEGER NOT NULL DEFAULT 0, " +
+                "updatedAtEpochMs INTEGER NOT NULL DEFAULT 0)",
+        )
+        raw.execSQL(
+            "INSERT INTO threads VALUES " +
+                "('thr-1', 'gt-1', 'acc-1', 'subj', 'Jane', 1, 1, 'msg-1', 5, 5)",
+        )
+        raw.execSQL(
+            "CREATE TABLE messages (" +
+                "messageId TEXT NOT NULL PRIMARY KEY, " +
+                "gmailMessageId TEXT, " +
+                "threadId TEXT NOT NULL, " +
+                "accountId TEXT NOT NULL, " +
+                "fromAddress TEXT NOT NULL, " +
+                "fromName TEXT, " +
+                "toAddresses TEXT NOT NULL, " +
+                "ccAddresses TEXT NOT NULL, " +
+                "subject TEXT NOT NULL, " +
+                "snippet TEXT, " +
+                "bodyText TEXT, " +
+                "bodyHtml TEXT, " +
+                "attachments TEXT NOT NULL DEFAULT '', " +
+                "timestampEpochMs INTEGER NOT NULL, " +
+                "unread INTEGER NOT NULL DEFAULT 1, " +
+                "starred INTEGER NOT NULL DEFAULT 0, " +
+                "labels TEXT NOT NULL, " +
+                "sizeBytes INTEGER)",
+        )
+        raw.execSQL(
+            "INSERT INTO messages VALUES (" +
+                "'msg-1', 'm-1', 'thr-1', 'acc-1', 'j@example.test', 'Jane', " +
+                "'me@example.test', '', 'Hello', 'snip', 'body', " +
+                "NULL, '', 1700000000000, 1, 0, 'INBOX', 100)",
+        )
+        raw.version = 3
+        raw.close()
+
+        // ---- Open through Room: triggers MIGRATION_3_4 + schema validation ----
+        val db = Room.databaseBuilder(context, AppDatabase::class.java, dbFile.absolutePath)
+            .addMigrations(Migrations.MIGRATION_3_4)
+            .allowMainThreadQueries()
+            .build()
+
+        try {
+            // Existing row preserved; companyId defaults to null
+            // ("not yet processed by company intelligence").
+            val msg = db.messageDao().getById("msg-1")!!
+            assertEquals("Hello", msg.subject)
+            assertEquals("j@example.test", msg.fromAddress)
+            assertNull(msg.companyId)
+
+            // The link is writable through the current entity.
+            db.messageDao().setCompanyId("msg-1", "co:example.test")
+            assertEquals("co:example.test", db.messageDao().getById("msg-1")!!.companyId)
+
+            // Clearing restores null.
+            db.messageDao().setCompanyId("msg-1", null)
+            assertNull(db.messageDao().getById("msg-1")!!.companyId)
+        } finally {
+            db.close()
+            dbFile.delete()
+        }
+    }
 }

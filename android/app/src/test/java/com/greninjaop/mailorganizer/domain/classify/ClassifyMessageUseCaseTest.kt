@@ -308,6 +308,45 @@ class ClassifyMessageUseCaseTest {
             label: String,
             limit: Int,
         ): Flow<List<MessageRecord>> = MutableStateFlow(emptyList())
+
+        // ---- Phase 8 company intelligence support (minimal stubs) ----
+
+        override suspend fun setMessageCompanyId(messageId: String, companyId: String?) = Unit
+
+        override suspend fun getMessagesWithoutCompany(
+            accountId: String,
+            limit: Int,
+        ): List<MessageRecord> = emptyList()
+
+        override fun observeMessagesByCompany(
+            accountId: String,
+            companyId: String,
+            limit: Int,
+        ): Flow<List<MessageRecord>> = MutableStateFlow(emptyList())
+
+        override fun observeMessagesByCompanyAndCategory(
+            accountId: String,
+            category: com.greninjaop.mailorganizer.data.local.MailCategory,
+            companyId: String,
+            limit: Int,
+        ): Flow<List<MessageRecord>> = MutableStateFlow(emptyList())
+
+        override fun observeMessagesByCompanyAndLabel(
+            accountId: String,
+            companyId: String,
+            label: String,
+            limit: Int,
+        ): Flow<List<MessageRecord>> = MutableStateFlow(emptyList())
+
+        override suspend fun companyCountsForCategory(
+            accountId: String,
+            category: com.greninjaop.mailorganizer.data.local.MailCategory,
+        ): Map<String, Int> = emptyMap()
+
+        override suspend fun companyCountsForLabel(
+            accountId: String,
+            label: String,
+        ): Map<String, Int> = emptyMap()
     }
 
     private class FakeIntelligenceRepository : IntelligenceRepository {
@@ -318,6 +357,34 @@ class ClassifyMessageUseCaseTest {
             accountId: String,
             limit: Int,
         ): Flow<List<SenderRecord>> = MutableStateFlow(emptyList())
+
+        override suspend fun getSenderByEmail(
+            accountId: String,
+            normalizedEmail: String,
+        ): SenderRecord? = null
+
+        override suspend fun recordSenderMessage(
+            accountId: String,
+            emailAddress: String,
+            normalizedEmail: String,
+            displayName: String?,
+            domain: String,
+        ): SenderRecord = SenderRecord(
+            senderId = "sender:$accountId:$normalizedEmail",
+            accountId = accountId,
+            emailAddress = emailAddress,
+            normalizedEmail = normalizedEmail,
+            displayName = displayName,
+            domain = domain,
+            firstSeenEpochMs = 0L,
+            lastSeenEpochMs = 0L,
+            messageCount = 1,
+        )
+
+        override suspend fun getCompanyByDomain(
+            accountId: String,
+            normalizedDomain: String,
+        ): com.greninjaop.mailorganizer.data.local.CompanyRecord? = null
 
         override suspend fun upsertCompany(company: CompanyRecord) = Unit
         override fun observeCompanyFilterList(

@@ -56,6 +56,12 @@ class MailViewModelTest {
                 classifyMessage = classifyMessage,
                 dispatchers = dispatchers(),
             ),
+            companyIntelligence = com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase(
+                mail = mail,
+                intelligence = intelligence,
+                dispatchers = dispatchers(),
+                clock = { 1_800_000_000_000L },
+            ),
             syncCoordinator = SyncCoordinator(
                 api = DeferredGmailSyncApi(),
                 mail = mail,

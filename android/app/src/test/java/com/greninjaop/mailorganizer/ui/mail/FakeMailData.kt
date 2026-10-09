@@ -1,8 +1,11 @@
 package com.greninjaop.mailorganizer.ui.mail
 
 import com.greninjaop.mailorganizer.data.local.AccountRecord
+import com.greninjaop.mailorganizer.data.local.CompanyRecord
 import com.greninjaop.mailorganizer.data.local.ConnectionState
+import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.local.MessageRecord
+import com.greninjaop.mailorganizer.data.local.SenderRecord
 import com.greninjaop.mailorganizer.data.local.SyncStateRecord
 import com.greninjaop.mailorganizer.data.local.SyncStatus
 import com.greninjaop.mailorganizer.data.local.ThreadRecord
@@ -224,6 +227,95 @@ class FakeMailRepository : MailRepository {
             .take(limit)
     }
 
+    // ---- Phase 8 company intelligence support ----
+
+    /**
+     * Test hook: messageId -> category, backing the company+category
+     * queries (the fake has no classification table of its own).
+     */
+    var categoryByMessageId: Map<String, MailCategory> = emptyMap()
+
+    override suspend fun setMessageCompanyId(messageId: String, companyId: String?) {
+        check()
+        messages.value = messages.value.map {
+            if (it.messageId == messageId) it.copy(companyId = companyId) else it
+        }
+    }
+
+    override suspend fun getMessagesWithoutCompany(
+        accountId: String,
+        limit: Int,
+    ): List<MessageRecord> {
+        check()
+        return messages.value
+            .filter { it.accountId == accountId && it.companyId == null }
+            .sortedByDescending { it.timestampEpochMs }
+            .take(limit)
+    }
+
+    override fun observeMessagesByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> = messages.map { list ->
+        check()
+        list.filter { it.accountId == accountId && it.companyId == companyId }
+            .sortedByDescending { it.timestampEpochMs }
+            .take(limit)
+    }
+
+    override fun observeMessagesByCompanyAndCategory(
+        accountId: String,
+        category: MailCategory,
+        companyId: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> = messages.map { list ->
+        check()
+        list.filter {
+            it.accountId == accountId && it.companyId == companyId &&
+                categoryByMessageId[it.messageId] == category
+        }.sortedByDescending { it.timestampEpochMs }.take(limit)
+    }
+
+    override fun observeMessagesByCompanyAndLabel(
+        accountId: String,
+        companyId: String,
+        label: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> = messages.map { list ->
+        check()
+        list.filter {
+            it.accountId == accountId && it.companyId == companyId && label in it.labels
+        }.sortedByDescending { it.timestampEpochMs }.take(limit)
+    }
+
+    override suspend fun companyCountsForCategory(
+        accountId: String,
+        category: MailCategory,
+    ): Map<String, Int> {
+        check()
+        return messages.value
+            .filter {
+                it.accountId == accountId && it.companyId != null &&
+                    categoryByMessageId[it.messageId] == category
+            }
+            .groupingBy { it.companyId!! }
+            .eachCount()
+    }
+
+    override suspend fun companyCountsForLabel(
+        accountId: String,
+        label: String,
+    ): Map<String, Int> {
+        check()
+        return messages.value
+            .filter {
+                it.accountId == accountId && it.companyId != null && label in it.labels
+            }
+            .groupingBy { it.companyId!! }
+            .eachCount()
+    }
+
     fun threadCount(): Int = threads.value.size
     fun messageCount(): Int = messages.value.size
     fun allMessages(): List<MessageRecord> = messages.value
@@ -237,27 +329,94 @@ class FakeIntelligenceRepository :
             emptyMap(),
         )
 
-    override suspend fun upsertSender(
-        sender: com.greninjaop.mailorganizer.data.local.SenderRecord,
-    ) = Unit
+    // ---- Phase 8: in-memory sender/company tracking ----
+
+    private val senders = mutableMapOf<String, SenderRecord>()
+    private val companies = MutableStateFlow<List<CompanyRecord>>(emptyList())
+
+    private fun senderKey(accountId: String, normalizedEmail: String) =
+        "$accountId|$normalizedEmail"
+
+    override suspend fun upsertSender(sender: SenderRecord) {
+        senders[senderKey(sender.accountId, sender.normalizedEmail)] = sender
+    }
+
+    override suspend fun getSenderByEmail(
+        accountId: String,
+        normalizedEmail: String,
+    ): SenderRecord? = senders[senderKey(accountId, normalizedEmail)]
+
+    override suspend fun recordSenderMessage(
+        accountId: String,
+        emailAddress: String,
+        normalizedEmail: String,
+        displayName: String?,
+        domain: String,
+    ): SenderRecord {
+        val key = senderKey(accountId, normalizedEmail)
+        val existing = senders[key]
+        val updated = if (existing == null) {
+            SenderRecord(
+                senderId = "sender:$accountId:$normalizedEmail",
+                accountId = accountId,
+                emailAddress = emailAddress,
+                normalizedEmail = normalizedEmail,
+                displayName = displayName,
+                domain = domain,
+                firstSeenEpochMs = 1_800_000_000_000L,
+                lastSeenEpochMs = 1_800_000_000_000L,
+                messageCount = 1,
+            )
+        } else {
+            existing.copy(
+                messageCount = existing.messageCount + 1,
+                lastSeenEpochMs = 1_800_000_000_000L,
+            )
+        }
+        senders[key] = updated
+        return updated
+    }
 
     override fun observeTopSenders(
         accountId: String,
         limit: Int,
-    ): Flow<List<com.greninjaop.mailorganizer.data.local.SenderRecord>> =
-        MutableStateFlow(emptyList())
+    ): Flow<List<SenderRecord>> =
+        MutableStateFlow(
+            senders.values
+                .filter { it.accountId == accountId }
+                .sortedByDescending { it.messageCount }
+                .take(limit),
+        )
 
-    override suspend fun upsertCompany(
-        company: com.greninjaop.mailorganizer.data.local.CompanyRecord,
-    ) = Unit
+    override suspend fun upsertCompany(company: CompanyRecord) {
+        companies.value =
+            companies.value.filterNot { it.companyId == company.companyId } + company
+    }
+
+    override suspend fun getCompanyByDomain(
+        accountId: String,
+        normalizedDomain: String,
+    ): CompanyRecord? = companies.value.firstOrNull {
+        it.accountId == accountId && it.normalizedDomain == normalizedDomain
+    }
 
     override fun observeCompanyFilterList(
         accountId: String,
         limit: Int,
-    ): Flow<List<com.greninjaop.mailorganizer.data.local.CompanyRecord>> =
-        MutableStateFlow(emptyList())
+    ): Flow<List<CompanyRecord>> = companies.map { list ->
+        list.filter { it.accountId == accountId }
+            .sortedWith(
+                compareByDescending<CompanyRecord> { it.pinned }
+                    .thenBy { it.canonicalName },
+            )
+            .take(limit)
+    }
 
-    override suspend fun setCompanyPinned(companyId: String, pinned: Boolean) = Unit
+    override suspend fun setCompanyPinned(companyId: String, pinned: Boolean) {
+        companies.value = companies.value.map {
+            if (it.companyId == companyId) it.copy(pinned = pinned) else it
+        }
+    }
 
     override suspend fun setClassification(
         record: com.greninjaop.mailorganizer.data.local.ClassificationRecord,

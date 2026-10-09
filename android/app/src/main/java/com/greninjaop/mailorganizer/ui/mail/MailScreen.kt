@@ -143,6 +143,17 @@ fun MailScreen(
                     onLoadMore = viewModel::loadMore,
                     onClearFilter = viewModel::clearFilter,
                     modifier = Modifier.weight(1f),
+                    header = {
+                        // Phase 8: company filter lives inside the selected
+                        // category — never a navigation destination.
+                        if (state.companyFilter.visible) {
+                            CompanyFilterRow(
+                                uiState = state.companyFilter,
+                                onSelect = viewModel::selectCompany,
+                                onTogglePin = viewModel::toggleCompanyPin,
+                            )
+                        }
+                    },
                 )
             }
         }
@@ -321,100 +332,109 @@ private fun MailContent(
     onLoadMore: () -> Unit,
     onClearFilter: () -> Unit,
     modifier: Modifier = Modifier,
+    header: @Composable () -> Unit = {},
 ) {
-    when (val content = state.content) {
-        MailboxContent.Loading -> MoLoadingState(
-            message = "Loading your mail…",
-            modifier = modifier,
-        )
-        is MailboxContent.Threads -> {
-            LazyColumn(modifier = modifier.fillMaxSize()) {
-                items(content.items, key = { it.threadId }) { item ->
-                    ThreadRow(
-                        item = item,
-                        account = state.activeAccount,
-                        showAccountIndicator =
-                            state.destination == MailboxDestination.ALL_INBOX,
-                        onClick = { onOpenThread(item.threadId, null) },
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(start = MoSpacing.md),
-                    )
-                }
-                if (content.hasMore) {
-                    item {
-                        Button(
-                            onClick = onLoadMore,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(MoSpacing.md),
-                        ) {
-                            Text("Load more")
+        Column(modifier = modifier.fillMaxSize()) {
+            header()
+            when (val content = state.content) {
+                MailboxContent.Loading -> MoLoadingState(
+                    message = "Loading your mail…",
+                    modifier = Modifier.weight(1f),
+                )
+                is MailboxContent.Threads -> {
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(content.items, key = { it.threadId }) { item ->
+                            ThreadRow(
+                                item = item,
+                                account = state.activeAccount,
+                                showAccountIndicator =
+                                    state.destination == MailboxDestination.ALL_INBOX,
+                                onClick = { onOpenThread(item.threadId, null) },
+                            )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                                modifier = Modifier.padding(start = MoSpacing.md),
+                            )
+                        }
+                        if (content.hasMore) {
+                            item {
+                                Button(
+                                    onClick = onLoadMore,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(MoSpacing.md),
+                                ) {
+                                    Text("Load more")
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-        is MailboxContent.Messages -> {
-            LazyColumn(modifier = modifier.fillMaxSize()) {
-                items(content.items, key = { it.messageId }) { item ->
-                    StarredMessageRow(
-                        item = item,
-                        account = state.activeAccount,
-                        onClick = { onOpenThread(item.threadId, item.messageId) },
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(start = MoSpacing.md),
-                    )
+                is MailboxContent.Messages -> {
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(content.items, key = { it.messageId }) { item ->
+                            StarredMessageRow(
+                                item = item,
+                                account = state.activeAccount,
+                                onClick = { onOpenThread(item.threadId, item.messageId) },
+                            )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                                modifier = Modifier.padding(start = MoSpacing.md),
+                            )
+                        }
+                    }
                 }
+                is MailboxContent.Empty -> {
+                    when (content.kind) {
+                        EmptyKind.NO_MAIL -> MoEmptyState(
+                            title = "No synchronized email yet",
+                            message = "Connect a Gmail account to see your mail here. " +
+                                "Gmail connection arrives in a later phase.",
+                            actionLabel = "Sync now",
+                            onAction = onRetry,
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_FILTER_RESULTS -> MoEmptyState(
+                            title = "No matches",
+                            message = "Nothing in this mailbox matches your search.",
+                            actionLabel = "Clear search",
+                            onAction = onClearFilter,
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_STARRED -> MoEmptyState(
+                            title = "No starred mail",
+                            message = "Messages you star will appear here.",
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_PROMOTIONS -> MoEmptyState(
+                            title = "No promotions",
+                            message = "Promotional mail will appear here once classified.",
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_SOCIAL -> MoEmptyState(
+                            title = "No social updates",
+                            message = "Social-network mail will appear here.",
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_SPAM -> MoEmptyState(
+                            title = "No spam",
+                            message = "Nothing filed as spam. Legitimate mail misfiled " +
+                                "as spam can be recovered from Gmail for now.",
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_COMPANY_RESULTS -> MoEmptyState(
+                            title = "No mail from this company here",
+                            message = "Nothing from the selected company in this mailbox.",
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                is MailboxContent.Error -> MoErrorState(
+                    message = content.message,
+                    onRetry = onRetry,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
-        is MailboxContent.Empty -> {
-            when (content.kind) {
-                EmptyKind.NO_MAIL -> MoEmptyState(
-                    title = "No synchronized email yet",
-                    message = "Connect a Gmail account to see your mail here. " +
-                        "Gmail connection arrives in a later phase.",
-                    actionLabel = "Sync now",
-                    onAction = onRetry,
-                    modifier = modifier,
-                )
-                EmptyKind.NO_FILTER_RESULTS -> MoEmptyState(
-                    title = "No matches",
-                    message = "Nothing in this mailbox matches your search.",
-                    actionLabel = "Clear search",
-                    onAction = onClearFilter,
-                    modifier = modifier,
-                )
-                EmptyKind.NO_STARRED -> MoEmptyState(
-                    title = "No starred mail",
-                    message = "Messages you star will appear here.",
-                    modifier = modifier,
-                )
-                EmptyKind.NO_PROMOTIONS -> MoEmptyState(
-                    title = "No promotions",
-                    message = "Promotional mail will appear here once classified.",
-                    modifier = modifier,
-                )
-                EmptyKind.NO_SOCIAL -> MoEmptyState(
-                    title = "No social updates",
-                    message = "Social-network mail will appear here.",
-                    modifier = modifier,
-                )
-                EmptyKind.NO_SPAM -> MoEmptyState(
-                    title = "No spam",
-                    message = "Nothing filed as spam. Legitimate mail misfiled " +
-                        "as spam can be recovered from Gmail for now.",
-                    modifier = modifier,
-                )
-            }
-        }
-        is MailboxContent.Error -> MoErrorState(
-            message = content.message,
-            onRetry = onRetry,
-            modifier = modifier,
-        )
-    }
 }
