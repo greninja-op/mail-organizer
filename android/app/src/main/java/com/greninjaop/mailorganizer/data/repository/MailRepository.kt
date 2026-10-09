@@ -70,6 +70,9 @@ interface MailRepository {
     /** Messages with no priority row yet (Phase 9 incremental prioritization). */
     suspend fun getUnprioritizedMessages(accountId: String, limit: Int): List<MessageRecord>
 
+    /** Messages with no extracted-items row yet (Phase 13 incremental extraction). */
+    suspend fun getUnextractedMessages(accountId: String, limit: Int): List<MessageRecord>
+
     /** Messages carrying one Gmail label (e.g. "SPAM", "CATEGORY_SOCIAL"). */
     fun observeByLabel(accountId: String, label: String, limit: Int = 50): Flow<List<MessageRecord>>
 
@@ -236,6 +239,13 @@ class RoomMailRepository(
         limit: Int,
     ): List<MessageRecord> = withContext(dispatchers.io) {
         db.messageDao().getUnprioritized(accountId, limit)
+    }
+
+    override suspend fun getUnextractedMessages(
+        accountId: String,
+        limit: Int,
+    ): List<MessageRecord> = withContext(dispatchers.io) {
+        db.messageDao().getUnextracted(accountId, limit)
     }
 
     override fun observeByLabel(

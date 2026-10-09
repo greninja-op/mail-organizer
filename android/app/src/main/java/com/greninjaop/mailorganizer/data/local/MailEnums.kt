@@ -117,7 +117,15 @@ enum class CorrectionField {
     COMPANY_NAME,
 }
 
-/** Structured-extraction item kinds (extraction engine is Phase 13). */
+/**
+ * Structured-extraction item kinds (extraction engine is Phase 13).
+ *
+ * Enums are stored by [Enum.name] (never ordinal), so adding values is
+ * migration-free. The Phase 13 temporal types were appended after the
+ * Phase 2 foundation values; legacy generic values (PAYMENT, APPLICATION,
+ * REMINDER) remain readable and map to their temporal equivalents in
+ * domain/temporal.
+ */
 enum class ExtractedItemType {
     MEETING,
     DEADLINE,
@@ -127,4 +135,16 @@ enum class ExtractedItemType {
     APPLICATION,
     REMINDER,
     REPLY_REQUIRED,
+    // ---- Phase 13 temporal types ----
+    EVENT,
+    INTERVIEW,
+    SUBMISSION_DEADLINE,
+    APPLICATION_DEADLINE,
+    PAYMENT_DEADLINE,
+    REGISTRATION_DEADLINE,
+    REMINDER_DATE,
+    DATE_ONLY,
+    TIME_ONLY,
+    DATE_TIME,
+    DATE_RANGE,
 }

@@ -129,6 +129,12 @@ interface IntelligenceRepository {
         type: ExtractedItemType,
         limit: Int = 50,
     ): Flow<List<ExtractedItemRecord>>
+
+    /** All extracted rows for one message (Phase 13 idempotency check). */
+    suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord>
+
+    /** Deletes specific extracted rows (Phase 13 re-extraction). */
+    suspend fun deleteExtractedItems(ids: List<Long>)
 }
 
 class RoomIntelligenceRepository(
@@ -261,6 +267,14 @@ class RoomIntelligenceRepository(
         limit: Int,
     ): Flow<List<ExtractedItemRecord>> =
         extracted.observeOpenByType(accountId, type, limit)
+
+    override suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord> =
+        withContext(dispatchers.io) { extracted.getByMessage(messageId) }
+
+    override suspend fun deleteExtractedItems(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        withContext(dispatchers.io) { extracted.deleteByIds(ids) }
+    }
 
     /** Convenience for tests/future engines: stamp a deterministic classification. */
     suspend fun classifyDeterministic(

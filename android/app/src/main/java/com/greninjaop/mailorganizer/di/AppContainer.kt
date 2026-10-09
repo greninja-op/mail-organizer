@@ -34,6 +34,8 @@ import com.greninjaop.mailorganizer.domain.rules.ApplyRulesUseCase
 import com.greninjaop.mailorganizer.domain.rules.RecordCorrectionUseCase
 import com.greninjaop.mailorganizer.domain.rules.RuleManagementUseCase
 import com.greninjaop.mailorganizer.domain.search.SearchIndexUseCase
+import com.greninjaop.mailorganizer.domain.temporal.ExtractMailboxUseCase
+import com.greninjaop.mailorganizer.domain.temporal.ExtractTemporalUseCase
 import com.greninjaop.mailorganizer.ui.mail.AndroidConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
@@ -205,6 +207,27 @@ class AppContainer(private val appContext: Context) {
         PrioritizeMailboxUseCase(
             mail = mailRepository,
             prioritizeMessage = prioritizeMessageUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 13: meeting & deadline extraction ----
+    // Pure-Kotlin extractor (core.temporal) driven through use cases so the
+    // UI never holds extraction logic. Local-only: no network, no AI.
+    // Reference time is the message's received timestamp (never "now").
+
+    val extractTemporalUseCase: ExtractTemporalUseCase by lazy {
+        ExtractTemporalUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val extractMailboxUseCase: ExtractMailboxUseCase by lazy {
+        ExtractMailboxUseCase(
+            mail = mailRepository,
+            extractMessage = extractTemporalUseCase,
             dispatchers = dispatchers,
         )
     }

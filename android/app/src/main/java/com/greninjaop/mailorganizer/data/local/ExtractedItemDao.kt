@@ -31,4 +31,11 @@ interface ExtractedItemDao {
 
     @Query("DELETE FROM extracted_items WHERE accountId = :accountId")
     suspend fun deleteByAccount(accountId: String)
+
+    /**
+     * Deletes specific rows by id (Phase 13 re-extraction replaces stale
+     * rows; user-completed rows are excluded by the caller).
+     */
+    @Query("DELETE FROM extracted_items WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 }

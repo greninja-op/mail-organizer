@@ -131,6 +131,19 @@ interface MessageDao {
     )
     suspend fun getUnclassified(accountId: String, limit: Int): List<MessageRecord>
 
+    // ---- Phase 13 temporal-extraction support ----
+
+    /**
+     * Messages with no extracted-items row yet (incremental extraction).
+     * Bounded; newest first so fresh mail extracts first.
+     */
+    @Query(
+        "SELECT m.* FROM messages m LEFT JOIN extracted_items e " +
+            "ON e.messageId = m.messageId WHERE m.accountId = :accountId " +
+            "AND e.messageId IS NULL ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getUnextracted(accountId: String, limit: Int): List<MessageRecord>
+
     // ---- Phase 9 priority support ----
 
     /**
