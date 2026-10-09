@@ -75,6 +75,30 @@ Deterministic, local and explainable before AI. User correction > user rule > bu
   precedence (Security > Action > Orders > Career > Education > Important >
   Newsletters > Promotions > Notifications > Low Value).
 
+## Company & sender intelligence (Phase 8 — permanent)
+- Deterministic detection: sender domain → canonical company is a pure
+  function of the normalized address. Same address → same company, every
+  device, every locale. No network, no device state.
+- Company identity is the registrable domain: mailing subdomains merge
+  (`noreply@mail.google.com` and `support@google.com` → one "Google").
+  Free/personal mailbox domains are people, not companies — they get
+  sender tracking but no company grouping.
+- Sender frequency is a documented heuristic (`RECURRING_SENDER_THRESHOLD`),
+  never a probability. The recurring-sender signal feeds the classifier
+  through the `RecurringSenderProvider` seam; attribution runs BEFORE
+  classification so the signal is real on the first pass.
+- Detection never overwrites user intent: `pinned` and `userOverrideName`
+  survive re-detection; only observed metadata merges (bounded).
+- Company filtering lives INSIDE the selected category — never a drawer
+  destination. Pinning reorders the filter list only; it never moves mail,
+  never stars messages, never creates navigation.
+- Filter-chip counts are global GROUP BY counts for the destination, never
+  page-derived. The filtered list queries the exact company+destination
+  slice so it always matches the chip counts.
+- Classifier VERSION bumps when rules change materially; older-version
+  rows reclassify without a resync (Phase 8: v1 → v2 for
+  IMPORTANT_RECURRING_SENDER).
+
 ## Phase protocol
 At session start read requirements/spec/design/rules, determine the current phase and inspect the actual repository. Implement only that phase. Update this file with genuinely permanent rules without deleting unrelated rules. After implementation: build → test → run → inspect → fix → retest → update status → stop.
 

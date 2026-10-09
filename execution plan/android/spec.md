@@ -97,7 +97,10 @@ Never claim tests or device verification that were not actually run. Never touch
 - [x] 7 Deterministic Classification Engine — complete, on main
   (local 30-rule engine v1; Promotional/Social/Spam destinations wired;
   category chip + "why" explanation on message detail)
-- [ ] 8 Company & Sender Intelligence — next
-- [ ] 9–30 — not started
+- [x] 8 Company & Sender Intelligence — complete, on main
+  (deterministic company detection; sender profiles; company filter chips;
+  classifier v2 with recurring-sender rule)
+- [ ] 9 Priority & Action-Required Engine — next
+- [ ] 10–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.

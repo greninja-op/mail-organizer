@@ -1,6 +1,6 @@
 # Development Status — Mail Organizer (Android)
 
-**Last updated:** 2026-10-09 (Phase 6 complete)
+**Last updated:** 2026-10-09 (Phase 8 complete)
 **Branch:** `main`
 **Application ID:** `com.greninjaop.mailorganizer`
 
@@ -543,5 +543,84 @@ no randomness:
   intelligence, Phase 9 priority/action-required engine, Phase 12
   user-correction UI, Phase 26 optional AI fallback.
 
-## Next: Phase 8 — Company & Sender Intelligence
+## Next: Phase 9 — Priority & Action-Required Engine
+Do NOT start unprompted.
+
+## Phase 8 — Company & Sender Intelligence: COMPLETE (2026-10-09)
+
+### What was built
+Deterministic, on-device company & sender intelligence — no network, no AI:
+
+- **`core/company/` package (pure Kotlin)** —
+  `CompanyModels` (DetectedCompany/companyId/canonicalName/normalizedDomain;
+  SenderProfile with honest `isRecurring`),
+  `CompanyDetector` (total + deterministic: sender domain → canonical
+  company; mailing-subdomain stripping; registrable-domain via
+  last-two-labels + small public-suffix list; free-mailbox domains are
+  people, not companies → null; small well-known display-name map;
+  `companyId = "co:<domain>"`),
+  `SenderIntelligence` (locale-independent normalization;
+  `RECURRING_SENDER_THRESHOLD = 3`, documented heuristic; saturating
+  counter).
+- **Real recurring-sender signal** — Phase 7's threaded flag is now fed
+  from local sender frequency via `RecurringSenderProvider`
+  (dependency-inverted: classifier package owns the interface);
+  new rule `IMPORTANT_RECURRING_SENDER` (weight 45, below
+  IMPORTANT_PERSONAL's 50; bulk/noreply veto); classifier VERSION 1→2 so
+  v1 rows reclassify without a resync.
+- **`domain/company/CompanyIntelligenceUseCase`** — `processMessage`
+  (normalize → atomic sender insert-or-increment → detect → upsert company
+  preserving pinned/userOverrideName → link `messages.companyId`);
+  `processNew` (bounded 200, newest-first); `isRecurring`;
+  `setCompanyPinned`; total — failures degrade to unattributed.
+- **Schema v3→v4** — `messages.companyId TEXT?` + index, purely additive
+  (`MIGRATION_3_4`); `AppDatabase` version 4.
+- **DAOs/repositories** — `MessageDao.setCompanyId/getWithoutCompany/
+  observeByCompany[/AndCategory/AndLabel]/companyCountsForCategory/
+  companyCountsForLabel` (counts are global GROUP BY, never page-derived);
+  `SenderDao.recordMessage` (transactional insert-or-increment);
+  `CompanyDao.getByDomain`; repository + DI wiring.
+- **UI** — `CompanyFilterRow` (Phase 8): company chips with honest global
+  counts inside Promotional/Social/Spam (never a drawer destination);
+  tap selects/deselects (direct company+destination query — list always
+  matches chip counts); Pin/Unpin text affordance (no pin glyph in
+  material-icons-core — honest text per editor rule); pinning only
+  reorders the list; `MailViewModel` runs attribution BEFORE classification
+  on startup; `EmptyKind.NO_COMPANY_RESULTS` for honest empty states.
+
+### Validation
+- `:app:compileDebugKotlin` — **BUILD SUCCESSFUL** (real Gradle toolchain).
+- **New unit tests pass** via direct kotlinc + `java` JUnitCore:
+  `CompanyDetectorTest` (13), `SenderIntelligenceTest` (5),
+  `CompanyIntelligenceUseCaseTest` (11), `RecurringSenderWiringTest` (4),
+  `CompanyFilterViewModelTest` (4); `MigrationTest` gains v3→v4
+  (Room-executed; SQL also validated on real SQLite).
+- All pre-existing tests re-run; no regressions (Phase 7's 140 intact —
+  the new rule only fires when `isRecurringSender=true`, which existing
+  fixtures never set).
+- Secret audit: clean.
+
+### Design notes (permanent)
+1. **Company identity is the registrable domain** — subdomains merge;
+   personal mailbox domains are excluded (people ≠ companies).
+2. **Pinning ≠ starring** — pinning reorders the filter list only.
+3. **Counts are global** — GROUP BY over the destination, never page counts.
+4. **Attribution precedes classification** — the recurring signal is real
+   on the first classify pass.
+
+### Known issues
+1. Gradle daemon dispatch flaky in sandbox (pre-existing) — works with
+   `GRADLE_OPTS=-Djava.net.preferIPv4Stack=true`.
+2. Gradle test-worker JVM crash (pre-existing, Phase 0) — tests run via
+   direct kotlinc + JUnitCore.
+3. No device/emulator — device criteria [!] blocked-by-environment, never
+   faked (APK ships only after Phase 30 per user decision).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 9
+  priority/action-required engine, Phase 12 user-correction UI, Phase 26
+  optional AI fallback.
+
+## Next: Phase 9 — Categories, Priority & Action Required
 Do NOT start unprompted.
