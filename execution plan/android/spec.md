@@ -117,6 +117,13 @@ Never claim tests or device verification that were not actually run. Never touch
   detail routes with validated args; Settings/Accounts/Privacy/
   Integrations/Appearance — honest, no fake login; real GROUP BY counts
   from ClassificationDao/MessageDao; 15 new ViewModel tests, 354/367 pass)
-- [ ] 12–30 — not started
+- [x] 12 Rules & User Corrections — complete, on main
+  (core/rules/ deterministic RuleEngine v1 + JSON codecs; domain/rules/
+  effective pipeline correction > rule > deterministic base, correction
+  scopes message/sender/domain/company + undo, rule CRUD/preview/conflicts/
+  reorder; schema v5→v6 additive migration; ui/rules/ correction bottom
+  sheet, rules list, rule editor with live preview; ThreadScreen "Correct"
+  affordance + "Set by you" markers; Settings → Rules route; 68 unit tests)
+- [ ] 13–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
