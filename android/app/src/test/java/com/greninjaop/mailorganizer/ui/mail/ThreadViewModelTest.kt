@@ -179,7 +179,8 @@ class ThreadViewModelTest {
     }
 
     @Test
-    fun `subject comes from the thread messages`() = runTest(testDispatcher) {        seedThread("t1", 1000L)
+    fun `subject comes from the thread messages`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L)
         val vm = ThreadViewModel("t1", mail, intelligence, dispatchers())
         advanceUntilIdle()
         vm.subject.test {
@@ -187,6 +188,38 @@ class ThreadViewModelTest {
             var last = awaitItem()
             while (last.isEmpty()) last = awaitItem()
             assertEquals("Subject", last)
+        }
+    }
+
+    @Test
+    fun `conversation intelligence is attached to thread state when present`() = runTest(testDispatcher) {
+        val account = com.greninjaop.mailorganizer.data.local.AccountRecord(
+            accountId = "acct-1",
+            emailAddress = "alex@example.com",
+            displayName = "Alex",
+            createdAtEpochMs = 1000L,
+        )
+        val accountRepo = FakeAccountRepository().apply { seed(account) }
+        val convUseCase = com.greninjaop.mailorganizer.domain.conversation.ConversationIntelligenceUseCase(
+            mail = mail,
+            intelligence = intelligence,
+            accounts = accountRepo,
+            dispatchers = dispatchers(),
+        )
+        seedThread("t1", 1000L)
+        val vm = ThreadViewModel(
+            threadId = "t1",
+            mail = mail,
+            intelligence = intelligence,
+            dispatchers = dispatchers(),
+            conversationIntelligence = convUseCase,
+        )
+        advanceUntilIdle()
+        vm.state.test {
+            val content = awaitContent()
+            org.junit.Assert.assertNotNull(content.conversation)
+            assertEquals("acct-1", content.conversation?.accountId)
+            assertEquals("t1", content.conversation?.threadId)
         }
     }
 }
