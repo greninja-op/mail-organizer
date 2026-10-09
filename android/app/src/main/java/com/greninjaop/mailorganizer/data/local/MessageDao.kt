@@ -45,6 +45,16 @@ interface MessageDao {
     )
     fun observeByAccount(accountId: String, limit: Int): Flow<List<MessageRecord>>
 
+    /**
+     * Unified presentation queries (Phase 18): observes messages across all
+     * enabled accounts.
+     */
+    @Query(
+        "SELECT m.* FROM messages m JOIN accounts a ON a.accountId = m.accountId " +
+            "WHERE a.isEnabled = 1 ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeUnified(limit: Int): Flow<List<MessageRecord>>
+
     @Query(
         "SELECT * FROM messages WHERE accountId = :accountId AND unread = 1 " +
             "ORDER BY timestampEpochMs DESC LIMIT :limit",
@@ -52,10 +62,22 @@ interface MessageDao {
     fun observeUnreadByAccount(accountId: String, limit: Int): Flow<List<MessageRecord>>
 
     @Query(
+        "SELECT m.* FROM messages m JOIN accounts a ON a.accountId = m.accountId " +
+            "WHERE a.isEnabled = 1 AND m.unread = 1 ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeUnifiedUnread(limit: Int): Flow<List<MessageRecord>>
+
+    @Query(
         "SELECT * FROM messages WHERE accountId = :accountId AND starred = 1 " +
             "ORDER BY timestampEpochMs DESC LIMIT :limit",
     )
     fun observeStarredByAccount(accountId: String, limit: Int): Flow<List<MessageRecord>>
+
+    @Query(
+        "SELECT m.* FROM messages m JOIN accounts a ON a.accountId = m.accountId " +
+            "WHERE a.isEnabled = 1 AND m.starred = 1 ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeUnifiedStarred(limit: Int): Flow<List<MessageRecord>>
 
     /** Bounded subject/snippet search foundation (full local index is Phase 10). */
     @Query(

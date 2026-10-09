@@ -153,8 +153,16 @@ class RoomSearchRepository(
         val seed = parsed.terms.firstOrNull() ?: parsed.phrases.firstOrNull()
         if (seed.isNullOrBlank()) return emptyList<com.greninjaop.mailorganizer.data.local.SenderRecord>() to emptyList()
         val like = "%${seed.take(60)}%"
-        val senders = db.senderDao().suggestByText(query.accountId, like, SUGGESTION_LIMIT)
-        val companies = db.companyDao().suggestByText(query.accountId, like, SUGGESTION_LIMIT)
+        val senders = if (query.accountId != null) {
+            db.senderDao().suggestByText(query.accountId, like, SUGGESTION_LIMIT)
+        } else {
+            db.senderDao().suggestByTextUnified(like, SUGGESTION_LIMIT)
+        }
+        val companies = if (query.accountId != null) {
+            db.companyDao().suggestByText(query.accountId, like, SUGGESTION_LIMIT)
+        } else {
+            db.companyDao().suggestByTextUnified(like, SUGGESTION_LIMIT)
+        }
         return senders to companies
     }
 
@@ -221,28 +229,38 @@ class RoomSearchRepository(
                 .append(") AS r FROM messages_fts ")
                 .append("JOIN messages m ON m.messageId = messages_fts.messageId ")
                 .append(joins)
-                .append("WHERE messages_fts.accountId = ? AND messages_fts MATCH ?")
-                .append(filters)
+            val allArgs = mutableListOf<Any?>()
+            if (query.accountId != null) {
+                sql.append("WHERE messages_fts.accountId = ? AND messages_fts MATCH ?")
+                allArgs.add(query.accountId)
+            } else {
+                sql.append("JOIN accounts a ON a.accountId = messages_fts.accountId ")
+                sql.append("WHERE a.isEnabled = 1 AND messages_fts MATCH ?")
+            }
+            allArgs.add(parsed.matchExpression)
+            allArgs.addAll(args)
+            allArgs.add(limit)
+            sql.append(filters)
                 .append(" ORDER BY r, ")
                 .append(SearchRanking.TIEBREAK_SQL)
                 .append(" LIMIT ?")
-                .toString()
-            val allArgs = mutableListOf<Any?>(query.accountId, parsed.matchExpression)
-            allArgs.addAll(args)
-            allArgs.add(limit)
-            sql to allArgs
+            sql.toString() to allArgs
         } else {
             val sql = StringBuilder()
                 .append("SELECT m.messageId AS mid, 0.0 AS r FROM messages m ")
                 .append(joins)
-                .append("WHERE m.accountId = ?")
-                .append(filters)
-                .append(" ORDER BY m.timestampEpochMs DESC, m.messageId ASC LIMIT ?")
-                .toString()
-            val allArgs = mutableListOf<Any?>(query.accountId)
+            val allArgs = mutableListOf<Any?>()
+            if (query.accountId != null) {
+                sql.append("WHERE m.accountId = ?")
+                allArgs.add(query.accountId)
+            } else {
+                sql.append("JOIN accounts a ON a.accountId = m.accountId WHERE a.isEnabled = 1")
+            }
             allArgs.addAll(args)
             allArgs.add(limit)
-            sql to allArgs
+            sql.append(filters)
+                .append(" ORDER BY m.timestampEpochMs DESC, m.messageId ASC LIMIT ?")
+            sql.toString() to allArgs
         }
     }
 

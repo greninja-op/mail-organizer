@@ -8,6 +8,8 @@ import com.greninjaop.mailorganizer.data.local.AccountRecord
 import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.local.MessageRecord
 import com.greninjaop.mailorganizer.data.local.Priority
+import com.greninjaop.mailorganizer.data.prefs.AccountSelection
+import com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
@@ -49,6 +51,7 @@ class HomeViewModel(
     private val samplePolicy: SampleDataPolicy,
     private val seeder: SampleMailboxSeeder,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val activeAccountPreferences: ActiveAccountPreferences? = null,
 ) : ViewModel() {
 
     companion object {
@@ -62,15 +65,33 @@ class HomeViewModel(
             // first collection, not a transient empty initial value.
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    private val activeSelection = if (activeAccountPreferences != null) {
+        activeAccountPreferences.activeAccountSelection
+    } else {
+        allAccounts.map { list ->
+            val primary = list.filter { it.isEnabled }.minWithOrNull(
+                compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId },
+            )
+            if (primary != null) AccountSelection.Single(primary.accountId) else AccountSelection.Unified
+        }
+    }
+
     private val activeAccount: StateFlow<AccountRecord?> =
-        allAccounts
-            .map { list ->
-                list.filter { it.isEnabled }.minWithOrNull(
-                    compareBy<AccountRecord> { it.createdAtEpochMs }
-                        .thenBy { it.accountId },
-                )
+        combine(allAccounts, activeSelection) { list, selection ->
+            val enabled = list.filter { it.isEnabled }
+            when (selection) {
+                is AccountSelection.Single -> {
+                    enabled.firstOrNull { it.accountId == selection.accountId }
+                        ?: enabled.firstOrNull()
+                }
+                is AccountSelection.Unified -> {
+                    enabled.minWithOrNull(
+                        compareBy<AccountRecord> { it.createdAtEpochMs }
+                            .thenBy { it.accountId },
+                    )
+                }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val isOffline: StateFlow<Boolean> =
         connectivity.isOnline
@@ -92,11 +113,7 @@ class HomeViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<HomeUiState> =
-        combine(seedDone, allAccounts, isOffline) { done, all, offline ->
-            val account = all.filter { it.isEnabled }.minWithOrNull(
-                compareBy<AccountRecord> { it.createdAtEpochMs }
-                    .thenBy { it.accountId },
-            )
+        combine(seedDone, allAccounts, activeAccount, isOffline) { done, all, account, offline ->
             Triple(done, account to all.isEmpty(), offline)
         }.flatMapLatest { (done, accountAndEmpty, offline) ->
             val (account, noAccountsAtAll) = accountAndEmpty

@@ -216,6 +216,67 @@ class SearchViewModelTest {
         assertTrue(vm.state.value.content is SearchContent.Results)
     }
 
+    @Test
+    fun `unified search issues null accountId query and marks state unified`() = runTest(testDispatcher) {
+        val fakePrefs = object : com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences {
+            private val sel = MutableStateFlow<com.greninjaop.mailorganizer.data.prefs.AccountSelection>(
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+            )
+            override val activeSelection = sel
+            override suspend fun setActiveSelection(selection: com.greninjaop.mailorganizer.data.prefs.AccountSelection) {
+                sel.value = selection
+            }
+        }
+        val vm = SearchViewModel(
+            accounts = accounts,
+            search = search,
+            searchIndex = indexMaintenance,
+            connectivity = connectivity,
+            dispatchers = dispatchers,
+            activeAccountPreferences = fakePrefs,
+        )
+        backgroundScope.launch { vm.state.collect {} }
+        runCurrent()
+
+        vm.setQueryText("contract")
+        advanceTimeBy(500)
+        runCurrent()
+
+        assertTrue(vm.state.value.isUnified)
+        assertEquals(2, vm.state.value.accountsById.size)
+        assertEquals(null, search.lastQuery?.accountId)
+    }
+
+    @Test
+    fun `single account selection scopes search to that accountId`() = runTest(testDispatcher) {
+        val fakePrefs = object : com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences {
+            private val sel = MutableStateFlow<com.greninjaop.mailorganizer.data.prefs.AccountSelection>(
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single("a2")
+            )
+            override val activeSelection = sel
+            override suspend fun setActiveSelection(selection: com.greninjaop.mailorganizer.data.prefs.AccountSelection) {
+                sel.value = selection
+            }
+        }
+        val vm = SearchViewModel(
+            accounts = accounts,
+            search = search,
+            searchIndex = indexMaintenance,
+            connectivity = connectivity,
+            dispatchers = dispatchers,
+            activeAccountPreferences = fakePrefs,
+        )
+        backgroundScope.launch { vm.state.collect {} }
+        runCurrent()
+
+        vm.setQueryText("contract")
+        advanceTimeBy(500)
+        runCurrent()
+
+        assertFalse(vm.state.value.isUnified)
+        assertEquals("a2", search.lastQuery?.accountId)
+    }
+
     // ------------------------------------------------------------------
     // Fakes
     // ------------------------------------------------------------------

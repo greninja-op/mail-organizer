@@ -57,6 +57,7 @@ class CategoriesViewModelFactory(
             mail = container.mailRepository,
             intelligence = container.intelligenceRepository,
             dispatchers = container.dispatchers,
+            activeAccountPreferences = container.activeAccountPreferences,
         ) as T
     }
 }

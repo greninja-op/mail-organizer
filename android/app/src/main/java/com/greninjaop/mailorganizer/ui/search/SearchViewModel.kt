@@ -11,6 +11,8 @@ import com.greninjaop.mailorganizer.core.search.SearchResultType
 import com.greninjaop.mailorganizer.data.local.AccountRecord
 import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.local.Priority
+import com.greninjaop.mailorganizer.data.prefs.AccountSelection
+import com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.data.repository.SearchRepository
 import com.greninjaop.mailorganizer.domain.search.SearchIndexMaintenance
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,6 +52,7 @@ class SearchViewModel(
     private val connectivity: ConnectivityObserver,
     private val dispatchers: AppDispatchers,
     initialQuery: String = "",
+    private val activeAccountPreferences: ActiveAccountPreferences? = null,
 ) : ViewModel() {
 
     companion object {
@@ -71,15 +75,44 @@ class SearchViewModel(
      */
     private val rerunNonce = MutableStateFlow(0)
 
-    private val activeAccount: StateFlow<AccountRecord?> =
+    private val allAccounts: StateFlow<List<AccountRecord>> =
         accounts.observeEnabled()
-            .map { list ->
-                list.minWithOrNull(
-                    compareBy<AccountRecord> { it.createdAtEpochMs }
-                        .thenBy { it.accountId },
-                )
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val activeSelection = if (activeAccountPreferences != null) {
+        activeAccountPreferences.activeAccountSelection
+    } else {
+        allAccounts.map { list ->
+            val primary = list.firstOrNull()
+            if (primary != null) AccountSelection.Single(primary.accountId) else AccountSelection.Unified
+        }
+    }
+
+    private data class AccountState(
+        val active: AccountRecord?,
+        val isUnified: Boolean,
+        val accountsById: Map<String, AccountRecord>,
+    )
+
+    private val accountStateFlow: StateFlow<AccountState> =
+        combine(allAccounts, activeSelection) { list, selection ->
+            val active = when (selection) {
+                is AccountSelection.Single -> {
+                    list.firstOrNull { it.accountId == selection.accountId } ?: list.firstOrNull()
+                }
+                is AccountSelection.Unified -> list.firstOrNull()
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+            val isUnified = activeAccountPreferences != null && selection is AccountSelection.Unified
+            AccountState(
+                active = active,
+                isUnified = isUnified,
+                accountsById = list.associateBy { it.accountId },
+            )
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            AccountState(null, false, emptyMap()),
+        )
 
     private val isOffline: StateFlow<Boolean> =
         connectivity.isOnline
@@ -89,7 +122,7 @@ class SearchViewModel(
     init {
         // Best-effort background index catch-up; never blocks the UI.
         viewModelScope.launch(dispatchers.io) {
-            val account = activeAccount.value
+            val account = accountStateFlow.value.active
                 ?: return@launch
             indexing.value = true
             try {
@@ -105,6 +138,8 @@ class SearchViewModel(
         val filters: SearchFilters,
         val resultType: SearchResultType,
         val account: AccountRecord?,
+        val isUnified: Boolean,
+        val accountsById: Map<String, AccountRecord>,
     )
 
     private data class Params(
@@ -119,9 +154,16 @@ class SearchViewModel(
             queryText.debounce(SEARCH_DEBOUNCE_MS).distinctUntilChanged(),
             filters,
             resultType,
-            activeAccount,
-        ) { text, f, rt, account ->
-            QueryParams(text, f, rt, account)
+            accountStateFlow,
+        ) { text, f, rt, accState ->
+            QueryParams(
+                text = text,
+                filters = f,
+                resultType = rt,
+                account = accState.active,
+                isUnified = accState.isUnified,
+                accountsById = accState.accountsById,
+            )
         }.combine(indexState) { q, idx -> q to idx }
             .combine(indexing) { (q, idx), idxing -> Triple(q, idx, idxing) }
             .combine(isOffline) { (q, idx, idxing), offline -> Params(q, idx, idxing, offline) }
@@ -144,9 +186,11 @@ class SearchViewModel(
             indexing = params.indexing,
             isOffline = params.offline,
             content = SearchContent.Landing,
+            isUnified = params.query.isUnified,
+            accountsById = params.query.accountsById,
         )
         val account = params.query.account
-        if (account == null) {
+        if (account == null && !params.query.isUnified) {
             emit(base.copy(content = SearchContent.Error("No account available.")))
             return@flow
         }
@@ -156,9 +200,10 @@ class SearchViewModel(
             return@flow
         }
         emit(base.copy(content = SearchContent.Loading))
+        val targetAccountId = if (params.query.isUnified) null else account?.accountId
         val searchQuery = SearchQuery(
             rawText = params.query.text,
-            accountId = account.accountId,
+            accountId = targetAccountId,
             category = params.query.filters.category,
             priority = params.query.filters.priority,
             actionRequiredOnly = params.query.filters.actionRequiredOnly,
@@ -247,7 +292,7 @@ class SearchViewModel(
 
     /** Error-state action: rebuilds the account's index from local data (§54). */
     fun rebuildIndex() {
-        val accountId = activeAccount.value?.accountId ?: return
+        val accountId = accountStateFlow.value.active?.accountId ?: return
         viewModelScope.launch(dispatchers.io) {
             indexing.value = true
             try {
