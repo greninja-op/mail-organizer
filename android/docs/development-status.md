@@ -686,5 +686,88 @@ Deterministic, on-device priority engine — no network, no AI:
   engine (ActionItemRecord storage already exists from Phase 2), Phase 26
   optional AI fallback.
 
-## Next: Phase 10 — Search & Local Indexing
+## Next: Phase 11 — Dashboard & Information Architecture
 Do NOT start unprompted.
+
+## Phase 10 — Search & Local Indexing: COMPLETE (2026-10-09)
+
+### What was built
+On-device full-text search over what's already indexed — subjects,
+snippets, bodies, senders, classifications. No network, no AI, no OAuth.
+
+- **`core/search/` (pure Kotlin)** — `SearchModels` (`SearchQuery`
+  structured filters; `ParsedQuery`; `SearchOutcome`; `SearchResult`
+  Message/Thread/Sender/Company; `SearchContent` Landing/Loading/Results/
+  Empty/Error; `SearchIndexState`), `QueryParser` (total parser: quoted
+  terms/phrases, AND semantics, 200-char/10-term bounds; every term
+  double-quote-escaped so FTS syntax can never be injected), `SearchRanking`
+  (deterministic bm25 positional weights matching the FTS column order),
+  `SearchHighlight` (safe highlight spans/snippets, never raw HTML).
+- **`data/local/`** — `SearchIndexStore` (raw-SQLite FTS5 virtual table
+  `messages_fts`: `messageId`/`accountId` UNINDEXED so ids can't be
+  surprise-matched; unicode61 `remove_diacritics 1`; body capped at
+  20k chars), `SearchIndexMeta` + DAO (per-account version table),
+  `MIGRATION_4_5` in `Migrations.kt` (schema v4→v5), `AppDatabase` → v5
+  with FTS table created on fresh installs too.
+- **`data/repository/SearchRepository`** — FTS MATCH + parameterized
+  filters (category/priority/action-required/sender/company/unread/
+  attachments/date preset), deterministic ranking, thread grouping,
+  sender/company suggestions, strict account isolation in every query.
+- **`domain/search/`** — `SearchIndexUseCase` (`ensureIndexed` catch-up,
+  `rebuild` from normalized local data, bounded batches) +
+  `SearchIndexMaintenance` interface (clean seam).
+- **Write-path hooks** — `RoomMailRepository` indexes in the same
+  transaction on save/delete; `RoomAccountRepository` drops FTS rows on
+  account delete; `CompanyIntelligenceUseCase` re-indexes after company
+  attribution. New DAO batch methods (`ClassificationDao.getByMessages`,
+  `ThreadDao.getByIds`, `CompanyDao.getByAccountAndId`,
+  `MessageDao.messageIdsForGmailIds`, `SenderDao`/`CompanyDao.suggestByText`).
+- **`ui/search/`** — `SearchScreen` (Material 3: search bar, filter chips,
+  result-type tabs Messages/Threads/People, people/company sections,
+  index-state banner, offline banner, error state with Rebuild action),
+  `SearchResultRows`, `SearchUiState`, `SearchViewModel` (300ms debounce,
+  `SharingStarted.WhileSubscribed`; landing emits zero DB work; queries
+  never logged), `SearchViewModelFactory`. `AppNavGraph` gains a real
+  SEARCH route with `?query=` arg; `MailScreen` top-bar IME search
+  navigates to it.
+- **IntelligenceRepository** gains `getClassifications(messageIds)`
+  (batch, never N+1); 4 existing test fakes updated.
+
+### Validation (actually run)
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` —
+  BUILD SUCCESSFUL (real Gradle toolchain).
+- New unit tests via direct `java` JUnitCore: `QueryParserTest`,
+  `SearchRankingTest`, `SearchHighlightTest` (31) + `SearchViewModelTest`
+  (8) = 39 new; full pure-JVM suite: **338/338 pass** (39 new + 299
+  regression). 14 tests excluded from the manual run (6 Room/Robolectric
+  DAO tests, 8 Compose theme-token tests — hand-rolled classpath limits,
+  unrelated to Phase 10, untouched files).
+- FTS5 DDL + behavior validated against real SQLite (python sqlite3):
+  phrase search, AND terms, account isolation, case-insensitivity,
+  Malayalam, café→cafe diacritic folding all work; UNINDEXED ids can't be
+  matched; injection probes safely quoted; bm25 positional weights check
+  out; meta table works.
+- Secret audit: clean.
+
+### Known issues
+1. Gradle daemon dispatch flaky in sandbox (pre-existing) — works with
+   `GRADLE_OPTS=-Djava.net.preferIPv4Stack=true`.
+2. Gradle test-worker JVM crashes (pre-existing, Phase 0) — tests run via
+   direct `java` JUnitCore.
+3. No device/emulator — device criteria [!] blocked-by-environment, never
+   faked (APK ships only after Phase 30 per user decision).
+4. Test lesson: `advanceUntilIdle()` in kotlinx-coroutines-test ADVANCES
+   virtual time (fires pending delays) — use `runCurrent()` when the clock
+   must not move (debounce tests). Also: `Dispatchers.setMain` is required
+   for ViewModel tests; the `android.util.Log` stub needs 3-arg overloads
+   (MoLogger.e calls `Log.e(tag, msg, throwable)`).
+5. **The phase-08 plan file is corrupt** (contains Phase 3 OAuth content);
+   the phase-10 plan file was verified clean before use. Under NO
+   circumstances was OAuth implemented.
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 12 user-correction
+  UI, Phase 13 meeting/deadline extraction, Phase 14 action engine
+  (ActionItemRecord storage already exists from Phase 2), Phase 26
+  optional AI fallback.

@@ -135,3 +135,28 @@ Do not skip phases; fake completion; add unnecessary AI/backend/permissions; exp
 
 ## Persistent skills
 If supported, maintain skills for Architecture, Android Development, Gmail OAuth/API, Privacy & Security, Classification Engine, Integration, UI/UX Design, Testing & QA, Phase Execution and Code Quality.
+
+## Phase 10 — Search & local indexing (permanent rules)
+- Local-first search: the FTS5 index (`messages_fts`) is derived from
+  normalized local data, never from the network. Search works fully offline.
+- Normalized-data source of truth: Room tables are canonical; the FTS index
+  is a disposable derivative — always rebuildable from local rows.
+- Index rebuildability: `SearchIndexMaintenance.rebuild(accountId)` reconstructs
+  the index from normalized data; a version table (`search_index_meta`)
+  tracks per-account index health.
+- Account isolation: every search query and every index write is scoped by
+  `accountId`. `messageId`/`accountId` are UNINDEXED FTS columns so ids can
+  never be surprise-matched by text queries.
+- Parameterized queries: the UI builds structured `SearchQuery` objects —
+  never SQL strings. FTS MATCH input is assembled from quoted terms only.
+- Query safety: `QueryParser` is total — every term is double-quote-escaped
+  (quotes stripped, then wrapped), so FTS5 syntax can never be injected;
+  pure-punctuation tokens are dropped; input bounded (200 chars, 10 terms).
+- No external search: never call a network or LLM service for search.
+- No AI/semantic search: ranking is deterministic bm25 with positional
+  column weights tied to the FTS column order.
+- No sensitive query logging: search text is never logged (only failure
+  classes); snippets shown in UI are safe spans, never raw HTML.
+- Bounded query processing: result limits, bounded index batches, body text
+  capped at 20k indexed chars; empty query + no filters = landing state
+  with zero DB work.

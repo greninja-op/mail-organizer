@@ -105,6 +105,12 @@ Never claim tests or device verification that were not actually run. Never touch
   LOW/NORMAL/HIGH/CRITICAL independent from category; domain/priority/
   use cases with manual-override safety; action-required filter chip +
   priority badges + "why this priority?" in UI)
-- [ ] 10–30 — not started
+- [x] 10 Search & Local Indexing — complete, on main
+  (on-device FTS5 index: messages_fts + search_index_meta, schema v4→v5;
+  core/search/ parser/ranking/highlight; SearchRepository with parameterized
+  filters + account isolation; domain/search/ index use case + maintenance
+  seam; write-path hooks in Room repositories; ui/search/ screen + 300ms
+  debounce ViewModel + SEARCH nav route)
+- [ ] 11–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
