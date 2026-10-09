@@ -1078,3 +1078,55 @@ Multi-account support and unified inbox presentation layer on top of the establi
 ### Deferred work (user-approved, unchanged)
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play).
+
+## Phase 19 — Background Sync & Offline Behavior: COMPLETE (2026-10-09)
+
+### What was built
+- **Account-Isolated Sync Worker** (`data/sync/AccountSyncWorker.kt`): Executes background sync for explicit `AccountId` without relying on active UI state.
+- **Background Intelligence Pipeline** (`data/sync/BackgroundProcessingPipeline.kt`): Runs local normalization, classification, priority, temporal, actions, and search indexing with per-engine error isolation.
+- **Battery-Conscious Sync Scheduler** (`data/sync/BatteryConsciousSyncScheduler.kt`): Enforces Android 15m periodic limits, unmetered/charging/battery constraints, staleness-aware app start, app resume, and connectivity recovery triggers.
+- **Sync Models & Honest Formatting** (`data/sync/SyncModels.kt`, `SyncTimeFormatter.kt`, `ConnectivityObserver.kt`): Network state tracking, clear distinction between offline state and authentication/API failures.
+- **UI Integration** (`ui/mail/MailViewModel.kt`, `MailScreen.kt`, `AccountsScreen.kt`): Per-account and unified sync indicators and relative timestamps.
+
+### Verification
+- 25 new unit tests (4 sync models + 6 worker + 8 pipeline + 7 scheduler).
+- 570/570 pure-JVM tests pass via direct JUnitCore.
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL.
+- Device checks UNVERIFIED (sandbox environment).
+
+## Phase 20 — Noise, Newsletter & Cleanup System: COMPLETE (2026-10-09)
+
+### What was built
+Noise, newsletter identification, and safe explainable cleanup recommendations per phase plan §34–§37:
+- **Cleanup Models** (`core/cleanup/CleanupModels.kt`): `CleanupCandidateType`, `CleanupRecommendationType`, `CleanupCandidateStatus`, `NewsletterExplanation`, `NoiseExplanation`, `NewsletterAnalysisResult`, `NoiseAnalysisResult`, `NewsletterSenderProfile`, `CleanupCandidate`, `CleanupGroup`, `CleanupAnalysisInput`.
+- **Unsubscribe Safety Engine** (`core/cleanup/UnsubscribeSafety.kt`): Strict RFC 2369 header parser (`List-Unsubscribe`, `List-Unsubscribe-Post`, `mailto:`, `https:`) and safe body phrase detector. Invariant enforced: unsubscribe URLs/mailto links are UNTRUSTED and NEVER automatically invoked or background-visited.
+- **Protection Shield** (`core/cleanup/CleanupProtector.kt`): Conservative shield protecting `SECURITY`, `RECEIPTS_ORDERS`, `CAREER`, `EDUCATION`, `ACTION_REQUIRED`, `IMPORTANT`, `Priority.HIGH`, `Priority.CRITICAL`, and starred messages from destructive proposals.
+- **Newsletter Analyzer** (`core/cleanup/NewsletterAnalyzer.kt`): Multi-signal deterministic detection scoring headers, content phrases, classifier categories, recurring senders, and newsletter subject patterns.
+- **Noise Analyzer** (`core/cleanup/NoiseAnalyzer.kt`): Multi-signal automated notification and noise detector respecting protector shields.
+- **Cleanup Recommendation Engine** (`core/cleanup/CleanupRecommendationEngine.kt`): Generates conservative, explainable `CleanupCandidate` recommendations (`KEEP`, `REVIEW`, `UNSUBSCRIBE_REVIEW`, `CLEANUP_REVIEW`, `CREATE_SENDER_RULE`).
+- **Cleanup Use Case** (`domain/cleanup/CleanupUseCase.kt`): Multi-account aware domain coordinator synthesizing candidates, aggregating sender intelligence, and clustering into safe bulk-review `CleanupGroup`s.
+- **UI & Presentation Layer** (`ui/cleanup/`):
+  - `CleanupViewModel` & `CleanupScreen`: Material 3 screen featuring Recommendations tab, Newsletters tab, Group Review dialog, honest account header (`All Accounts` vs single account), and prominent non-destructive notice banner ("Recommendations only — no destructive mutations are performed on your mailbox").
+- **App Navigation & Settings Wiring**:
+  - `AppDestinations.CLEANUP = "cleanup"` added to `AppNavGraph.kt`.
+  - Added "Cleanup & Newsletters" entry in `SettingsScreens.kt`.
+  - Injected `cleanupUseCase` into `AppContainer.kt`.
+
+### Verification
+- 26 new unit tests across 7 test classes:
+  - `UnsubscribeSafetyTest` (5 tests)
+  - `CleanupProtectorTest` (7 tests)
+  - `NewsletterAnalyzerTest` (3 tests)
+  - `NoiseAnalyzerTest` (3 tests)
+  - `CleanupRecommendationEngineTest` (3 tests)
+  - `CleanupUseCaseTest` (3 tests)
+  - `CleanupViewModelTest` (2 tests)
+- Full test suite: **596/596 tests pass** via JUnitCore across 72 test classes (0 failures).
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL via Gradle 8.14.6.
+- Secret audit clean: zero API keys, secrets, or passwords committed.
+- Stopped strictly at Phase 20 boundary (did not begin Phase 21 Waiting-for-Reply or Phase 22 Gmail write operations).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  21 (Waiting-for-Reply & Follow-up Detection), 22 (Gmail write operations), 29 (prod OAuth/Play).
+
