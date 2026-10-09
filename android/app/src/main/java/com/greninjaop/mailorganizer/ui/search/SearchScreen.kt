@@ -279,20 +279,36 @@ private fun SearchResults(
             },
         ) { result ->
             when (result) {
-                is SearchResult.Message -> SearchMessageRow(
-                    result = result,
-                    terms = terms,
-                    phrases = phrases,
-                    onClick = {
-                        onOpenThread(result.record.threadId, result.record.messageId)
-                    },
-                )
-                is SearchResult.Thread -> SearchThreadRow(
-                    result = result,
-                    terms = terms,
-                    phrases = phrases,
-                    onClick = { onOpenThread(result.thread.threadId, null) },
-                )
+                is SearchResult.Message -> {
+                    val badge = if (state.isUnified) {
+                        state.accountsById[result.record.accountId]?.let {
+                            it.displayName ?: it.emailAddress.substringBefore("@")
+                        } ?: result.record.accountId
+                    } else null
+                    SearchMessageRow(
+                        result = result,
+                        terms = terms,
+                        phrases = phrases,
+                        accountBadge = badge,
+                        onClick = {
+                            onOpenThread(result.record.threadId, result.record.messageId)
+                        },
+                    )
+                }
+                is SearchResult.Thread -> {
+                    val badge = if (state.isUnified) {
+                        state.accountsById[result.thread.accountId]?.let {
+                            it.displayName ?: it.emailAddress.substringBefore("@")
+                        } ?: result.thread.accountId
+                    } else null
+                    SearchThreadRow(
+                        result = result,
+                        terms = terms,
+                        phrases = phrases,
+                        accountBadge = badge,
+                        onClick = { onOpenThread(result.thread.threadId, null) },
+                    )
+                }
                 // Sender/Company results render as suggestion rows above;
                 // they never appear as primary hits (phase §8).
                 is SearchResult.Sender,

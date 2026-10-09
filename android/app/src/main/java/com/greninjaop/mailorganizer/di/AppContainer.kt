@@ -72,6 +72,13 @@ class AppContainer(private val appContext: Context) {
         DataStoreThemePreferences(appContext.applicationContext, dispatchers)
     }
 
+    val activeAccountPreferences: com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences by lazy {
+        com.greninjaop.mailorganizer.data.prefs.DataStoreActiveAccountPreferences(
+            appContext.applicationContext,
+            dispatchers,
+        )
+    }
+
     val database: AppDatabase by lazy {
         Room.databaseBuilder(
             appContext.applicationContext,

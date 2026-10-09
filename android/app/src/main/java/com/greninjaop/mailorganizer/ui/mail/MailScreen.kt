@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -232,10 +233,20 @@ private fun MailTopBar(
             IconButton(onClick = onRefresh, enabled = !syncing) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Sync now")
             }
-            val account = state.activeAccount
-            if (account != null) {
+            if (state.isUnified) {
                 IconButton(onClick = onAccountClick) {
-                    AccountAvatar(account = account, size = MoSpacing.xxl)
+                    Icon(
+                        imageVector = Icons.Filled.MailOutline,
+                        contentDescription = "All Accounts (Unified Inbox). Tap to switch account.",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else {
+                val account = state.activeAccount
+                if (account != null) {
+                    IconButton(onClick = onAccountClick) {
+                        AccountAvatar(account = account, size = MoSpacing.xxl)
+                    }
                 }
             }
         },
@@ -253,7 +264,29 @@ private fun MailDrawer(
             modifier = Modifier.padding(MoSpacing.md),
             verticalArrangement = Arrangement.spacedBy(MoSpacing.xs),
         ) {
-            if (account != null) {
+            if (state.isUnified) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.MailOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(MoSpacing.huge),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(MoSpacing.sm))
+                    Column {
+                        Text(
+                            text = "All Accounts",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = "Unified Inbox",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = MoSpacing.xs))
+            } else if (account != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AccountAvatar(account = account, size = MoSpacing.huge)
                     Spacer(Modifier.width(MoSpacing.sm))
@@ -372,11 +405,11 @@ private fun MailContent(
                 is MailboxContent.Threads -> {
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(content.items, key = { it.threadId }) { item ->
+                            val rowAccount = state.accountsById[item.accountId] ?: state.activeAccount
                             ThreadRow(
                                 item = item,
-                                account = state.activeAccount,
-                                showAccountIndicator =
-                                    state.destination == MailboxDestination.ALL_INBOX,
+                                account = rowAccount,
+                                showAccountIndicator = state.isUnified || state.destination == MailboxDestination.ALL_INBOX,
                                 onClick = { onOpenThread(item.threadId, null) },
                             )
                             HorizontalDivider(
@@ -401,9 +434,11 @@ private fun MailContent(
                 is MailboxContent.Messages -> {
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(content.items, key = { it.messageId }) { item ->
+                            val rowAccount = state.accountsById[item.accountId] ?: state.activeAccount
                             StarredMessageRow(
                                 item = item,
-                                account = state.activeAccount,
+                                account = rowAccount,
+                                showAccountIndicator = state.isUnified,
                                 onClick = { onOpenThread(item.threadId, item.messageId) },
                             )
                             HorizontalDivider(

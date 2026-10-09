@@ -8,6 +8,7 @@ import com.greninjaop.mailorganizer.data.local.MessageRecord
 import com.greninjaop.mailorganizer.data.local.SearchIndexStore
 import com.greninjaop.mailorganizer.data.local.ThreadRecord
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.withContext
 
 /**
@@ -20,9 +21,12 @@ import kotlinx.coroutines.withContext
 interface MailRepository {
     suspend fun saveThreadWithMessages(thread: ThreadRecord, messages: List<MessageRecord>)
     fun observeThreads(accountId: String, limit: Int = 50): Flow<List<ThreadRecord>>
+    fun observeUnifiedThreads(limit: Int = 50): Flow<List<ThreadRecord>> = emptyFlow()
     fun observeMessages(threadId: String, limit: Int = 100): Flow<List<MessageRecord>>
     fun observeUnread(accountId: String, limit: Int = 50): Flow<List<MessageRecord>>
+    fun observeUnifiedUnread(limit: Int = 50): Flow<List<MessageRecord>> = emptyFlow()
     fun observeStarred(accountId: String, limit: Int = 50): Flow<List<MessageRecord>>
+    fun observeUnifiedStarred(limit: Int = 50): Flow<List<MessageRecord>> = emptyFlow()
     suspend fun searchByText(accountId: String, query: String, limit: Int = 50): List<MessageRecord>
     suspend fun setRead(messageId: String, read: Boolean)
     suspend fun setStarred(messageId: String, starred: Boolean)
@@ -198,14 +202,23 @@ class RoomMailRepository(
     override fun observeThreads(accountId: String, limit: Int): Flow<List<ThreadRecord>> =
         db.threadDao().observeByAccount(accountId, limit)
 
+    override fun observeUnifiedThreads(limit: Int): Flow<List<ThreadRecord>> =
+        db.threadDao().observeUnified(limit)
+
     override fun observeMessages(threadId: String, limit: Int): Flow<List<MessageRecord>> =
         db.messageDao().observeByThread(threadId, limit)
 
     override fun observeUnread(accountId: String, limit: Int): Flow<List<MessageRecord>> =
         db.messageDao().observeUnreadByAccount(accountId, limit)
 
+    override fun observeUnifiedUnread(limit: Int): Flow<List<MessageRecord>> =
+        db.messageDao().observeUnifiedUnread(limit)
+
     override fun observeStarred(accountId: String, limit: Int): Flow<List<MessageRecord>> =
         db.messageDao().observeStarredByAccount(accountId, limit)
+
+    override fun observeUnifiedStarred(limit: Int): Flow<List<MessageRecord>> =
+        db.messageDao().observeUnifiedStarred(limit)
 
     override suspend fun searchByText(
         accountId: String,
