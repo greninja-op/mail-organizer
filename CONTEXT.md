@@ -37,8 +37,9 @@
 - **Phase 3** — Google OAuth & Gmail Connection: **DEFERRED** (see Standing rules).
 - **Phase 4** — Gmail Synchronization Engine (sync coordinator, cursors, retry policy, scheduler seam): COMPLETE, pushed. 92/92 tests.
 - **Phase 5** — Email Data Model & Parsing (`core/email/`: canonical model, total MIME parser, HTML sanitizer, v2→v3 migration): COMPLETE, pushed (2 commits). 38/38 tests (caught 2 real bugs, fixed).
-- **Phase 6** — Core Inbox & Email Viewer: NEXT (pipeline status unconfirmed at redesign time — next agent must verify and update this line).
-- Push history: phases 0/1/2/4 in commits cc38873, 855ff48, 6f00813, 8a9267f; Phase 5 in 2 commits.
+- **Phase 6** — Core Inbox & Email Viewer (`ui/mail/`: MailScreen + drawer + lazy lists, ThreadScreen oldest-first, MessageCard viewer, no-WebView HTML-as-native-text, fixture data clearly labeled): COMPLETE, pushed (3 commits). 44/44 unit tests; `:app:compileDebugKotlin` BUILD SUCCESSFUL; secret audit clean. No device — device checks blocked, never faked.
+- **Phase 7** — Email Classification Engine: NEXT (starting 2026-10-09).
+- Push history: phases 0/1/2/4 in commits cc38873, 855ff48, 6f00813, 8a9267f; Phase 5 in 2 commits; Phase 6 in 3 commits.
 
 ## Decision log
 - **2026-10-08:** User greenlit Android execution. Build UI + foundation now; skip all Google Auth/API-key/OAuth work to the very end. Report after every phase. Push directly to `main`.
