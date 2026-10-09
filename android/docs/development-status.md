@@ -1128,5 +1128,50 @@ Noise, newsletter identification, and safe explainable cleanup recommendations p
 
 ### Deferred work (user-approved, unchanged)
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
-  21 (Waiting-for-Reply & Follow-up Detection), 22 (Gmail write operations), 29 (prod OAuth/Play).
+  22 (Gmail write operations), 29 (prod OAuth/Play).
+
+## Phase 21 — Waiting-for-Reply & Conversation Intelligence: COMPLETE
+
+### What was built
+Local-first, deterministic conversation intelligence and waiting-for-reply system per phase plan §1–§35:
+- **Conversation Models** (`core/conversation/ConversationModels.kt`):
+  - 7 deterministic states: `NO_ACTION`, `AWAITING_USER_REPLY`, `AWAITING_OTHER_PARTY`, `RECENTLY_REPLIED`, `STALE_CONVERSATION`, `RESOLVED`, `UNKNOWN`.
+  - Participant modeling: `ParticipantRole` (`USER`, `OTHER_PARTY`, `AUTOMATED_NO_REPLY`).
+  - Explainability structures: `ConversationTimelineEntry`, `ConversationExplanation`, `ConversationAnalysisResult`.
+- **Participant Classification** (`core/conversation/ParticipantClassifier.kt`):
+  - Account-aware user vs other-party classification with display name cleaning and address normalization.
+  - Multi-account alias support (`userAccountEmail`).
+  - Automated no-reply sender detection (`no-reply@`, `noreply@`, `mailer-daemon@`, `notifications@`, etc.).
+- **Conversation Signals** (`core/conversation/ConversationSignals.kt`):
+  - Reply-expectation phrase extraction ("please let me know", "could you clarify", etc.).
+  - Direct inquiry/question detection.
+  - Thread closure/resolution extraction ("issue has been resolved", "[closed]", "all set", etc.).
+- **Conversation Analyzer** (`core/conversation/ConversationAnalyzer.kt`):
+  - Strict chronological sorting (oldest-to-newest message ordering).
+  - Negative signal shields: newsletters, notifications, automated receipts, spam, and no-reply senders are never marked as awaiting user reply.
+  - Follow-up candidate detection: threads where user replied over 3 days ago without reply.
+  - Stale conversation handling: threads awaiting action for over 7 days.
+- **Domain Use Case** (`domain/conversation/ConversationIntelligenceUseCase.kt`):
+  - Repository-driven message and thread analysis with account validation.
+  - Reactive `observeThreadConversation` flow for real-time thread inspection.
+- **UI & Presentation Layer** (`ui/mail/`):
+  - `ConversationVisuals.kt`: Material 3 badge pills (`ConversationStateBadge`) and expandable conversation intelligence card (`ConversationIntelligenceSection`) detailing chronological participant timeline and transparent reasons.
+  - Integration with `ThreadRow.kt`, `ThreadScreen.kt`, and `ThreadViewModel.kt`.
+  - Manual dependency injection registered in `AppContainer.kt` and `ViewModelFactories.kt`.
+
+### Verification
+- 25 new unit tests across 4 test classes:
+  - `ParticipantClassifierTest` (6 tests)
+  - `ConversationSignalsTest` (4 tests)
+  - `ConversationAnalyzerTest` (11 tests)
+  - `ConversationIntelligenceUseCaseTest` (4 tests)
+  - Plus extended `ThreadViewModelTest` (7 tests total)
+- Full test suite: **621/621 tests pass** via JUnitCore across 75 test classes (0 failures).
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL via Gradle 8.14.6.
+- Secret audit clean: zero API keys, secrets, or passwords committed.
+- Stopped strictly at Phase 21 boundary (did not begin Phase 22 Gmail write operations or mutations).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
 
