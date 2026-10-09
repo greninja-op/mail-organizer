@@ -26,6 +26,13 @@ interface MailRepository {
     suspend fun setStarred(messageId: String, starred: Boolean)
     suspend fun countByAccount(accountId: String): Int
 
+    /**
+     * Message rows by local id — one bounded query (Phase 6: the thread list
+     * resolves each visible thread's latest message without N+1 lookups).
+     * Empty input returns empty output (Room rejects empty IN clauses).
+     */
+    suspend fun getMessagesByIds(messageIds: List<String>): List<MessageRecord>
+
     // ---- Phase 4 sync engine support ----
 
     /** Thread row for a Gmail thread id, or null if never synced. */
@@ -97,6 +104,12 @@ class RoomMailRepository(
     override suspend fun countByAccount(accountId: String): Int =
         withContext(dispatchers.io) {
             db.messageDao().countByAccount(accountId)
+        }
+
+    override suspend fun getMessagesByIds(messageIds: List<String>): List<MessageRecord> =
+        withContext(dispatchers.io) {
+            if (messageIds.isEmpty()) emptyList()
+            else db.messageDao().getByIds(messageIds)
         }
 
     override suspend fun getThreadByGmailId(accountId: String, gmailThreadId: String) =

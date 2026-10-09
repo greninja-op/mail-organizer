@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MailOrganizerTheme(themeMode = foundationViewModel.themeMode) {
-                AppNavGraph()
+                AppNavGraph(container = (application as MailOrganizerApp).container)
             }
         }
     }

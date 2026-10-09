@@ -43,9 +43,23 @@ Material 3). Execution plan: `execution plan/android/` (phases 00–30).
   Migration SQL validated against real SQLite. `versionName` →
   `0.1.0-phase5`. Device criteria [!] blocked (no adb). Secret audit clean.
   Gradle daemon dispatch failure in this sandbox — used direct kotlinc.
+- **Phase 6 COMPLETE** — Core Inbox & Email Viewer (2026-10-09): full
+  mailbox UI (`ui/mail/` — MailScreen w/ 6-destination drawer, ThreadScreen,
+  ThreadRow, MessageCard, SafeHtmlText, AccountAvatar), MailViewModel +
+  ThreadViewModel (sealed UI states, pagination, account scoping, honest
+  sync via Phase 4 SyncCoordinator), SafeHtmlRenderer (sanitized HTML →
+  Compose, no WebView; remote images never fetched; http/https links only),
+  clearly-labeled fixture data (`fixture-` ids, sample banner, debug-only
+  seeding; release never seeds). 44/44 new tests pass (manual JUnitCore
+  run; 4 real issues found & fixed incl. HTML whitespace gluing words).
+  `:app:compileDebugKotlin` BUILD SUCCESSFUL. `versionName` →
+  `0.1.0-phase6`. Device criteria [!] blocked (no adb). Secret audit
+  clean. Icon note: only material-icons-core is available — missing glyphs
+  replaced with core-set icons or honest text indicators, no invented icons.
 - Toolchain: AGP 8.13.2, Kotlin 2.3.21, Compose BOM 2026.06.01,
   compileSdk/targetSdk 35, minSdk 26.
-- Build: `:app:assembleDebug` SUCCESSFUL. Lint: SUCCESSFUL (4 warnings).
+- Build: `:app:compileDebugKotlin` SUCCESSFUL (Phase 6).
+  Lint Phase 6: SUCCESSFUL (0 errors, 5 warnings — 4 pre-existing, 1 fixed).
 - Tests: 16 test files; verified manually (Gradle test worker crashes
   in this sandbox — environment issue, not code).
 - Project lives under `android/` in the repo (root keeps the plan README).
@@ -55,7 +69,7 @@ Material 3). Execution plan: `execution plan/android/` (phases 00–30).
 ## Next
 **Phase 3 — Google OAuth & Gmail Connection — DEFERRED BY USER** (no
 computer access for credentials/API keys; revisit at the very end).
-Next executable phase: **Phase 6 — Core Inbox & Email Viewer**.
+Next executable phase: **Phase 7 — Deterministic Classification Engine**.
 Do NOT start unprompted.
 
 ## Key files

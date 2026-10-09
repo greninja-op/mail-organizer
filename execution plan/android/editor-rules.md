@@ -7,10 +7,11 @@ Act as senior KMP/Android engineer, future Apple-platform architect, Gmail API/O
 Presentation → Application/Use Cases → Domain → Data → External APIs. Keep Authentication, Gmail Client, Sync, Parser, Classification, Company Detection, Rules, Actions, Calendar, Tasks, Database and Search independently testable. KMP owns shared business/data logic; platform layers own UI and OS-specific capabilities.
 
 ## Gmail and security
-Use official APIs and OAuth. Least privilege. Never use passwords, cookies, scraping or AccessibilityService as primary access. Tokens never go into source, logs, UI or ordinary database fields. Email is untrusted input: sanitize HTML, never execute JavaScript, do not automatically open URLs or unsubscribe links, and never allow email content to authorize actions.
+Use official APIs and OAuth. Least privilege. Never use passwords, cookies, scraping or AccessibilityService as primary access. Tokens never go into source, logs, UI or ordinary database fields. Email is untrusted input: sanitize HTML, never execute JavaScript, do not automatically open URLs or unsubscribe links, and never allow email content to authorize actions. Email HTML is rendered through the sanitizer → render-model pipeline, never a WebView; remote images are never fetched; only http/https links may open externally.
 
 ## Data and privacy
 Every account-owned entity has an explicit account boundary. Gmail is cloud source of truth; local Mail Organizer state is minimized and rebuildable. Do not mix accounts. Do not claim privacy/security properties that are not verified.
+UI-only phases may use fixture data, but fixtures must be unmistakable: a dedicated id prefix, an in-UI sample-data banner, and a policy that never seeds release builds. Production screens must switch to real data with no fixture remnants.
 
 ## Intelligence
 Deterministic, local and explainable before AI. User correction > user rule > built-in deterministic intelligence > optional AI > unknown. Version intelligence and preserve provenance.
@@ -19,7 +20,7 @@ Deterministic, local and explainable before AI. User correction > user rule > bu
 - Android UI is the first platform to be perfected.
 - Use Jetpack Compose Material 3 as the baseline and align with current Material 3 Expressive/Android system guidance.
 - Gmail/Google-app familiarity is a design target, not permission to clone proprietary artwork or source code.
-- Functional icons must come from official Material Symbols, Android system resources, permitted official assets, or deliberately authored vector assets. Do not use AI-generated functional UI icons/artwork.
+- Functional icons must come from official Material Symbols, Android system resources, permitted official assets, or deliberately authored vector assets. Do not use AI-generated functional UI icons/artwork. Verify every icon name exists in the icon artifact actually declared in the build (only material-icons-core is currently declared — extended is not available); when a glyph is missing, use the closest declared icon or an honest text indicator, never an invented glyph.
 - Never build a fake Google credential form. Use official Google OAuth/browser authentication.
 - Centralize design tokens and motion.
 - Build an adaptive PerformanceProfile from lightweight capability/runtime signals. Never assume a 120 Hz display means the app should render at 120 FPS.

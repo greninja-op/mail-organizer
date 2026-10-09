@@ -1,0 +1,163 @@
+package com.greninjaop.mailorganizer.ui.mail
+
+import app.cash.turbine.ReceiveTurbine
+import app.cash.turbine.test
+import com.greninjaop.mailorganizer.core.AppDispatchers
+import com.greninjaop.mailorganizer.data.local.MessageRecord
+import com.greninjaop.mailorganizer.data.local.ThreadRecord
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+class ThreadViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+    private lateinit var mail: FakeMailRepository
+
+    private fun dispatchers() = AppDispatchers(
+        io = testDispatcher,
+        default = testDispatcher,
+        main = testDispatcher,
+    )
+
+    private fun message(
+        id: String,
+        threadId: String,
+        subject: String,
+        timestamp: Long,
+    ) = MessageRecord(
+        messageId = id,
+        gmailMessageId = null,
+        threadId = threadId,
+        accountId = "acct-1",
+        fromAddress = "a@example.com",
+        fromName = "A",
+        subject = subject,
+        snippet = null,
+        bodyText = "body $id",
+        timestampEpochMs = timestamp,
+        unread = false,
+    )
+
+    private suspend fun seedThread(threadId: String, vararg stamps: Long) {
+        val messages = stamps.mapIndexed { i, ts ->
+            message("m$i", threadId, "Subject", ts)
+        }
+        mail.saveThreadWithMessages(
+            ThreadRecord(
+                threadId = threadId,
+                gmailThreadId = null,
+                accountId = "acct-1",
+                subject = "Subject",
+                messageCount = messages.size,
+                latestMessageId = messages.maxByOrNull { it.timestampEpochMs }?.messageId,
+                latestMessageEpochMs = messages.maxOf { it.timestampEpochMs },
+                updatedAtEpochMs = 0L,
+            ),
+            messages,
+        )
+    }
+
+    private suspend fun ReceiveTurbine<ThreadDetailState>.awaitContent(): ThreadDetailState.Content {
+        while (true) {
+            when (val s = awaitItem()) {
+                is ThreadDetailState.Content -> return s
+                else -> Unit
+            }
+        }
+    }
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        mail = FakeMailRepository()
+    }
+
+    @After
+    fun teardown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `messages are oldest first and newest starts expanded`() = runTest(testDispatcher) {
+        // Inserted newest-first to prove ordering is by timestamp, not insert order.
+        seedThread("t1", 3000L, 1000L, 2000L)
+        val vm = ThreadViewModel("t1", mail, dispatchers())
+        advanceUntilIdle()
+
+        vm.state.test {
+            val content = awaitContent()
+            assertEquals(listOf(1000L, 2000L, 3000L), content.messages.map { it.timestampEpochMs })
+            assertEquals(setOf("m0"), content.expandedIds) // m0 has ts 3000 (newest)
+        }
+    }
+
+    @Test
+    fun `toggle expands and collapses`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L, 2000L) // m0 oldest, m1 newest (expanded by default)
+        val vm = ThreadViewModel("t1", mail, dispatchers())
+        advanceUntilIdle()
+
+        // Establish the default: newest (m1) expanded.
+        vm.state.test {
+            assertEquals(setOf("m1"), awaitContent().expandedIds)
+        }
+
+        vm.toggleExpanded("m1") // collapse the default-expanded newest
+        advanceUntilIdle()
+        vm.state.test {
+            assertEquals(emptySet<String>(), awaitContent().expandedIds)
+        }
+
+        vm.toggleExpanded("m0") // expand the oldest
+        advanceUntilIdle()
+        vm.state.test {
+            assertEquals(setOf("m0"), awaitContent().expandedIds)
+        }
+    }
+
+    @Test
+    fun `unknown thread is empty, not an error`() = runTest(testDispatcher) {
+        val vm = ThreadViewModel("nope", mail, dispatchers())
+        advanceUntilIdle()
+        vm.state.test {
+            while (true) {
+                if (awaitItem() is ThreadDetailState.Empty) break
+            }
+        }
+    }
+
+    @Test
+    fun `ensureExpanded opens a deep-linked message`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L, 2000L)
+        val vm = ThreadViewModel("t1", mail, dispatchers())
+        advanceUntilIdle()
+        vm.ensureExpanded("m1")
+        advanceUntilIdle()
+        vm.state.test {
+            val content = awaitContent()
+            assertTrue(content.expandedIds.contains("m1"))
+        }
+    }
+
+    @Test
+    fun `subject comes from the thread messages`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L)
+        val vm = ThreadViewModel("t1", mail, dispatchers())
+        advanceUntilIdle()
+        vm.subject.test {
+            // Initial "" then the real subject once messages arrive.
+            var last = awaitItem()
+            while (last.isEmpty()) last = awaitItem()
+            assertEquals("Subject", last)
+        }
+    }
+}

@@ -1,6 +1,6 @@
 # Development Status — Mail Organizer (Android)
 
-**Last updated:** 2026-10-09 (Phase 1 complete)
+**Last updated:** 2026-10-09 (Phase 6 complete)
 **Branch:** `main`
 **Application ID:** `com.greninjaop.mailorganizer`
 
@@ -346,5 +346,87 @@ for Gmail payloads (no Android, no Room, no network):
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play)
 
-## Next: Phase 6 — Core Inbox & Email Viewer
+## Phase 6 — Core Inbox & Email Viewer: COMPLETE (2026-10-09)
+
+### What was built
+Full mailbox UI (UI-only phase; clearly-labeled fixture data — no live
+Gmail until Phase 3):
+- **`ui/mail/` package** — `MailScreen` (top bar, 6-destination drawer:
+  All Inbox/Primary/Promotional/Social/Spam/Starred, offline + sample-data
+  banners, honest sync progress, lazy thread/message lists, honest empty
+  states), `ThreadScreen` (conversation view, oldest-first, newest expanded
+  by default, deep-link focus scroll), `ThreadRow` (flat rows, unread
+  emphasis, star display read-only), `MessageCard` (progressive header
+  disclosure, attachment metadata only, >500k-char plain-text fallback),
+  `SafeHtmlText` (Compose rendering of sanitized HTML — no WebView),
+  `AccountAvatar` (compact circular receiving-account indicator).
+- **ViewModels** — `MailViewModel` (sealed `MailboxContent`:
+  Loading/Threads/Messages/Empty/Error; pagination PAGE_SIZE=50; account
+  scoping; text filter; refresh via Phase 4 `SyncCoordinator` with honest
+  outcome mapping), `ThreadViewModel` (newest expanded by default,
+  `ensureExpanded` for deep links). UI→ViewModel→Repository→DAO only.
+- **Safety** — `SafeHtmlRenderer` (sanitized HTML → BodyBlocks; images
+  become placeholders, never fetched; only http/https links open
+  externally); `MailFormatting` (relative timestamps, byte sizes, avatar
+  initials, sender/subject fallbacks); `ConnectivityObserver` (offline
+  banner; browsing never needs network).
+- **Fixtures** — `SampleMailboxSeeder` (2 accounts, 7 threads, 11 messages;
+  all ids prefixed `fixture-`; seeds only when DB has zero accounts; HTML
+  passed through `HtmlSanitizer`; covers long subject, hostile HTML link,
+  attachments, Malayalam+emoji, missing fields, thread, starred);
+  `SampleDataPolicy` (debug may seed; release never).
+- **Navigation** — `MAIL` route → `MailScreen`; `THREAD` route
+  `mail/thread/{threadId}?focusMessageId=` with deep-link args.
+- Additive only: `MessageDao.getByIds`, `MailRepository.getMessagesByIds`;
+  `AppContainer` wires connectivity/policy/seeder; `versionName` →
+  `0.1.0-phase6`.
+
+### Validation
+- `:app:compileDebugKotlin` — **BUILD SUCCESSFUL** (real Gradle toolchain;
+  sandbox daemon dispatch is flaky — `GRADLE_OPTS=-Djava.net.preferIPv4Stack=true`
+  makes the client-side dispatch work; a wedged stale daemon was killed once).
+- **44/44 new unit tests pass** via direct kotlinc + `java` JUnitCore
+  (Gradle test worker crashes in sandbox — pre-existing):
+  `MailFormattingTest` (9), `SafeHtmlRendererTest` (11),
+  `SampleMailboxSeederTest` (9), `MailViewModelTest` (10),
+  `ThreadViewModelTest` (5). Tests caught 4 real issues, all fixed:
+  whitespace-only HTML nodes glued words ("a b" → "ab"); `</li>` never
+  cleared `inListItem`; duplicate companion object in `MailViewModel`;
+  7-flow `combine()` has no typed overload in coroutines 1.9 (max 5 —
+  restructured into two typed combines).
+- Real compile errors fixed: only `material-icons-core` is available in
+  this environment (no -extended) — `AttachFile`/`ExpandMore`/`ExpandLess`/
+  `Image`/`AllInbox`/`Inbox`/`LocalOffer`/`Group`/`Report`/`CloudOff` do not
+  exist there; replaced with core-set icons (`Email`, `MailOutline`,
+  `ShoppingCart`, `Person`, `Warning`, `Info`, `KeyboardArrowDown/Up`) or
+  honest text-only indicators (attachment "Files" chip / "N files" count;
+  text image placeholders). No invented icons.
+- Secret audit: clean. No credentials, no network calls from UI.
+
+### Decisions
+1. **No WebView for email HTML** — sanitized HTML renders through
+   `SafeHtmlRenderer` → Compose `Text`; remote images never fetched.
+2. **Star is display-only** (read-only phase §6); starring is a Gmail write
+   (Phase 22).
+3. **Classification destinations show honest "not classified yet"** —
+   Promotional/Social/Spam are empty until Phase 7, never faked.
+4. **Fixture data is unmistakable** — `fixture-` id prefix, "Sample data"
+   banner, `SampleDataPolicy` gates release builds.
+
+### Known issues
+1. Gradle daemon dispatch flaky in sandbox (pre-existing) — worked with
+   `GRADLE_OPTS=-Djava.net.preferIPv4Stack=true`; may need a stale-daemon
+   kill between runs.
+2. Gradle test-worker JVM crash (pre-existing, Phase 0) — tests run via
+   direct kotlinc + JUnitCore.
+3. No device/emulator — device criteria [!] blocked-by-environment, never
+   faked.
+4. Lint: 0 errors, 5 warnings (4 pre-existing: SDK/target, mipmap folder,
+   adaptive-icon monochrome; 1 fixed: KTX `toUri()`).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play)
+
+## Next: Phase 7 — Deterministic Classification Engine
 Do NOT start unprompted.

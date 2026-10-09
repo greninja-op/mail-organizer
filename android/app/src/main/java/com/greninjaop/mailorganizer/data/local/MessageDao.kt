@@ -25,6 +25,14 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE messageId = :messageId")
     suspend fun getById(messageId: String): MessageRecord?
 
+    /**
+     * Latest-message rows for the visible thread page (Phase 6): one bounded
+     * query instead of N+1 per-row lookups. Never call with an empty list
+     * (Room rejects empty IN clauses) — callers guard.
+     */
+    @Query("SELECT * FROM messages WHERE messageId IN (:messageIds)")
+    suspend fun getByIds(messageIds: List<String>): List<MessageRecord>
+
     @Query(
         "SELECT * FROM messages WHERE threadId = :threadId " +
             "ORDER BY timestampEpochMs ASC LIMIT :limit",

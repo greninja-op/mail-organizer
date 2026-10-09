@@ -20,6 +20,11 @@ import com.greninjaop.mailorganizer.data.repository.SyncStateRepository
 import com.greninjaop.mailorganizer.data.sync.DeferredGmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.GmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
+import com.greninjaop.mailorganizer.ui.mail.AndroidConnectivityObserver
+import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
+import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
+import com.greninjaop.mailorganizer.ui.mail.SampleDataPolicy
+import com.greninjaop.mailorganizer.ui.mail.SampleMailboxSeeder
 
 /**
  * Manual dependency container (Phase 0; data layer wired in Phase 2).
@@ -96,6 +101,26 @@ class AppContainer(private val appContext: Context) {
             syncState = syncStateRepository,
             dispatchers = dispatchers,
         )
+    }
+
+    // ---- Phase 6: mailbox UI collaborators ----
+    // Connectivity only drives the honest offline banner; browsing
+    // synchronized mail never needs the network.
+
+    val connectivityObserver: ConnectivityObserver by lazy {
+        AndroidConnectivityObserver(appContext.applicationContext)
+    }
+
+    // Fixture policy: debug builds may seed clearly-labeled sample mail so
+    // the inbox is developable without live Gmail (Phase 3 deferred).
+    // Release builds never seed; the seeder never touches real data.
+
+    val sampleDataPolicy: SampleDataPolicy by lazy {
+        DebugSampleDataPolicy()
+    }
+
+    val sampleMailboxSeeder: SampleMailboxSeeder by lazy {
+        SampleMailboxSeeder(accountRepository, mailRepository)
     }
 
     private companion object {

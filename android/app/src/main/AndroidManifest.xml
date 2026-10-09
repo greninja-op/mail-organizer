@@ -2,7 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Phase 0: no permissions yet. INTERNET and Gmail-related permissions are
-         introduced with the phases that need them (Phase 3+), per least privilege. -->
+         introduced with the phases that need them (Phase 3+), per least privilege.
+         Phase 6: ACCESS_NETWORK_STATE for the offline banner only (normal
+         permission — auto-granted at install, no runtime prompt). Browsing
+         local mail never needs network; this only drives the banner. -->
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".MailOrganizerApp"
