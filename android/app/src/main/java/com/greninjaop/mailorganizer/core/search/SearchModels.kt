@@ -33,15 +33,16 @@ enum class SearchDatePreset {
 }
 
 /**
- * A structured search request (phase §29).
+ * A structured search request (Phase 10, updated in Phase 18 for unified search).
  *
- * [accountId] is mandatory: search never leaks results between accounts
- * (phase §26). [rawText] is parsed by [QueryParser] into a safe FTS5
+ * When [accountId] is non-null, search is strictly scoped to that account (phase §26).
+ * When [accountId] is null, search operates across all enabled accounts in unified mode (phase §39).
+ * [rawText] is parsed by [QueryParser] into a safe FTS5
  * expression; every other field becomes a parameterized predicate.
  */
 data class SearchQuery(
     val rawText: String = "",
-    val accountId: String,
+    val accountId: String? = null,
     val category: MailCategory? = null,
     val priority: Priority? = null,
     val actionRequiredOnly: Boolean = false,

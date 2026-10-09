@@ -51,6 +51,7 @@ class ActionsViewModelFactory(
             intelligence = container.intelligenceRepository,
             review = container.reviewActionUseCase,
             dispatchers = container.dispatchers,
+            activeAccountPreferences = container.activeAccountPreferences,
         ) as T
     }
 }

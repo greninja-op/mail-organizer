@@ -82,6 +82,7 @@ fun ThreadRow(
 fun StarredMessageRow(
     item: MessageItem,
     account: AccountRecord?,
+    showAccountIndicator: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,7 +106,7 @@ fun StarredMessageRow(
         messageCount = 1,
         priority = item.priority,
         account = account,
-        showAccountIndicator = false,
+        showAccountIndicator = showAccountIndicator,
         onClick = onClick,
         modifier = modifier.semantics { contentDescription = description },
     )

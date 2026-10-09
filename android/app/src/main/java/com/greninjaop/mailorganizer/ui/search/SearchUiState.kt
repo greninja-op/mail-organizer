@@ -61,6 +61,8 @@ data class SearchScreenState(
     val filters: SearchFilters = SearchFilters(),
     val resultType: SearchResultType = SearchResultType.MESSAGES,
     val activeAccount: AccountRecord? = null,
+    val isUnified: Boolean = false,
+    val accountsById: Map<String, AccountRecord> = emptyMap(),
     val indexState: SearchIndexState? = null,
     /** Background index catch-up running (phase §56). Search still works. */
     val indexing: Boolean = false,

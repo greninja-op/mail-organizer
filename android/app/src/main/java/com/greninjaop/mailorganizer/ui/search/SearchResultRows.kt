@@ -68,6 +68,7 @@ fun SearchMessageRow(
     result: SearchResult.Message,
     terms: List<String>,
     phrases: List<String>,
+    accountBadge: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -77,13 +78,24 @@ fun SearchMessageRow(
     }
     ListItem(
         headlineContent = {
-            HighlightedText(
-                text = MailFormatting.senderDisplay(record.fromName, record.fromAddress),
-                terms = terms,
-                phrases = phrases,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                HighlightedText(
+                    text = MailFormatting.senderDisplay(record.fromName, record.fromAddress),
+                    terms = terms,
+                    phrases = phrases,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (accountBadge != null) {
+                    Spacer(Modifier.width(MoSpacing.xs))
+                    Text(
+                        text = accountBadge,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         },
         supportingContent = {
             Column {
@@ -125,19 +137,31 @@ fun SearchThreadRow(
     result: SearchResult.Thread,
     terms: List<String>,
     phrases: List<String>,
+    accountBadge: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val preview = result.preview
     ListItem(
         headlineContent = {
-            HighlightedText(
-                text = MailFormatting.subjectDisplay(result.thread.subject),
-                terms = terms,
-                phrases = phrases,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                HighlightedText(
+                    text = MailFormatting.subjectDisplay(result.thread.subject),
+                    terms = terms,
+                    phrases = phrases,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (accountBadge != null) {
+                    Spacer(Modifier.width(MoSpacing.xs))
+                    Text(
+                        text = accountBadge,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         },
         supportingContent = {
             Text(

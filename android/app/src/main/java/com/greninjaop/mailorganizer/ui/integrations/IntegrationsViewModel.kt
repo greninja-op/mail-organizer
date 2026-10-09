@@ -8,6 +8,8 @@ import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.core.integrations.IntegrationId
 import com.greninjaop.mailorganizer.core.integrations.IntegrationSnapshot
 import com.greninjaop.mailorganizer.data.local.AccountRecord
+import com.greninjaop.mailorganizer.data.prefs.AccountSelection
+import com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.di.AppContainer
 import com.greninjaop.mailorganizer.domain.integrations.IntegrationManager
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,22 +52,37 @@ class IntegrationsViewModel(
     private val manager: IntegrationManager,
     private val accounts: AccountRepository,
     private val dispatchers: AppDispatchers,
+    private val activeAccountPreferences: ActiveAccountPreferences? = null,
 ) : ViewModel() {
 
     private val _events = MutableSharedFlow<IntegrationsEvent>(extraBufferCapacity = 8)
     val events: SharedFlow<IntegrationsEvent> = _events.asSharedFlow()
 
     private val activeAccount: StateFlow<AccountRecord?> =
-        accounts.observeAll()
-            .map { list ->
-                list.filter { it.isEnabled }.minWithOrNull(
-                    compareBy<AccountRecord> { it.createdAtEpochMs }
-                        .thenBy { it.accountId },
-                )
-            }
-            // Eagerly: account flows feed flatMapLatest-style combines;
-            // WhileSubscribed would replay the initial null first (Phase 11 lesson).
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        if (activeAccountPreferences != null) {
+            combine(accounts.observeAll(), activeAccountPreferences.activeAccountSelection) { list, selection ->
+                val enabled = list.filter { it.isEnabled }
+                when (selection) {
+                    is AccountSelection.Single -> {
+                        enabled.firstOrNull { it.accountId == selection.accountId } ?: enabled.firstOrNull()
+                    }
+                    is AccountSelection.Unified -> {
+                        enabled.minWithOrNull(
+                            compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId },
+                        )
+                    }
+                }
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        } else {
+            accounts.observeAll()
+                .map { list ->
+                    list.filter { it.isEnabled }.minWithOrNull(
+                        compareBy<AccountRecord> { it.createdAtEpochMs }
+                            .thenBy { it.accountId },
+                    )
+                }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        }
 
     private val refreshTick = MutableStateFlow(0L)
 
@@ -183,6 +201,7 @@ class IntegrationsViewModelFactory(
                 manager = container.integrationManager,
                 accounts = container.accountRepository,
                 dispatchers = container.dispatchers,
+                activeAccountPreferences = container.activeAccountPreferences,
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")

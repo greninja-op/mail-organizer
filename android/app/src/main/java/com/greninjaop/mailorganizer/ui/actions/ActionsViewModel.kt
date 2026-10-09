@@ -7,6 +7,8 @@ import com.greninjaop.mailorganizer.core.MoLogger
 import com.greninjaop.mailorganizer.core.actions.ActionStatus
 import com.greninjaop.mailorganizer.data.local.AccountRecord
 import com.greninjaop.mailorganizer.data.local.ActionItemRecord
+import com.greninjaop.mailorganizer.data.prefs.AccountSelection
+import com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -71,6 +74,7 @@ class ActionsViewModel(
     private val review: ReviewActionUseCase,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val activeAccountPreferences: ActiveAccountPreferences? = null,
 ) : ViewModel() {
 
     companion object {
@@ -81,15 +85,32 @@ class ActionsViewModel(
     private val _events = MutableSharedFlow<ActionsEvent>()
     val events: SharedFlow<ActionsEvent> = _events.asSharedFlow()
 
+    private val activeSelection = activeAccountPreferences?.activeAccountSelection
+        ?: flowOf(AccountSelection.Unified)
+
     private val activeAccount: StateFlow<AccountRecord?> =
-        accounts.observeAll()
-            .map { list ->
-                list.filter { it.isEnabled }.minWithOrNull(
-                    compareBy<AccountRecord> { it.createdAtEpochMs }
-                        .thenBy { it.accountId },
-                )
+        combine(accounts.observeAll(), activeSelection) { list, selection ->
+            val enabled = list.filter { it.isEnabled }
+            when (selection) {
+                is AccountSelection.Single -> {
+                    if (selection.accountId != null) {
+                        enabled.firstOrNull { it.accountId == selection.accountId }
+                            ?: enabled.firstOrNull()
+                    } else {
+                        enabled.minWithOrNull(
+                            compareBy<AccountRecord> { it.createdAtEpochMs }
+                                .thenBy { it.accountId },
+                        )
+                    }
+                }
+                is AccountSelection.Unified -> {
+                    enabled.minWithOrNull(
+                        compareBy<AccountRecord> { it.createdAtEpochMs }
+                            .thenBy { it.accountId },
+                    )
+                }
             }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ActionsUiState> =

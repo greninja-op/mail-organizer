@@ -32,6 +32,16 @@ interface ThreadDao {
     )
     fun observeByAccount(accountId: String, limit: Int): Flow<List<ThreadRecord>>
 
+    /**
+     * Unified presentation query (Phase 18): observes threads across all
+     * enabled accounts ordered by latest message epoch descending.
+     */
+    @Query(
+        "SELECT t.* FROM threads t JOIN accounts a ON a.accountId = t.accountId " +
+            "WHERE a.isEnabled = 1 ORDER BY t.latestMessageEpochMs DESC LIMIT :limit",
+    )
+    fun observeUnified(limit: Int): Flow<List<ThreadRecord>>
+
     @Query(
         "SELECT * FROM threads WHERE accountId = :accountId " +
             "ORDER BY latestMessageEpochMs DESC LIMIT :limit",

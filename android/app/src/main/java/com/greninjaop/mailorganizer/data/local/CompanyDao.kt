@@ -65,4 +65,13 @@ interface CompanyDao {
             "ORDER BY pinned DESC, canonicalName ASC LIMIT :limit",
     )
     suspend fun suggestByText(accountId: String, like: String, limit: Int): List<CompanyRecord>
+
+    /** Unified company suggestions across all enabled accounts (Phase 18). */
+    @Query(
+        "SELECT c.* FROM companies c JOIN accounts a ON a.accountId = c.accountId " +
+            "WHERE a.isEnabled = 1 AND " +
+            "(c.canonicalName LIKE :like COLLATE NOCASE OR c.userOverrideName LIKE :like COLLATE NOCASE) " +
+            "ORDER BY c.pinned DESC, c.canonicalName ASC LIMIT :limit",
+    )
+    suspend fun suggestByTextUnified(like: String, limit: Int): List<CompanyRecord>
 }

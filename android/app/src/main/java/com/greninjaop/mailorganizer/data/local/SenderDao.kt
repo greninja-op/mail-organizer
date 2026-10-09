@@ -88,4 +88,13 @@ interface SenderDao {
             "ORDER BY messageCount DESC LIMIT :limit",
     )
     suspend fun suggestByText(accountId: String, like: String, limit: Int): List<SenderRecord>
+
+    /** Unified suggestions across all enabled accounts (Phase 18). */
+    @Query(
+        "SELECT s.* FROM senders s JOIN accounts a ON a.accountId = s.accountId " +
+            "WHERE a.isEnabled = 1 AND " +
+            "(s.displayName LIKE :like COLLATE NOCASE OR s.emailAddress LIKE :like COLLATE NOCASE) " +
+            "ORDER BY s.messageCount DESC LIMIT :limit",
+    )
+    suspend fun suggestByTextUnified(like: String, limit: Int): List<SenderRecord>
 }
