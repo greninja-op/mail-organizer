@@ -976,3 +976,69 @@ user confirms, nothing external happens automatically.
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 26 optional AI
   fallback.
+
+## Phase 17 — Integration Manager: COMPLETE (2026-10-09)
+
+### What was built
+Coherent application-level system for managing the app's integrations —
+the manager coordinates; it never absorbs API-specific logic, never
+performs external side effects, and never bypasses Phase 14's confirmation
+boundary. Built honestly around the deferred phases: the plan assumed
+Phases 3/15/16 existed, but they are user-deferred, so Calendar/Tasks are
+first-class UNAVAILABLE integrations (never fake-connected) and Gmail
+reports AUTH_REQUIRED (OAuth deferred) — never CONNECTED.
+
+- **Core** (`core/integrations/`, pure Kotlin): `IntegrationModels.kt`
+  (`IntegrationId` value class; `IntegrationStatus` — AVAILABLE/CONNECTED/
+  CONNECTING/DISCONNECTED/AUTH_REQUIRED/PERMISSION_REQUIRED/OFFLINE/
+  UNAVAILABLE/ERROR; `IntegrationCapability` — READ_EMAIL/SYNC_EMAIL/
+  READ_CALENDAR_METADATA/CREATE_EVENT/READ_TASK_LISTS/CREATE_TASK;
+  `PermissionDescription` least-privilege declarations; `IntegrationSnapshot`
+  with `usableCapabilities` gated on CONNECTED — a declaration is never
+  availability; `IntegrationError` categories; `RetryDecision`;
+  `IntegrationEvent`), `IntegrationAdapter.kt` (contract: snapshot/connect/
+  disconnect/refresh, all total), `IntegrationPolicies.kt` (pure error
+  normalization + retry semantics — OFFLINE→retry later, AUTH→reconnect,
+  INVALID/NOT_BUILT→never retry, RATE_LIMITED→backoff).
+- **Domain** (`domain/integrations/`): `IntegrationManager` (adapter
+  registry; account-scoped snapshots with strict isolation; `isCapable`
+  capability queries for the Action Engine — phase §28; `integrationForAction`
+  routing — MEETING→Calendar, REMINDER→Tasks, DEADLINE deliberately
+  unmapped rather than guessed — phase §30; safe connect/disconnect;
+  lightweight `refreshAll` health check — phase §25; `handleAccountRemoved`
+  cleanup boundary — only that account's metadata — phase §36; SharedFlow
+  events — phase §33), `IntegrationStateRepository` (metadata persistence
+  interface).
+- **Data** (`data/integrations/`): `GmailIntegrationAdapter` (wraps Phase 4's
+  fail-closed sync seam; no account→DISCONNECTED, local-only
+  account→AUTH_REQUIRED naming Phase 3, never CONNECTED; readonly-only
+  permissions), `CalendarIntegrationAdapter` / `TasksIntegrationAdapter`
+  (deferred → UNAVAILABLE naming Phase 15/16; connect() fails honestly,
+  never a fake OAuth flow).
+- **Storage**: `integration_states` via additive v7→v8 migration
+  (`MIGRATION_7_8`) — status metadata only, never credentials (phase §35).
+- **Action Engine wiring** (phase §28): `ReviewActionUseCase` accepts the
+  manager and enriches `ExternalNotConnected` with the responsible
+  integration's honest reason (e.g. "Google Calendar: …arrives with Phase
+  15"); the UI message uses it, falling back to the generic copy.
+- **UI** (`ui/integrations/`): reworked Integrations destination on the
+  manager — status list with pills, account header, offline banner
+  (offline ≠ disconnected — phase §26); detail screen (provider, status +
+  reason, account, capabilities with usable-vs-declared distinction,
+  permissions with purposes, Connect/Disconnect with confirmation dialog —
+  phase §19; no Connect button for UNAVAILABLE); `integration/{id}` route
+  with unknown-id not-found state; old Phase 11 placeholder removed.
+
+### Verification
+- New tests: `IntegrationPoliciesTest` (8), `IntegrationManagerTest`
+  (10), `IntegrationAdaptersTest` (10), `IntegrationsViewModelTest` (4).
+- Full suite via direct JUnitCore; `:app:compileDebugKotlin` and
+  `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL.
+- `MIGRATION_7_8` SQL validated on real SQLite.
+- Secret audit clean. No device — device checks blocked, never faked.
+  No OAuth. No APK (user decision: only after Phase 30).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 26 optional AI
+  fallback.
