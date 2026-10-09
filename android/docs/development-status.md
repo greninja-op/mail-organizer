@@ -428,5 +428,120 @@ Gmail until Phase 3):
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play)
 
-## Next: Phase 7 — Deterministic Classification Engine
+## Phase 7 — Deterministic Classification Engine: COMPLETE (2026-10-09)
+
+### What was built
+Local, deterministic, explainable email classification — no network, no AI,
+no randomness:
+
+- **`core/classify/` package (pure Kotlin)** —
+  `ClassifierModels` (ClassifierCategory/Confidence/MatchedSignal/
+  ClassificationInput/ClassificationResult; Confidence is documented rule
+  strength, not statistics),
+  `TextNormalizer` (NFKC, locale-independent ASCII lowercase so a
+  Turkish-locale device classifies identically, whitespace collapse, bounded
+  lengths),
+  `SignalExtractor` (total + bounded: sender/domain, subject, body ≤20k
+  chars, Gmail category labels, labels, unsubscribe, URL domains ≤20 parsed
+  as strings never visited, attachment filename hints, recurring-sender
+  flag threaded through for Phase 8),
+  `ClassificationRules` (30 registered rules with stable ids —
+  SECURITY_OTP/LOGIN_ALERT/PASSWORD_RESET/SUSPICIOUS/VERIFY_ACCOUNT,
+  ACTION_DEADLINE/PAYMENT_DUE/DOC_REQUEST, ORDER_CONFIRMATION/SHIPPED/
+  DELIVERED/INVOICE, CAREER_INTERVIEW/RECRUITER/JOB_POSTING/APPLICATION,
+  EDUCATION_INSTITUTION/ASSIGNMENT/EXAM/COURSE, IMPORTANT_PERSONAL,
+  NEWSLETTER_UNSUBSCRIBE/FORMAT, PROMOTION_DISCOUNT/SALE/GMAIL_CATEGORY,
+  NOTIFICATION_SOCIAL/SERVICE, LOW_VALUE_NOREPLY_NOISE; every rule KDoc'd
+  with id/purpose/signals/strength/precedence/explanation/limitations),
+  `DeterministicClassifier` (VERSION=1; score = summed rule weights;
+  conflicts resolved by score then explicit PRECEDENCE
+  Security>Action>Orders>Career>Education>Important>Newsletters>
+  Promotions>Notifications>LowValue; LOW_VALUE gated to win only when
+  nothing else scored; <20 points stays honestly UNCLASSIFIED).
+- **`domain/classify/` use cases** — `ClassifyMessageUseCase` (UI never
+  holds logic; never overwrites USER_CORRECTION/USER_RULE rows; skips
+  current-version DETERMINISTIC rows = idempotent; reclassifies older
+  versions; enforces account isolation; total — failures degrade to
+  unclassified with safe logging),
+  `ClassifyMailboxUseCase.classifyNew` (incremental: only unclassified
+  messages; bounded 200/call; IO dispatcher).
+- **Persistence** — no migration: Phase 2's `classifications` table already
+  stores category/confidence/source/version/explanation/overridden,
+  account-scoped. Additive DAO: `MessageDao.getUnclassified` (LEFT JOIN),
+  `MessageDao.observeByLabel` (exact label match via char(31) separators);
+  `MailRepository` gains `getMessage`/`getUnclassifiedMessages`/
+  `observeByLabel`.
+- **UI wiring (§52)** — Promotional destination ← PROMOTIONS category;
+  Social ← Gmail CATEGORY_SOCIAL label; Spam ← Gmail SPAM label
+  (documented: Gmail's own signals; classifier still classifies for the
+  record); `MessageCard` shows a category chip + expandable "Why this
+  category?" from the persisted explanation; `ThreadViewModel` loads
+  per-message classifications (message-level evidence preserved, §35);
+  `CategoryVisuals` (label + accent + content description — never color
+  alone; light/dark token pairs in `Color.kt`);
+  `MailViewModel` runs bounded background classification on startup
+  (best-effort, never breaks the inbox). `versionName` → `0.1.0-phase7`.
+
+### Validation
+- `:app:compileDebugKotlin` — **BUILD SUCCESSFUL** (real Gradle toolchain).
+- **New unit tests pass** via direct kotlinc + `java` JUnitCore (Gradle test
+  worker crashes in sandbox — pre-existing):
+  `TextNormalizerTest` (10), `SignalExtractorTest` (11),
+  `DeterministicClassifierTest` (30: all 10 categories incl. security OTP/
+  login-alert/password-reset/suspicious/verify, career, education, orders,
+  newsletter, promotion, notification, action-required, important, low-value,
+  unclassified; determinism),
+  `ClassificationConflictsTest` (9: security>promotion, security>
+  notification, order>promotion, action>notification, career>promotion,
+  education>notification, tie-break determinism, low-value gate,
+  precedence completeness),
+  `ClassificationAdversarialTest` (7: lone "security"/"sale" words don't
+  fire, "Interview tips newsletter" → newsletters, unsubscribe alone ≠
+  newsletter, Gmail label alone ≠ decision, keyword stuffing),
+  `ClassificationRobustnessTest` (9: script-like/JS-URL/Unicode/control-char
+  input inert, 2.4MB body bounded <2s, no catastrophic backtracking),
+  `ClassificationPerformanceTest` (4: 100/1k/10k emails; sub-ms average),
+  `ClassifyMessageUseCaseTest` (12: persist, override safety, idempotency,
+  version re-run, force, account isolation, batch + bound),
+  `MailViewModelTest` (+4: promotional shows classified promotions,
+  honest empty states, spam label destination, background classification),
+  `ThreadViewModelTest` (+1: per-message classifications loaded).
+  Tests caught real issues, all fixed: bare `return` inside non-inline rule
+  lambdas (compile errors); `NEWSLETTER_UNSUBSCRIBE` fired on bank "monthly
+  statement" — markers narrowed to explicit newsletter self-identification.
+- Secret audit: clean. No network calls from classifier; no email-content
+  logging (verified by inspection).
+
+### Decisions
+1. **Message-level classification** (§35) — per-message evidence preserved;
+   thread-level aggregation is a later presentation concern.
+2. **LOW_VALUE is gated** (§41) — wins only when no other category scored;
+   weak evidence otherwise stays honestly UNCLASSIFIED.
+3. **Social/Spam destinations are label-driven** — Gmail's CATEGORY_SOCIAL /
+   SPAM labels define them; the classifier still classifies every message
+   for the record. Promotional is classifier-driven.
+4. **Confidence is rule strength, not probability** — documented in the
+   model; never presented as statistical certainty.
+5. **Overrides are never destroyed** (§30–31) — USER_CORRECTION/USER_RULE
+   rows are skipped, not overwritten; predicted vs effective category stay
+   distinguishable via ClassificationSource.
+
+### Known issues
+1. Gradle daemon dispatch flaky in sandbox (pre-existing) — works with
+   `GRADLE_OPTS=-Djava.net.preferIPv4Stack=true`.
+2. Gradle test-worker JVM crash (pre-existing, Phase 0) — tests run via
+   direct kotlinc + JUnitCore.
+3. No device/emulator — device criteria [!] blocked-by-environment, never
+   faked (APK install/launch/screenshots/logcat impossible here; APK ships
+   only after Phase 30 per user decision).
+4. `isRecurringSender` is a threaded-through flag (default false) — the
+   real recurring-sender signal is Phase 8 (Company & Sender Intelligence).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 8 company/sender
+  intelligence, Phase 9 priority/action-required engine, Phase 12
+  user-correction UI, Phase 26 optional AI fallback.
+
+## Next: Phase 8 — Company & Sender Intelligence
 Do NOT start unprompted.

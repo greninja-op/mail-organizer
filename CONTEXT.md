@@ -38,8 +38,9 @@
 - **Phase 4** — Gmail Synchronization Engine (sync coordinator, cursors, retry policy, scheduler seam): COMPLETE, pushed. 92/92 tests.
 - **Phase 5** — Email Data Model & Parsing (`core/email/`: canonical model, total MIME parser, HTML sanitizer, v2→v3 migration): COMPLETE, pushed (2 commits). 38/38 tests (caught 2 real bugs, fixed).
 - **Phase 6** — Core Inbox & Email Viewer (`ui/mail/`: MailScreen + drawer + lazy lists, ThreadScreen oldest-first, MessageCard viewer, no-WebView HTML-as-native-text, fixture data clearly labeled): COMPLETE, pushed (3 commits). 44/44 unit tests; `:app:compileDebugKotlin` BUILD SUCCESSFUL; secret audit clean. No device — device checks blocked, never faked.
-- **Phase 7** — Email Classification Engine: NEXT (starting 2026-10-09).
-- Push history: phases 0/1/2/4 in commits cc38873, 855ff48, 6f00813, 8a9267f; Phase 5 in 2 commits; Phase 6 in 3 commits.
+- **Phase 7** — Email Classification Engine (deterministic local classifier: `core/classify/` — 30 rules, 10 categories + UNCLASSIFIED, honest confidence-as-rule-strength; `domain/classify/` use cases with persist + idempotency + user-override safety; Promotional/Social/Spam destinations now show real classified mail; category chips + "Why this category?" explanations in UI): COMPLETE, pushed. 140/140 unit tests pass (76 core classifier + 12 use-case + 52 UI); `:app:compileDebugKotlin` BUILD SUCCESSFUL; secret audit clean. 10,000 emails classify in ~933ms (~0.09ms/msg). No device — device checks blocked, never faked.
+- **Phase 8** — NEXT (starts after Phase 7 push).
+- Push history: phases 0/1/2/4 in commits cc38873, 855ff48, 6f00813, 8a9267f; Phase 5 in 2 commits; Phase 6 in 3 commits; Phase 7 pushed (see phase report for commit).
 
 ## Decision log
 - **2026-10-08:** User greenlit Android execution. Build UI + foundation now; skip all Google Auth/API-key/OAuth work to the very end. Report after every phase. Push directly to `main`.
@@ -50,6 +51,7 @@
 - **2026-10-09:** 4 approval prompts in a row were a one-time 105-file catch-up split (arg-size limit) — not the norm; one prompt per phase going forward.
 - **2026-10-09:** Quota guardrail set: hard stop at 98% free-weekly usage, notify in side chat, never touch 1B pool without explicit approval. (Supersedes earlier "full speed even if it burns the 1B pool" wording.)
 - **2026-10-09:** User emphasized CONTEXT.md is THE continuity file — redesigned for agent-efficient understanding. Phase 5's agent had failed to update it (stale push); rule 4 above added to prevent repeats.
+- **2026-10-09:** Phase 7 (Email Classification Engine) COMPLETE and pushed. Key decisions: message-level classification; LOW_VALUE gated (wins only when nothing else scored); Social/Spam destinations are Gmail-label-driven, Promotional is classifier-driven; confidence = rule strength not probability; no schema migration needed. Test lesson: `android.util.Log` no-op stub (`/tmp/mo-test/out/stubs`) must be FIRST on the JUnitCore runtime classpath — without it, MoLogger calls throw "Stub!" from android.jar and break error-path tests (this caused 2 pre-existing MailViewModelTest failures).
 
 ## Environment limitations (sandbox)
 - No emulator/adb — device install/launch/screenshot checks blocked until real hardware or CI. Mark device criteria `[!]`.
