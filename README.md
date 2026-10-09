@@ -1,8 +1,8 @@
 ![Mail Stack — Organise your inbox. Simplify your day.](banner/banner.png)
 
-# Mail Organizer — Execution Plan
+# Mailstack — Execution Plan
 
-This repository contains the execution plan for Mail Organizer. Execute one phase at a time from the cloned repository.
+This repository contains the execution plan for Mailstack (formerly "Mail Organizer"). Execute one phase at a time from the cloned repository.
 
 ## Architecture direction
 - Kotlin Multiplatform (KMP) for shared domain, data, sync, intelligence and integration logic.
