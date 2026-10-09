@@ -273,5 +273,78 @@ New `data/sync/` package — the app's only network-touching subsystem:
   implementation
 - Phases 15/16 (Calendar/Tasks), 22 (Gmail write), 29 (prod OAuth/Play)
 
-## Next: Phase 5 — Email Data Model & Parsing
+## Phase 5 — Email Data Model & Parsing: COMPLETE (2026-10-09)
+
+### What was built
+New pure-Kotlin `core/email/` package — the parsing/normalization boundary
+for Gmail payloads (no Android, no Room, no network):
+- **`EmailModels`** — wire mirror (`RawGmailMessage`/`RawGmailPart`/
+  `RawGmailHeader`/`RawGmailBody`, shaped like the Gmail API JSON) →
+  canonical **`EmailMessage`** (headers, addresses, bodyText/bodyHtml,
+  snippet, attachments metadata-only, flags). `AttachmentMeta` carries
+  filename/mimeType/sizeBytes/attachmentId — never content bytes.
+- **`EmailParser`** — total parser (never throws): recursive MIME walk
+  (multipart/alternative prefers text/plain; falls back to first text part;
+  multipart/mixed collects attachments), RFC 2047 encoded-word decoding
+  (B/Q, multi-charset), address-list parsing (display names, groups),
+  RFC 2822 date parsing (named zones, numeric offsets, obsolete formats),
+  Gmail labelIds → flags (UNREAD/STARRED), snippet fallback. Malformed
+  input degrades to identity shell (id/threadId/labels preserved).
+- **`HtmlSanitizer`** — dependency-free sanitizer: strips script/style/
+  iframe/object/embed/applet/form (+ unclosed executable tags to end of
+  input, matching browser parsing), comments, event handlers, style attrs,
+  javascript:/data:/vbscript: URLs; `htmlToText` extracts readable text
+  with paragraph breaks. Both total (never throw).
+- **`AttachmentMetaJson`** — hand-rolled JSON codec for attachment lists
+  (no serialization dependency in core).
+- **`EmailMappers`** (`data/sync/`) — `EmailMessage.toMessageRecord()`:
+  reuses Phase 4's `localMessageId`/`localThreadId` stable namespacing;
+  Gmail UNREAD/STARRED labels → `unread`/`starred` flags.
+- Schema v2→v3: `MessageRecord` gains `bodyHtml: String?` (nullable TEXT)
+  and `attachments: List<AttachmentMeta>` (TEXT via `MoConverters` JSON,
+  NOT NULL); `MIGRATION_2_3` (purely additive ALTER TABLEs);
+  `AppDatabase` version 2→3; `AppContainer` registers migration;
+  `versionName` → `0.1.0-phase5`.
+
+### Validation
+- Direct `kotlinc` compile (Gradle daemon has a dispatch failure in this
+  sandbox — pre-existing environment issue, separate from the test-worker
+  issue): all new/modified sources compile clean.
+- **38/38 new unit tests pass** via direct `java` JUnitCore:
+  `HtmlSanitizerTest` (9), `EmailParserTest` (14), `AttachmentMetaJsonTest`
+  (8), `EmailMappersTest` (7). 2 real bugs found & fixed during testing
+  (see Decisions).
+- Migration SQL validated against real SQLite (Python sqlite3): v2 table +
+  ALTERs → correct schema, existing rows preserved, `bodyHtml` NULL,
+  `attachments` `''` → reads as empty list via converter.
+- `MigrationTest` extended with v2→v3 test (requires Room runtime —
+  **not run** in this sandbox; SQL validated as above).
+- Secret audit: clean. Email treated as untrusted input throughout.
+
+### Decisions
+1. **Test fixtures must put headers on the payload part** (matching the
+   real Gmail API shape), not in a separate list — the parser reads
+   `payload.headers`. Fixed the fixtures, not the parser.
+2. **Unclosed `<script` removes to end of input**, matching browser parsing
+   (browsers treat the rest as script content). Found by hostile-input test.
+3. **Lone newlines in `htmlToText` are source-formatting whitespace** —
+   converted to spaces before collapsing; only `\n\n` (from block elements)
+   survives as paragraph breaks. Found by whitespace test.
+4. **`attachments` migration default is `''`** (not `'[]'`): `MoConverters`
+   reads blank as empty list, and Room writes `"[]"` for new empty lists —
+   consistent both directions.
+
+### Known issues
+1. Gradle daemon dispatch failure in this sandbox (new, Phase 5) —
+   compilation verified via direct `kotlinc` instead.
+2. Gradle test-worker JVM crash (pre-existing, Phase 0).
+3. No device/emulator — device criteria [!] blocked-by-environment.
+4. `MigrationTest` v2→v3 not executed (needs Room runtime); SQL validated
+   directly.
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play)
+
+## Next: Phase 6 — Core Inbox & Email Viewer
 Do NOT start unprompted.

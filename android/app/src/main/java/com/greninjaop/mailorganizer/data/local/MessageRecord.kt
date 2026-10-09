@@ -4,14 +4,15 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.greninjaop.mailorganizer.core.email.AttachmentMeta
 
 /**
  * Email message row (Phase 2).
  *
  * Data-minimization notes (phase §38):
- * - Only a minimal plain-text body is stored; full MIME payloads and
- *   attachment binaries are NOT stored (attachment *metadata* is out of
- *   scope for Phase 2 and arrives with the sync engine).
+ * - Only a minimal plain-text body is stored, plus the *sanitized* HTML body
+ *   (Phase 5); full MIME payloads and attachment binaries are NOT stored
+ *   (attachment *metadata* arrives with the Phase 5 parser).
  * - `bodyText` may be null when only headers/snippet have been synced.
  *
  * Query patterns supported by the indexes: per-account mailbox, per-thread
@@ -58,6 +59,16 @@ data class MessageRecord(
     val snippet: String?,
     /** Minimal plain-text body (nullable); sanitized HTML is a later phase. */
     val bodyText: String?,
+    /**
+     * Sanitized HTML body (Phase 5, [HtmlSanitizer]); null when the message
+     * has no HTML part. Never raw wire HTML — email is untrusted input.
+     */
+    val bodyHtml: String? = null,
+    /**
+     * Attachment *metadata* (Phase 5); binaries are never stored.
+     * Persisted as JSON via [MoConverters] (never a query predicate).
+     */
+    val attachments: List<AttachmentMeta> = emptyList(),
     val timestampEpochMs: Long,
     val unread: Boolean = true,
     val starred: Boolean = false,

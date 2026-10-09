@@ -52,8 +52,13 @@ anything filtered or sorted by is a real column — the JSON `payload` on
 - v2 (Phase 2): purely additive — new columns on `accounts` (all defaulted),
   plus the eleven new tables and indexes. No destructive fallback is enabled;
   production migrations must preserve user data.
+- v3 (Phase 5): purely additive — `messages.bodyHtml` (nullable TEXT) and
+  `messages.attachments` (NOT NULL TEXT, JSON via `MoConverters`,
+  default `''` which reads as an empty list). `Migrations.MIGRATION_2_3`.
 - `Migrations.MIGRATION_1_2` is covered by `MigrationTest` (genuine v1 DB
   built with raw SQLite → Room validates the migrated schema at open).
+  `MIGRATION_2_3` has an analogous v2→v3 test (SQL validated directly
+  against SQLite in this sandbox).
 
 ## Transaction strategy (§42)
 
@@ -85,4 +90,4 @@ identifier. Attachments: metadata model only; no binaries in Phase 2.
 Stored: what offline use, search, derived intelligence, rules/corrections,
 and sync state need. NOT stored: full MIME payloads, attachment binaries,
 OAuth secrets, tracking data. `bodyText` is minimal plain text and nullable;
-sanitized HTML arrives in a later phase.
+`bodyHtml` (Phase 5) is sanitized HTML only — never raw, never executed.

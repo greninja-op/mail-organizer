@@ -49,8 +49,9 @@ class AppContainer(private val appContext: Context) {
             DATABASE_NAME,
         )
             // Production migrations must preserve user data: no destructive
-            // fallback. v1 -> v2 is covered by Migrations.MIGRATION_1_2.
-            .addMigrations(Migrations.MIGRATION_1_2)
+            // fallback. v1 -> v2 is covered by Migrations.MIGRATION_1_2;
+            // v2 -> v3 (Phase 5 parser columns) by Migrations.MIGRATION_2_3.
+            .addMigrations(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3)
             .build()
     }
 

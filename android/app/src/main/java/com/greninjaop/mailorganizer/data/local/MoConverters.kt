@@ -1,6 +1,8 @@
 package com.greninjaop.mailorganizer.data.local
 
 import androidx.room.TypeConverter
+import com.greninjaop.mailorganizer.core.email.AttachmentMeta
+import com.greninjaop.mailorganizer.core.email.AttachmentMetaJson
 
 /**
  * Room type converters (Phase 2).
@@ -23,6 +25,18 @@ class MoConverters {
     @TypeConverter
     fun toStringList(value: String): List<String> =
         if (value.isEmpty()) emptyList() else value.split(SEPARATOR)
+
+    // ---- Attachment metadata (Phase 5) ----
+    // JSON blob: attachments are write-once/read-with-message metadata, never
+    // a query predicate, so a serialized column is appropriate here.
+
+    @TypeConverter
+    fun fromAttachmentList(value: List<AttachmentMeta>): String =
+        AttachmentMetaJson.encode(value)
+
+    @TypeConverter
+    fun toAttachmentList(value: String): List<AttachmentMeta> =
+        AttachmentMetaJson.decode(value)
 
     // ---- Enums (one pair per enum; Room needs concrete signatures) ----
 

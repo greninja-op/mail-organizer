@@ -16,6 +16,8 @@ import androidx.room.TypeConverters
  * - v2 (Phase 2): full mailbox schema — threads, messages, senders,
  *   companies, classifications, priorities, action items, sync state,
  *   user rules/corrections, extracted items. See [Migrations].
+ * - v3 (Phase 5): parser output columns on `messages` (`bodyHtml`,
+ *   `attachments` metadata). See [Migrations.MIGRATION_2_3].
  *
  * Schema is exported to `app/schemas` so migrations stay verifiable.
  * Destructive fallback is deliberately NOT enabled: production migrations
@@ -36,7 +38,7 @@ import androidx.room.TypeConverters
         UserCorrectionRecord::class,
         ExtractedItemRecord::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)

@@ -25,8 +25,8 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        // Phase 4 Gmail synchronization engine. Versioning scheme (semantic) lands in Phase 29.
-        versionName = "0.1.0-phase4"
+        // Phase 5 email data model & parsing. Versioning scheme (semantic) lands in Phase 29.
+        versionName = "0.1.0-phase5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

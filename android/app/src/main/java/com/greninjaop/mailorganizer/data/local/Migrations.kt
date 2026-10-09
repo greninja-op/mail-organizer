@@ -11,6 +11,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * dropped, rewritten, or backfilled — v1 databases only ever contained
  * account seeds from the Phase 0 foundation build.
  *
+ * v2 → v3 (Phase 5) is purely additive: two nullable columns on `messages`
+ * for the parser output (`bodyHtml`, `attachments`). Existing rows keep
+ * their data; the new columns default to NULL/empty.
+ *
  * Production migrations must preserve user data; destructive fallback is
  * deliberately NOT enabled (see AppDatabase builder configuration).
  */
@@ -313,6 +317,20 @@ object Migrations {
                 "CREATE INDEX IF NOT EXISTS index_extracted_items_dueDateEpochMs " +
                     "ON extracted_items(dueDateEpochMs)",
             )
+        }
+    }
+
+    /**
+     * v2 → v3 (Phase 5): parser output columns on `messages`.
+     *
+     * Purely additive — existing rows are untouched; `bodyHtml` defaults to
+     * NULL and `attachments` to `''` (which [MoConverters] reads as an empty
+     * list). No index changes: neither column is a query predicate.
+     */
+    val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN bodyHtml TEXT")
+            db.execSQL("ALTER TABLE messages ADD COLUMN attachments TEXT NOT NULL DEFAULT ''")
         }
     }
 }
