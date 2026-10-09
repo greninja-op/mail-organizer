@@ -20,6 +20,8 @@ import com.greninjaop.mailorganizer.data.repository.SyncStateRepository
 import com.greninjaop.mailorganizer.data.sync.DeferredGmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.GmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
+import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
+import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.ui.mail.AndroidConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
@@ -99,6 +101,26 @@ class AppContainer(private val appContext: Context) {
             api = gmailSyncApi,
             mail = mailRepository,
             syncState = syncStateRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 7: deterministic classification engine ----
+    // Pure-Kotlin engine (core.classify) driven through use cases so the UI
+    // never holds classification logic. Local-only: no network, no AI.
+
+    val classifyMessageUseCase: ClassifyMessageUseCase by lazy {
+        ClassifyMessageUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val classifyMailboxUseCase: ClassifyMailboxUseCase by lazy {
+        ClassifyMailboxUseCase(
+            mail = mailRepository,
+            classifyMessage = classifyMessageUseCase,
             dispatchers = dispatchers,
         )
     }

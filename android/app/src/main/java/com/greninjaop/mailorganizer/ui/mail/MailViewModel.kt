@@ -7,19 +7,23 @@ import com.greninjaop.mailorganizer.core.AccountId
 import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.core.MoLogger
 import com.greninjaop.mailorganizer.data.local.AccountRecord
+import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
+import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
 import com.greninjaop.mailorganizer.data.sync.SyncOutcome
 import com.greninjaop.mailorganizer.data.sync.SyncProgress
 import com.greninjaop.mailorganizer.data.sync.SyncStage
 import com.greninjaop.mailorganizer.data.sync.SyncTrigger
+import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Intermediate fold for the two-stage typed combine() in [MailViewModel]. */
 private data class MailboxCore(
@@ -56,6 +61,8 @@ private data class MailboxCore(
 class MailViewModel(
     private val accounts: AccountRepository,
     private val mail: MailRepository,
+    private val intelligence: IntelligenceRepository,
+    private val classifyMailbox: ClassifyMailboxUseCase,
     private val syncCoordinator: SyncCoordinator,
     private val connectivity: ConnectivityObserver,
     private val dispatchers: AppDispatchers,
@@ -68,6 +75,14 @@ class MailViewModel(
         /** Bounded page size — the list never loads a whole mailbox (§17). */
         const val PAGE_SIZE = 50
         private const val TAG = "MailViewModel"
+
+        /**
+         * Startup classification guards: the background pass waits for
+         * seeding, then for an account, but never blocks the UI — both
+         * waits are bounded.
+         */
+        private const val CLASSIFY_STARTUP_TIMEOUT_MS = 30_000L
+        private const val CLASSIFY_ACCOUNT_TIMEOUT_MS = 10_000L
     }
 
     private val destination = MutableStateFlow(MailboxDestination.ALL_INBOX)
@@ -127,8 +142,30 @@ class MailViewModel(
             when {
                 !key.resolved -> flowOf(MailboxContent.Loading)
                 key.account == null -> flowOf(MailboxContent.Empty(EmptyKind.NO_MAIL))
-                key.dest.needsClassification ->
-                    flowOf(MailboxContent.Empty(EmptyKind.NOT_CLASSIFIED_YET))
+                // Phase 7: classification-backed destinations are wired to
+                // real data — PROMOTIONAL via the deterministic classifier,
+                // SOCIAL/SPAM via Gmail's own labels. Never fabricated.
+                key.dest == MailboxDestination.PROMOTIONAL ->
+                    intelligence.observeByCategory(
+                        key.account.accountId,
+                        MailCategory.PROMOTIONS,
+                        key.limit,
+                    ).mapLatest { records ->
+                        buildCategoryContent(records.map { it.messageId }, key)
+                            ?: MailboxContent.Empty(EmptyKind.NO_PROMOTIONS)
+                    }
+                key.dest == MailboxDestination.SOCIAL ->
+                    mail.observeByLabel(key.account.accountId, "CATEGORY_SOCIAL", key.limit)
+                        .mapLatest { messages ->
+                            buildMessageContent(messages.map { it.toMessageItem() }, key)
+                                ?: MailboxContent.Empty(EmptyKind.NO_SOCIAL)
+                        }
+                key.dest == MailboxDestination.SPAM ->
+                    mail.observeByLabel(key.account.accountId, "SPAM", key.limit)
+                        .mapLatest { messages ->
+                            buildMessageContent(messages.map { it.toMessageItem() }, key)
+                                ?: MailboxContent.Empty(EmptyKind.NO_SPAM)
+                        }
                 key.dest == MailboxDestination.STARRED ->
                     mail.observeStarred(key.account.accountId, key.limit)
                         .mapLatest { messages ->
@@ -189,6 +226,28 @@ class MailViewModel(
                 }
             }
             .launchIn(viewModelScope)
+
+        // Phase 7: classify new mail in the background (bounded, incremental).
+        // Best-effort — classification must never break the inbox. Runs after
+        // the fixture seeding attempt so debug sample mail is classified too.
+        viewModelScope.launch(dispatchers.io) {
+            try {
+                withTimeoutOrNull(CLASSIFY_STARTUP_TIMEOUT_MS) {
+                    seedDone.first { it }
+                    val account = withTimeoutOrNull(CLASSIFY_ACCOUNT_TIMEOUT_MS) {
+                        activeAccount.first { it != null }
+                    }
+                    if (account != null) {
+                        val n = classifyMailbox.classifyNew(account.accountId)
+                        if (n > 0) {
+                            MoLogger.i(TAG, "Background classification: $n messages")
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                MoLogger.e(TAG, "Background classification failed: ${t.javaClass.simpleName}")
+            }
+        }
     }
 
     // ---- Intents ----
@@ -249,6 +308,40 @@ class MailViewModel(
         val filter: String,
         val limit: Int,
     )
+
+    /**
+     * Builds message-list content for classification/label destinations.
+     * Classification record ids resolve to messages with one bounded query;
+     * stale ids (message deleted) are dropped silently.
+     */
+    private suspend fun buildCategoryContent(
+        messageIds: List<String>,
+        key: ContentKey,
+    ): MailboxContent? {
+        if (messageIds.isEmpty()) return null
+        val messages = mail.getMessagesByIds(messageIds)
+        return buildMessageContent(messages.map { it.toMessageItem() }, key)
+    }
+
+    /**
+     * Shared message-list builder: applies the text filter and returns null
+     * when there is nothing to show, so callers pick the honest empty kind
+     * for their destination.
+     */
+    private fun buildMessageContent(
+        items: List<MessageItem>,
+        key: ContentKey,
+    ): MailboxContent? {
+        val filtered = items.applyMessageFilter(key.filter)
+        if (filtered.isEmpty()) {
+            return if (key.filter.isNotEmpty()) {
+                MailboxContent.Empty(EmptyKind.NO_FILTER_RESULTS)
+            } else {
+                null
+            }
+        }
+        return MailboxContent.Messages(filtered)
+    }
 
     private suspend fun buildThreadContent(
         threads: List<com.greninjaop.mailorganizer.data.local.ThreadRecord>,

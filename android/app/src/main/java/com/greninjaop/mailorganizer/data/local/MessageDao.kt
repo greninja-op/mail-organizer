@@ -103,4 +103,29 @@ interface MessageDao {
             "AND gmailMessageId = :gmailMessageId",
     )
     suspend fun deleteByGmailId(accountId: String, gmailMessageId: String)
+
+    // ---- Phase 7 classification support ----
+
+    /**
+     * Messages with no classification row yet (incremental classification,
+     * phase §49). Bounded; newest first so fresh mail classifies first.
+     */
+    @Query(
+        "SELECT m.* FROM messages m LEFT JOIN classifications c " +
+            "ON c.messageId = m.messageId WHERE m.accountId = :accountId " +
+            "AND c.messageId IS NULL ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getUnclassified(accountId: String, limit: Int): List<MessageRecord>
+
+    /**
+     * Messages carrying one Gmail label. Labels are stored as a U+001F
+     * (char(31)) delimited string ([MoConverters]); wrapping both sides in
+     * the separator makes the match exact — "SPAM" never matches "SPAMMY".
+     */
+    @Query(
+        "SELECT * FROM messages WHERE accountId = :accountId AND " +
+            "instr(char(31) || labels || char(31), char(31) || :label || char(31)) > 0 " +
+            "ORDER BY timestampEpochMs DESC LIMIT :limit",
+    )
+    fun observeByLabel(accountId: String, label: String, limit: Int): Flow<List<MessageRecord>>
 }

@@ -106,3 +106,59 @@ val MoDarkStatusColors = MoStatusColors(
     info = Color(0xFF60A5FA),
     error = ErrorDark,
 )
+
+/**
+ * Category accent colors (Phase 7 §53).
+ *
+ * Spec mapping: Action Required → red, Important → primary, Career → blue,
+ * Education → purple, Receipts & Orders → green, Security → amber,
+ * Notifications → blue/neutral, Newsletters → teal, Promotions → orange,
+ * Low Value → gray. Spec tokens are reused verbatim where they match
+ * (red/primary/blue/green/amber); the rest are derived companions chosen
+ * for contrast on light (#F8F9FC) and dark (#101114) backgrounds and are
+ * documented as derived, per the token rules above.
+ *
+ * Color is never the only category indicator — every usage pairs the
+ * accent with a text label and a content description (see CategoryVisuals).
+ */
+data class MoCategoryColors(
+    val actionRequired: Color,
+    val important: Color,
+    val career: Color,
+    val education: Color,
+    val receiptsOrders: Color,
+    val security: Color,
+    val notifications: Color,
+    val newsletters: Color,
+    val promotions: Color,
+    val lowValue: Color,
+    val unclassified: Color,
+)
+
+val MoLightCategoryColors = MoCategoryColors(
+    actionRequired = SpecError,
+    important = SpecPrimary,
+    career = SpecInfo,
+    education = Color(0xFF7C3AED),
+    receiptsOrders = SpecSuccess,
+    security = SpecWarning,
+    notifications = Color(0xFF0284C7),
+    newsletters = Color(0xFF0D9488),
+    promotions = Color(0xFFEA580C),
+    lowValue = Color(0xFF6B7280),
+    unclassified = Color(0xFF6B7280),
+)
+
+val MoDarkCategoryColors = MoCategoryColors(
+    actionRequired = ErrorDark,
+    important = Color(0xFFA8ABFF),
+    career = Color(0xFF60A5FA),
+    education = Color(0xFFC4B5FD),
+    receiptsOrders = Color(0xFF4ADE80),
+    security = Color(0xFFFBBF24),
+    notifications = Color(0xFF38BDF8),
+    newsletters = Color(0xFF5EEAD4),
+    promotions = Color(0xFFFB923C),
+    lowValue = Color(0xFF9CA3AF),
+    unclassified = Color(0xFF9CA3AF),
+)

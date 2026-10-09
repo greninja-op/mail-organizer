@@ -7,10 +7,12 @@ import com.greninjaop.mailorganizer.data.local.ThreadRecord
 /**
  * Mailbox destinations (Phase 6, design.md §Navigation drawer).
  *
- * The drawer is fixed to these six destinations. Classification-backed
- * destinations (PROMOTIONAL / SOCIAL / SPAM) show honest empty states until
- * the Phase 7 classification engine populates them — no fake categorization
- * (phase §59).
+ * The drawer is fixed to these six destinations. Phase 7 wires the
+ * classification-backed destinations to real data:
+ * - PROMOTIONAL → MailCategory.PROMOTIONS (deterministic classifier)
+ * - SOCIAL → Gmail CATEGORY_SOCIAL label (Gmail's own social signal)
+ * - SPAM → Gmail SPAM label (Gmail's own spam signal)
+ * Nothing is fabricated — empty destinations show honest empty states.
  */
 enum class MailboxDestination {
     ALL_INBOX,
@@ -30,13 +32,6 @@ enum class MailboxDestination {
             SPAM -> "Spam"
             STARRED -> "Starred"
         }
-
-    /**
-     * True for destinations that need the classification engine (Phase 7).
-     * They render an honest empty state, never fabricated content.
-     */
-    val needsClassification: Boolean
-        get() = this == PROMOTIONAL || this == SOCIAL || this == SPAM
 }
 
 /** Kinds of honest empty states (phase §12: never fabricate sample emails). */
@@ -47,11 +42,17 @@ enum class EmptyKind {
     /** Text filter matched nothing. */
     NO_FILTER_RESULTS,
 
-    /** Destination needs Phase 7 classification. */
-    NOT_CLASSIFIED_YET,
-
     /** Starred destination with no starred messages. */
     NO_STARRED,
+
+    /** Promotional destination with no classified promotions. */
+    NO_PROMOTIONS,
+
+    /** Social destination with no social mail. */
+    NO_SOCIAL,
+
+    /** Spam destination with no spam. */
+    NO_SPAM,
 }
 
 /** Explicit mailbox content state (phase §35: sealed, no scattered booleans). */

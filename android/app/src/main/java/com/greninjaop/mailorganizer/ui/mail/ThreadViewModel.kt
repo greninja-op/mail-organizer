@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.core.MoLogger
+import com.greninjaop.mailorganizer.data.local.ClassificationRecord
+import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.stateIn
 class ThreadViewModel(
     private val threadId: String,
     private val mail: MailRepository,
+    private val intelligence: IntelligenceRepository,
     private val dispatchers: AppDispatchers,
 ) : ViewModel() {
 
@@ -46,16 +50,36 @@ class ThreadViewModel(
             emit(emptyList())
         }
 
+    /**
+     * Phase 7: classification per message (message-level evidence preserved,
+     * phase §35). Threads are bounded (200), so one lookup per visible
+     * message is fine; failures degrade to "no classification shown".
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val classifications =
+        messages.mapLatest { items ->
+            items.associate { item ->
+                item.messageId to try {
+                    intelligence.getClassification(item.messageId)
+                } catch (t: Throwable) {
+                    MoLogger.e(TAG, "Classification lookup failed: ${t.javaClass.simpleName}")
+                    null
+                }
+            }
+        }
+
     val state: StateFlow<ThreadDetailState> = combine(
         messages,
         expandedIds,
-    ) { items, expanded ->
+        classifications,
+    ) { items, expanded, classById ->
         if (items.isEmpty()) {
             ThreadDetailState.Empty
         } else {
             ThreadDetailState.Content(
                 messages = items,
                 expandedIds = expanded,
+                classifications = classById,
             )
         }
     }.stateIn(
@@ -95,6 +119,8 @@ sealed interface ThreadDetailState {
     data class Content(
         val messages: List<MessageItem>,
         val expandedIds: Set<String>,
+        /** Message-level classifications by message id (Phase 7). */
+        val classifications: Map<String, ClassificationRecord?> = emptyMap(),
     ) : ThreadDetailState
     data object Empty : ThreadDetailState
 }

@@ -13,6 +13,8 @@ class MailViewModelFactory(
         return MailViewModel(
             accounts = container.accountRepository,
             mail = container.mailRepository,
+            intelligence = container.intelligenceRepository,
+            classifyMailbox = container.classifyMailboxUseCase,
             syncCoordinator = container.syncCoordinator,
             connectivity = container.connectivityObserver,
             dispatchers = container.dispatchers,
@@ -32,6 +34,7 @@ class ThreadViewModelFactory(
         return ThreadViewModel(
             threadId = threadId,
             mail = container.mailRepository,
+            intelligence = container.intelligenceRepository,
             dispatchers = container.dispatchers,
         ) as T
     }

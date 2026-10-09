@@ -53,6 +53,20 @@ interface MailRepository {
      * ids so aggregates can be refreshed. No-op for empty input.
      */
     suspend fun deleteMessagesByGmailIds(accountId: String, gmailIds: List<String>): List<String>
+
+    // ---- Phase 7 classification support ----
+
+    /** One message by local id, or null. */
+    suspend fun getMessage(messageId: String): MessageRecord?
+
+    /**
+     * Messages with no classification row yet (incremental classification).
+     * Bounded; newest first.
+     */
+    suspend fun getUnclassifiedMessages(accountId: String, limit: Int): List<MessageRecord>
+
+    /** Messages carrying one Gmail label (e.g. "SPAM", "CATEGORY_SOCIAL"). */
+    fun observeByLabel(accountId: String, label: String, limit: Int = 50): Flow<List<MessageRecord>>
 }
 
 class RoomMailRepository(
@@ -95,6 +109,27 @@ class RoomMailRepository(
         withContext(dispatchers.io) {
             db.messageDao().setUnread(messageId, !read)
         }
+
+    // ---- Phase 7 classification support ----
+
+    override suspend fun getMessage(messageId: String): MessageRecord? =
+        withContext(dispatchers.io) {
+            db.messageDao().getById(messageId)
+        }
+
+    override suspend fun getUnclassifiedMessages(
+        accountId: String,
+        limit: Int,
+    ): List<MessageRecord> = withContext(dispatchers.io) {
+        db.messageDao().getUnclassified(accountId, limit)
+    }
+
+    override fun observeByLabel(
+        accountId: String,
+        label: String,
+        limit: Int,
+    ): Flow<List<MessageRecord>> =
+        db.messageDao().observeByLabel(accountId, label, limit)
 
     override suspend fun setStarred(messageId: String, starred: Boolean) =
         withContext(dispatchers.io) {

@@ -388,15 +388,25 @@ private fun MailContent(
                     onAction = onClearFilter,
                     modifier = modifier,
                 )
-                EmptyKind.NOT_CLASSIFIED_YET -> MoEmptyState(
-                    title = "Nothing here yet",
-                    message = "${state.destination.title} mail will appear here once " +
-                        "mail classification arrives in Phase 7.",
-                    modifier = modifier,
-                )
                 EmptyKind.NO_STARRED -> MoEmptyState(
                     title = "No starred mail",
                     message = "Messages you star will appear here.",
+                    modifier = modifier,
+                )
+                EmptyKind.NO_PROMOTIONS -> MoEmptyState(
+                    title = "No promotions",
+                    message = "Promotional mail will appear here once classified.",
+                    modifier = modifier,
+                )
+                EmptyKind.NO_SOCIAL -> MoEmptyState(
+                    title = "No social updates",
+                    message = "Social-network mail will appear here.",
+                    modifier = modifier,
+                )
+                EmptyKind.NO_SPAM -> MoEmptyState(
+                    title = "No spam",
+                    message = "Nothing filed as spam. Legitimate mail misfiled " +
+                        "as spam can be recovered from Gmail for now.",
                     modifier = modifier,
                 )
             }

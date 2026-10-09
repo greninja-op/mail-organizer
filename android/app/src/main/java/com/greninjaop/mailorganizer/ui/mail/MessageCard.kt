@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.greninjaop.mailorganizer.data.local.ClassificationRecord
 import com.greninjaop.mailorganizer.ui.theme.MoSpacing
 import java.time.Instant
 import java.time.ZoneId
@@ -53,6 +54,8 @@ fun MessageCard(
     onToggleExpanded: () -> Unit,
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** Phase 7: message-level classification; null when not classified yet. */
+    classification: ClassificationRecord? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         MessageHeader(
@@ -63,6 +66,7 @@ fun MessageCard(
         if (expanded) {
             MessageBody(
                 message = message,
+                classification = classification,
                 onOpenLink = onOpenLink,
                 modifier = Modifier.padding(
                     start = MoSpacing.md,
@@ -155,12 +159,17 @@ private fun MessageBody(
     message: MessageItem,
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier,
+    classification: ClassificationRecord? = null,
 ) {
     var showDetails by remember { mutableStateOf(false) }
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(MoSpacing.sm),
     ) {
+        // Phase 7: category chip with explainable "why" (§52, §55).
+        if (classification != null) {
+            CategoryChipWithExplanation(classification = classification)
+        }
         // Progressive disclosure for full headers (§21).
         Text(
             text = if (showDetails) "Hide details" else "Show details",

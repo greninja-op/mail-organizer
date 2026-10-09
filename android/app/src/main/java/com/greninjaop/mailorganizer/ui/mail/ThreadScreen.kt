@@ -102,6 +102,7 @@ fun ThreadScreen(
                             onOpenLink = { url ->
                                 openExternalLink(context, url)
                             },
+                            classification = s.classifications[message.messageId],
                         )
                     }
                 }
