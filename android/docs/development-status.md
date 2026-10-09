@@ -921,3 +921,58 @@ phases' seams).
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 14 action engine,
   Phase 26 optional AI fallback.
+
+## Phase 14 — Action Cards & Action Engine: COMPLETE (2026-10-09)
+
+### What was built
+Deterministic, on-device action engine turning structured intelligence into
+actionable suggestions with strict user control — the engine proposes, the
+user confirms, nothing external happens automatically.
+
+- **Core** (`core/actions/`, pure Kotlin): `ActionModels.kt`
+  (`ActionConfidence`, `ActionUrgency` — independent from email priority per
+  phase §17, `ActionSource`, `ActionStatus` lifecycle, `ExternalEffect`
+  side-effect classification, `ActionCandidate` with deterministic dedup id,
+  `SafetyVerdict`), `ActionCandidateGenerator.kt` (VERSION=1; 10 documented
+  rules: temporal interview/meeting/deadline/payment/registration/reminder/
+  travel → typed candidates; ACTION_REQUIRED → REPLY_REQUIRED; CRITICAL
+  priority → review card; past items and bare dates never generate),
+  `ActionSafety.kt` (separate validation layer: identity check, missing-info
+  degradation to review cards, confidence-capped urgency, no invented times).
+- **Domain** (`domain/actions/`): `ActionExecutor.kt` (executor interface +
+  receipt + registry — intentionally empty in Phase 14, so confirming an
+  external proposal honestly reports "not connected", never a fake success),
+  `ActionPayloadJson.kt` (hand-rolled versioned codec), 
+  `GenerateActionsUseCase` (bounded incremental generation, deterministic
+  message+thread dedup, stale-version replacement, overdue-expiry pass;
+  best-effort, never breaks the inbox),
+  `ReviewActionUseCase` (review/dismiss/complete/confirm; confirmation
+  outcomes: RecordedInternal / ExternalNotConnected / Executed / Failed).
+- **Storage**: `action_items` extended via additive v6→v7 migration
+  (`MIGRATION_6_7`): threadId, title, description, urgency, source, status
+  (backfilled from legacy completed/dismissed booleans), externalEffect,
+  payloadJson, version, updatedAtEpochMs. New DAO queries for thread dedup,
+  status transitions, and the expiry pass.
+- **UI** (`ui/actions/`): reusable `ActionCard` (type + urgency chips,
+  title, description, expandable "why", due date, tappable source email,
+  Review/Act/Dismiss; "confirmation required" notice on external
+  proposals), reworked Actions destination backed by engine cards (urgency
+  order, honest empty/error states), confirmation dialog showing what will
+  happen / source / data / affected service / reversibility (phase §31).
+  Generation hooked into MailViewModel's background pipeline after
+  temporal extraction.
+
+### Verification
+- New tests: `ActionCandidateGeneratorTest` (12), `ActionSafetyTest` (7),
+  `GenerateActionsUseCaseTest` (8), `ReviewActionUseCaseTest` (9),
+  `ActionPayloadJsonTest` (3), `ActionsViewModelTest` (6, rewritten for
+  cards).
+- Full suite via direct JUnitCore; `:app:compileDebugKotlin` and
+  `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL.
+- Secret audit clean. No device — device checks blocked, never faked.
+  No OAuth. No APK (user decision: only after Phase 30).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 26 optional AI
+  fallback.

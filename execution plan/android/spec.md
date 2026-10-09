@@ -130,6 +130,15 @@ Never claim tests or device verification that were not actually run. Never touch
   domain/temporal/ use cases + hand-rolled payload JSON codec; reuses Phase 2
   extracted_items table — no migration; ui/mail/TemporalSection with "why"
   explanations in the expanded message view; 59 new unit tests)
-- [ ] 14–30 — not started
+- [x] 14 Action Cards & Action Engine — complete, on main
+  (core/actions/ deterministic ActionCandidateGenerator v1 + ActionSafety
+  validation layer; domain/actions/ GenerateActionsUseCase (idempotent,
+  thread-dedup, expiry pass) + ReviewActionUseCase (review/dismiss/complete/
+  confirm) + ActionExecutor interface with empty registry — confirming an
+  external proposal honestly reports "not connected", never a fake success;
+  schema v6→v7 additive migration extending action_items; ui/actions/
+  reusable ActionCard + confirmation dialog + reworked Actions destination;
+  generation hooked into MailViewModel background pipeline)
+- [ ] 15–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
