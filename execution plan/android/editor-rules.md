@@ -200,3 +200,24 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
   idempotent re-extraction skips rows at the current version; user-completed
   rows are never replaced. Account-isolated; failures degrade silently to
   the UI.
+
+## Phase 14 — Action cards & action engine (permanent rules)
+- The engine proposes; the user confirms; nothing external happens
+  automatically. Generation (what could the user do next) and safety
+  validation (what may be presented and how) are separate layers —
+  `ActionCandidateGenerator` and `ActionSafety` evolve independently.
+- Never fake success: "created"/"sent"/"done" copy is only shown for a real
+  executor receipt. With no executor registered, confirming an external
+  proposal records the intent locally and honestly reports "not connected".
+- Dedup is deterministic: the candidate id `messageId|actionType|targetKey`
+  makes re-runs idempotent; thread-level dedup compares (actionType,
+  targetKey) across sibling messages. History rows (completed/dismissed/
+  expired) never suppress or regenerate.
+- Action urgency is independent from email priority (separate type); low
+  confidence caps urgency at NORMAL. Missing required info degrades to a
+  review-style card — never invent the missing piece.
+- Every card identifies its source email and links to it; cards never
+  duplicate email bodies. Explanations are deterministic structured
+  reasons recorded at generation time.
+- Account isolation is enforced at generation, persistence, display, and
+  confirmation. Email content never authorizes external actions.
