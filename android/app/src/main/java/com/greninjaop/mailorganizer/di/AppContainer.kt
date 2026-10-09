@@ -436,6 +436,15 @@ class AppContainer(private val appContext: Context) {
         )
     }
 
+    // ---- Phase 20: Noise, Newsletter & Cleanup System ----
+    val cleanupUseCase: com.greninjaop.mailorganizer.domain.cleanup.CleanupUseCase by lazy {
+        com.greninjaop.mailorganizer.domain.cleanup.CleanupUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
     private companion object {
         const val DATABASE_NAME = "mail_organizer.db"
     }

@@ -150,6 +150,19 @@ Never claim tests or device verification that were not actually run. Never touch
   additive integration_states table; ui/integrations/ list + detail screens;
   ReviewActionUseCase enriched with the manager's honest per-integration
   reason)
-- [ ] 15–16, 18–30 — not started (15/16 user-deferred to the very end)
+- [x] 18 Multi-Account & Unified Inbox — complete, on main
+  (data/prefs/ ActiveAccountPreferences, Room unified queries joining accounts a WHERE a.isEnabled = 1,
+  unified search with account badges, AccountsViewModel + AccountsScreen,
+  MailViewModel top bar/drawer All Accounts indicators)
+- [x] 19 Background Sync & Offline Behavior — complete, on main
+  (AccountSyncWorker account-isolated background sync, BackgroundProcessingPipeline local intelligence,
+  BatteryConsciousSyncScheduler 15m intervals & network/battery constraints, honest offline indicators)
+- [x] 20 Noise, Newsletter & Cleanup System — complete, on main
+  (core/cleanup/ models + UnsubscribeSafety RFC 2369 parser without executing links +
+  CleanupProtector security/receipt/career shield + NewsletterAnalyzer + NoiseAnalyzer +
+  CleanupRecommendationEngine; domain/cleanup/ CleanupUseCase; ui/cleanup/ CleanupViewModel +
+  CleanupScreen with recommendations & newsletters tabs, non-destructive safety notices)
+- [ ] 21 Waiting-for-Reply & Conversation Intelligence — next phase
+- [ ] 15–16, 22–30 — not started (15/16, 22, 29 user-deferred)
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.

@@ -83,6 +83,7 @@ object AppDestinations {
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
     const val ACCOUNTS = "accounts"
+    const val CLEANUP = "cleanup"
 
     /**
      * Integration detail route: `integration/{integrationId}` (Phase 17).
@@ -152,6 +153,7 @@ object AppDestinations {
         SETTINGS -> "Settings"
         PRIVACY -> "Privacy"
         ACCOUNTS -> "Accounts"
+        CLEANUP -> "Cleanup"
         else -> route
     }
 
@@ -167,6 +169,7 @@ object AppDestinations {
         SETTINGS -> "Phase 11"
         PRIVACY -> "Phase 11"
         ACCOUNTS -> "Phase 11"
+        CLEANUP -> "Phase 20"
         else -> "a later phase"
     }
 
@@ -480,6 +483,18 @@ fun AppNavGraph(
             AccountsScreen(
                 viewModel = vm,
                 onBack = { navController.popBackStack() },
+            )
+        }
+        // Phase 20: Noise, Newsletter & Cleanup destination
+        composable(AppDestinations.CLEANUP) {
+            val vm: com.greninjaop.mailorganizer.ui.cleanup.CleanupViewModel =
+                viewModel(factory = com.greninjaop.mailorganizer.ui.cleanup.CleanupViewModelFactory(container))
+            com.greninjaop.mailorganizer.ui.cleanup.CleanupScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+                onOpenThread = { threadId ->
+                    navController.navigate(AppDestinations.threadRoute(threadId))
+                },
             )
         }
     }
