@@ -686,12 +686,54 @@ Deterministic, on-device priority engine — no network, no AI:
   engine (ActionItemRecord storage already exists from Phase 2), Phase 26
   optional AI fallback.
 
-## Next: Phase 11 — Dashboard & Information Architecture
+## Next: Phase 12 — Rules & User Corrections
 Do NOT start unprompted.
 
-## Phase 10 — Search & Local Indexing: COMPLETE (2026-10-09)
+## Phase 11 — Dashboard & Information Architecture: COMPLETE (2026-10-09)
 
 ### What was built
+Dashboard + app information architecture over real local data — no
+placeholders, no fake counts:
+- **Navigation chrome**: `MoNavBar` (bottom bar, 5 primary destinations)
+  + `MoAppTopBar` (title, search affordance, account avatar, overflow menu
+  for secondary destinations). HOME route now shows the dashboard.
+- **Home dashboard** (`ui/home/`): hierarchy account → attention
+  (action-required) → priority (HIGH/CRITICAL) → recent → categories →
+  companies, all from repository flows; honest Loading/Empty/Error/
+  NoAccount/offline states.
+- **Categories** (`ui/categories/`): list with real GROUP BY counts +
+  `category/{name}` detail route with validated arguments.
+- **Companies** (`ui/companies/`): list with real message counts +
+  `company/{companyId}` detail route (messages + per-category breakdown).
+- **Actions** (`ui/actions/`): view-only action-required list; no external
+  execution (Phase 14 seam).
+- **Settings** (`ui/settings/`): Settings, Accounts, Privacy, Integrations,
+  Appearance — all honest, no fake login; account switching labeled as
+  Phase 18 scope.
+- **Data layer (additive)**: `ClassificationDao.countByCategory` and
+  `MessageDao.companyMessageCounts` (GROUP BY, account-scoped, NULL-safe);
+  `IntelligenceRepository.categoryCounts` + `observeByPriority`;
+  `MailRepository.companyMessageCounts`.
+
+### Verification (actually run)
+- `:app:compileDebugKotlin` + `:app:compileDebugUnitTestKotlin` — BUILD SUCCESSFUL.
+- 367 unit tests via direct `java` JUnitCore: 354 pass; 13 failures are the
+  known environment-only ones (6 Room DAO `initializationError`, 7 Compose
+  theme `NoClassDefFoundError`) — unchanged from Phase 10 baseline.
+- 15 new ViewModel tests (Home 7, Categories 3, Companies 3, Actions 2) — all pass.
+- New DAO GROUP BY SQL validated on real SQLite (account isolation, NULL exclusion).
+- Secret audit clean.
+- Device criteria [!] blocked-by-environment (no emulator); APK ships only after Phase 30.
+
+### Test lesson (permanent)
+`stateIn(SharingStarted.WhileSubscribed)` emits its initial value first —
+account-list StateFlows feeding `flatMapLatest` must use
+`SharingStarted.Eagerly`, else the first collection sees a transient empty
+list and degrades to NoAccount/Empty. ViewModel tests must
+`advanceUntilIdle()` after creating the VM and skip transient Loading
+emissions when awaiting content.
+
+### What was built (Phase 10)
 On-device full-text search over what's already indexed — subjects,
 snippets, bodies, senders, classifications. No network, no AI, no OAuth.
 

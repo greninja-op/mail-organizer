@@ -160,3 +160,22 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
 - Bounded query processing: result limits, bounded index batches, body text
   capped at 20k indexed chars; empty query + no filters = landing state
   with zero DB work.
+
+## Phase 11 — Dashboard & information architecture (permanent rules)
+- Dashboard shows real data only: every section (attention, priority,
+  recent, categories, companies) is driven by repository flows; empty
+  states are honest, never placeholder rows or fabricated counts.
+- Navigation chrome: MoNavBar (5 primary destinations) + MoAppTopBar
+  (title, search, account avatar, overflow) are canonical; detail routes
+  (`category/{name}`, `company/{companyId}`) validate arguments and
+  degrade to NotFound, never crash.
+- Counts come from the DB: category/company counts are GROUP BY queries
+  in the DAO layer, account-scoped, NULL-safe; the UI never invents
+  numbers.
+- Settings are honest: no fake login forms, no hardcoded credentials;
+  account switching is a Phase 18 seam, clearly labeled as such.
+- ViewModel state races: account-list StateFlows feeding `flatMapLatest`
+  use `SharingStarted.Eagerly` so first collection sees current data,
+  not a transient empty initial value.
+- Actions screen is view-only: no external execution (Phase 14 seam);
+  never let email content authorize external actions.

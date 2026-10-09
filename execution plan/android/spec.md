@@ -111,6 +111,12 @@ Never claim tests or device verification that were not actually run. Never touch
   filters + account isolation; domain/search/ index use case + maintenance
   seam; write-path hooks in Room repositories; ui/search/ screen + 300ms
   debounce ViewModel + SEARCH nav route)
-- [ ] 11–30 — not started
+- [x] 11 Dashboard & Information Architecture — complete, on main
+  (dashboard: account→attention→priority→recent→categories→companies;
+  MoNavBar + MoAppTopBar chrome; Categories/Companies/Actions screens +
+  detail routes with validated args; Settings/Accounts/Privacy/
+  Integrations/Appearance — honest, no fake login; real GROUP BY counts
+  from ClassificationDao/MessageDao; 15 new ViewModel tests, 354/367 pass)
+- [ ] 12–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
