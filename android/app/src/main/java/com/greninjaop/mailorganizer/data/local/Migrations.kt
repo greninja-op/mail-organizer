@@ -444,4 +444,30 @@ object Migrations {
             db.execSQL("UPDATE action_items SET updatedAtEpochMs = detectedAtEpochMs")
         }
     }
+
+    /**
+     * v7 → v8 (Phase 17): integration metadata table.
+     *
+     * Creates `integration_states` — last-known Integration Manager
+     * snapshots, metadata only. No credentials are ever stored here
+     * (phase §35); no existing data is touched.
+     */
+    val MIGRATION_7_8: Migration = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS integration_states (" +
+                    "integrationId TEXT NOT NULL, " +
+                    "accountId TEXT NOT NULL, " +
+                    "lastStatus TEXT NOT NULL, " +
+                    "statusReason TEXT, " +
+                    "updatedAtEpochMs INTEGER NOT NULL, " +
+                    "configVersion INTEGER NOT NULL, " +
+                    "PRIMARY KEY(integrationId, accountId))",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_integration_states_accountId " +
+                    "ON integration_states(accountId)",
+            )
+        }
+    }
 }

@@ -26,6 +26,11 @@ import androidx.room.TypeConverters
  * - v6 (Phase 12): user rules & corrections engine columns on
  *   `user_rules` (`name`, `conditionsJson`, `actionsJson`, `ruleOrder`,
  *   `ruleVersion`, `source`). See [Migrations.MIGRATION_5_6].
+ * - v7 (Phase 14): action-engine columns on `action_items`. See
+ *   [Migrations.MIGRATION_6_7].
+ * - v8 (Phase 17): `integration_states` metadata table (last-known
+ *   Integration Manager snapshots; no credentials). See
+ *   [Migrations.MIGRATION_7_8].
  *
  * Schema is exported to `app/schemas` so migrations stay verifiable.
  * Destructive fallback is deliberately NOT enabled: production migrations
@@ -46,8 +51,9 @@ import androidx.room.TypeConverters
         UserCorrectionRecord::class,
         ExtractedItemRecord::class,
         SearchIndexMeta::class,
+        IntegrationStateRecord::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)
@@ -62,6 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun actionItemDao(): ActionItemDao
     abstract fun syncStateDao(): SyncStateDao
     abstract fun userRuleDao(): UserRuleDao
+    abstract fun integrationStateDao(): IntegrationStateDao
     abstract fun userCorrectionDao(): UserCorrectionDao
     abstract fun extractedItemDao(): ExtractedItemDao
 
