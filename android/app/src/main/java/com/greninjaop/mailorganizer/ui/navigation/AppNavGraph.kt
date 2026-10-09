@@ -1,6 +1,16 @@
 package com.greninjaop.mailorganizer.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -8,6 +18,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.greninjaop.mailorganizer.core.integrations.IntegrationId
+import com.greninjaop.mailorganizer.core.integrations.IntegrationSnapshot
 import com.greninjaop.mailorganizer.di.AppContainer
 import com.greninjaop.mailorganizer.ui.actions.ActionsScreen
 import com.greninjaop.mailorganizer.ui.actions.ActionsViewModel
@@ -23,6 +35,9 @@ import com.greninjaop.mailorganizer.ui.companies.CompanyDetailScreen
 import com.greninjaop.mailorganizer.ui.home.HomeScreen
 import com.greninjaop.mailorganizer.ui.home.HomeViewModel
 import com.greninjaop.mailorganizer.ui.home.HomeViewModelFactory
+import com.greninjaop.mailorganizer.ui.integrations.IntegrationsViewModel
+import com.greninjaop.mailorganizer.ui.integrations.IntegrationsViewModelFactory
+import com.greninjaop.mailorganizer.ui.integrations.UnknownIntegrationScreen
 import com.greninjaop.mailorganizer.ui.mail.MailScreen
 import com.greninjaop.mailorganizer.ui.mail.MailViewModel
 import com.greninjaop.mailorganizer.ui.mail.MailViewModelFactory
@@ -45,7 +60,6 @@ import com.greninjaop.mailorganizer.ui.settings.AccountsViewModel
 import com.greninjaop.mailorganizer.ui.settings.AccountsViewModelFactory
 import com.greninjaop.mailorganizer.ui.settings.AppearanceViewModel
 import com.greninjaop.mailorganizer.ui.settings.AppearanceViewModelFactory
-import com.greninjaop.mailorganizer.ui.settings.IntegrationsScreen
 import com.greninjaop.mailorganizer.ui.settings.PrivacyScreen
 import com.greninjaop.mailorganizer.ui.settings.SettingsScreen
 
@@ -69,6 +83,15 @@ object AppDestinations {
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
     const val ACCOUNTS = "accounts"
+
+    /**
+     * Integration detail route: `integration/{integrationId}` (Phase 17).
+     * Unknown ids degrade to a NotFound-style message, never a crash.
+     */
+    const val INTEGRATION_DETAIL = "integration/{integrationId}"
+
+    fun integrationDetailRoute(integrationId: String): String =
+        "integration/$integrationId"
 
     /** Phase 12: rules list. */
     const val RULES = "rules"
@@ -401,9 +424,43 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
             )
         }
-        // Phase 11: secondary destinations — real, honest screens.
+        // Phase 17: Integration Manager screens — real statuses, honest states.
         composable(AppDestinations.INTEGRATIONS) {
-            IntegrationsScreen(onBack = { navController.popBackStack() })
+            val vm: IntegrationsViewModel =
+                viewModel(factory = IntegrationsViewModelFactory(container))
+            com.greninjaop.mailorganizer.ui.integrations.IntegrationsScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+                onOpenDetail = { id ->
+                    navController.navigate(AppDestinations.integrationDetailRoute(id.value))
+                },
+            )
+        }
+        composable(AppDestinations.INTEGRATION_DETAIL) { backStackEntry ->
+            val vm: IntegrationsViewModel =
+                viewModel(factory = IntegrationsViewModelFactory(container))
+            val rawId = backStackEntry.arguments?.getString("integrationId")
+            var snapshot by remember { mutableStateOf<IntegrationSnapshot?>(null) }
+            var loaded by remember { mutableStateOf(false) }
+            LaunchedEffect(rawId) {
+                snapshot = rawId?.let { vm.snapshotFor(IntegrationId(it)) }
+                loaded = true
+            }
+            when {
+                !loaded -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) { CircularProgressIndicator() }
+
+                snapshot != null -> com.greninjaop.mailorganizer.ui.integrations.IntegrationDetailScreen(
+                    snapshot = snapshot!!,
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() },
+                )
+
+                // Unknown integration id: honest not-found, never a crash.
+                else -> UnknownIntegrationScreen(onBack = { navController.popBackStack() })
+            }
         }
         composable(AppDestinations.SETTINGS) {
             val vm: AppearanceViewModel =

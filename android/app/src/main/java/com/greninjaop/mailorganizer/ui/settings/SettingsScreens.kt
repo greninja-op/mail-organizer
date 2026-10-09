@@ -411,41 +411,12 @@ private fun PrivacyPoint(title: String, body: String) {
 }
 
 /**
- * Integrations destination — Phase 11 (phase §40).
+ * Integrations destination — Phase 17 (phase §20).
  *
- * A basic entry point. Calendar and Tasks are NOT implemented — the
- * screen says so plainly instead of presenting them as active.
+ * The Phase 11 placeholder lived here; the real Integration Manager UI
+ * now lives in `ui.integrations` (IntegrationsScreen + detail). This file
+ * keeps no integration UI anymore.
  */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun IntegrationsScreen(
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Integrations") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        MoEmptyState(
-            title = "No integrations yet",
-            message = "Calendar and Tasks integrations will appear here as they " +
-                "are connected (Phases 15–16). Nothing is connected right now.",
-            modifier = Modifier.padding(padding),
-        )
-    }
-}
 
 /** ViewModel for the Appearance section (theme). */
 class AppearanceViewModel(
