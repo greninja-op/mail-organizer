@@ -9,8 +9,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.greninjaop.mailorganizer.di.AppContainer
-import com.greninjaop.mailorganizer.ui.foundation.FoundationScreen
-import com.greninjaop.mailorganizer.ui.foundation.PlaceholderScreen
+import com.greninjaop.mailorganizer.ui.actions.ActionsScreen
+import com.greninjaop.mailorganizer.ui.actions.ActionsViewModel
+import com.greninjaop.mailorganizer.ui.actions.ActionsViewModelFactory
+import com.greninjaop.mailorganizer.ui.categories.CategoriesScreen
+import com.greninjaop.mailorganizer.ui.categories.CategoriesViewModel
+import com.greninjaop.mailorganizer.ui.categories.CategoriesViewModelFactory
+import com.greninjaop.mailorganizer.ui.categories.CategoryDetailScreen
+import com.greninjaop.mailorganizer.ui.companies.CompaniesScreen
+import com.greninjaop.mailorganizer.ui.companies.CompaniesViewModel
+import com.greninjaop.mailorganizer.ui.companies.CompaniesViewModelFactory
+import com.greninjaop.mailorganizer.ui.companies.CompanyDetailScreen
+import com.greninjaop.mailorganizer.ui.home.HomeScreen
+import com.greninjaop.mailorganizer.ui.home.HomeViewModel
+import com.greninjaop.mailorganizer.ui.home.HomeViewModelFactory
 import com.greninjaop.mailorganizer.ui.mail.MailScreen
 import com.greninjaop.mailorganizer.ui.mail.MailViewModel
 import com.greninjaop.mailorganizer.ui.mail.MailViewModelFactory
@@ -20,6 +32,14 @@ import com.greninjaop.mailorganizer.ui.mail.ThreadViewModelFactory
 import com.greninjaop.mailorganizer.ui.search.SearchScreen
 import com.greninjaop.mailorganizer.ui.search.SearchViewModel
 import com.greninjaop.mailorganizer.ui.search.SearchViewModelFactory
+import com.greninjaop.mailorganizer.ui.settings.AccountsScreen
+import com.greninjaop.mailorganizer.ui.settings.AccountsViewModel
+import com.greninjaop.mailorganizer.ui.settings.AccountsViewModelFactory
+import com.greninjaop.mailorganizer.ui.settings.AppearanceViewModel
+import com.greninjaop.mailorganizer.ui.settings.AppearanceViewModelFactory
+import com.greninjaop.mailorganizer.ui.settings.IntegrationsScreen
+import com.greninjaop.mailorganizer.ui.settings.PrivacyScreen
+import com.greninjaop.mailorganizer.ui.settings.SettingsScreen
 
 /**
  * Navigation foundation — Phase 1 (phase-01 §25).
@@ -93,18 +113,30 @@ object AppDestinations {
 
     /** The future phase that builds this destination's real UI. */
     fun phaseFor(route: String): String = when (route) {
-        HOME -> "Phase 1"
+        HOME -> "Phase 11"
         MAIL -> "Phase 6"
-        CATEGORIES -> "Phase 9"
-        COMPANIES -> "Phase 8"
-        ACTIONS -> "Phase 14"
+        CATEGORIES -> "Phase 11"
+        COMPANIES -> "Phase 11"
+        ACTIONS -> "Phase 11"
         SEARCH -> "Phase 10"
-        INTEGRATIONS -> "Phase 17"
-        SETTINGS -> "a later phase"
-        PRIVACY -> "Phase 23"
-        ACCOUNTS -> "Phase 18"
+        INTEGRATIONS -> "Phase 11"
+        SETTINGS -> "Phase 11"
+        PRIVACY -> "Phase 11"
+        ACCOUNTS -> "Phase 11"
         else -> "a later phase"
     }
+
+    /** Category detail route: `category/{name}` (MailCategory.name). */
+    const val CATEGORY_DETAIL = "category/{categoryName}"
+
+    fun categoryRoute(category: com.greninjaop.mailorganizer.data.local.MailCategory): String =
+        "category/${category.name}"
+
+    /** Company detail route: `company/{companyId}`. */
+    const val COMPANY_DETAIL = "company/{companyId}"
+
+    fun companyRoute(companyId: String): String =
+        "company/" + android.net.Uri.encode(companyId)
 }
 
 @Composable
@@ -116,9 +148,25 @@ fun AppNavGraph(
         navController = navController,
         startDestination = AppDestinations.HOME,
     ) {
+        // Phase 11: the real Home dashboard (replaces the Phase 1
+        // foundation screen).
         composable(AppDestinations.HOME) {
-            FoundationScreen(
+            val vm: HomeViewModel = viewModel(factory = HomeViewModelFactory(container))
+            HomeScreen(
+                viewModel = vm,
                 onNavigate = { route -> navController.navigate(route) },
+                onOpenThread = { threadId ->
+                    navController.navigate(AppDestinations.threadRoute(threadId))
+                },
+                onOpenCategory = { category ->
+                    navController.navigate(AppDestinations.categoryRoute(category))
+                },
+                onOpenCompany = { companyId ->
+                    navController.navigate(AppDestinations.companyRoute(companyId))
+                },
+                onOpenSearch = {
+                    navController.navigate(AppDestinations.searchRoute())
+                },
             )
         }
         // Phase 6: the real mailbox. Other destinations keep their honest
@@ -137,6 +185,116 @@ fun AppNavGraph(
                 // dedicated search screen with the typed query.
                 onOpenSearch = { query ->
                     navController.navigate(AppDestinations.searchRoute(query))
+                },
+                // Phase 11: primary-destination bottom bar.
+                onNavigatePrimary = { route ->
+                    navController.navigate(route) {
+                        popUpTo(AppDestinations.HOME)
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        // Phase 11: category browsing + detail.
+        composable(AppDestinations.CATEGORIES) {
+            val vm: CategoriesViewModel =
+                viewModel(factory = CategoriesViewModelFactory(container))
+            CategoriesScreen(
+                viewModel = vm,
+                onNavigate = { route -> navController.navigate(route) },
+                onOpenCategory = { category ->
+                    navController.navigate(AppDestinations.categoryRoute(category))
+                },
+                onOpenThread = { threadId ->
+                    navController.navigate(AppDestinations.threadRoute(threadId))
+                },
+                onOpenSearch = {
+                    navController.navigate(AppDestinations.searchRoute())
+                },
+            )
+        }
+        composable(
+            route = AppDestinations.CATEGORY_DETAIL,
+            arguments = listOf(
+                navArgument("categoryName") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val categoryName = entry.arguments?.getString("categoryName")
+            val category = runCatching {
+                com.greninjaop.mailorganizer.data.local.MailCategory.valueOf(
+                    categoryName ?: "",
+                )
+            }.getOrNull()
+            if (category == null) {
+                // Unknown category — never crash on a bad deep link.
+                navController.popBackStack()
+            } else {
+                val vm: CategoriesViewModel =
+                    viewModel(factory = CategoriesViewModelFactory(container))
+                androidx.compose.runtime.LaunchedEffect(category) {
+                    vm.selectCategory(category)
+                }
+                CategoryDetailScreen(
+                    viewModel = vm,
+                    category = category,
+                    onOpenThread = { threadId ->
+                        navController.navigate(AppDestinations.threadRoute(threadId))
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+        }
+        // Phase 11: company browsing + detail.
+        composable(AppDestinations.COMPANIES) {
+            val vm: CompaniesViewModel =
+                viewModel(factory = CompaniesViewModelFactory(container))
+            CompaniesScreen(
+                viewModel = vm,
+                onNavigate = { route -> navController.navigate(route) },
+                onOpenCompany = { companyId ->
+                    navController.navigate(AppDestinations.companyRoute(companyId))
+                },
+                onOpenSearch = {
+                    navController.navigate(AppDestinations.searchRoute())
+                },
+            )
+        }
+        composable(
+            route = AppDestinations.COMPANY_DETAIL,
+            arguments = listOf(
+                navArgument("companyId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val companyId = entry.arguments?.getString("companyId")
+            if (companyId.isNullOrEmpty()) {
+                navController.popBackStack()
+            } else {
+                val vm: CompaniesViewModel =
+                    viewModel(factory = CompaniesViewModelFactory(container))
+                androidx.compose.runtime.LaunchedEffect(companyId) {
+                    vm.selectCompany(companyId)
+                }
+                CompanyDetailScreen(
+                    viewModel = vm,
+                    onOpenThread = { threadId ->
+                        navController.navigate(AppDestinations.threadRoute(threadId))
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+        }
+        // Phase 11: actions destination (view-only).
+        composable(AppDestinations.ACTIONS) {
+            val vm: ActionsViewModel =
+                viewModel(factory = ActionsViewModelFactory(container))
+            ActionsScreen(
+                viewModel = vm,
+                onNavigate = { route -> navController.navigate(route) },
+                onOpenThread = { threadId ->
+                    navController.navigate(AppDestinations.threadRoute(threadId))
+                },
+                onOpenSearch = {
+                    navController.navigate(AppDestinations.searchRoute())
                 },
             )
         }
@@ -186,18 +344,29 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
             )
         }
-        AppDestinations.all
-            .filter {
-                it != AppDestinations.HOME && it != AppDestinations.MAIL &&
-                    it != AppDestinations.SEARCH
-            }
-            .forEach { route ->
-                composable(route) {
-                    PlaceholderScreen(
-                        route = route,
-                        onBack = { navController.popBackStack() },
-                    )
-                }
-            }
+        // Phase 11: secondary destinations — real, honest screens.
+        composable(AppDestinations.INTEGRATIONS) {
+            IntegrationsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(AppDestinations.SETTINGS) {
+            val vm: AppearanceViewModel =
+                viewModel(factory = AppearanceViewModelFactory(container))
+            SettingsScreen(
+                appearanceViewModel = vm,
+                onNavigate = { route -> navController.navigate(route) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(AppDestinations.PRIVACY) {
+            PrivacyScreen(onBack = { navController.popBackStack() })
+        }
+        composable(AppDestinations.ACCOUNTS) {
+            val vm: AccountsViewModel =
+                viewModel(factory = AccountsViewModelFactory(container))
+            AccountsScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
 }
