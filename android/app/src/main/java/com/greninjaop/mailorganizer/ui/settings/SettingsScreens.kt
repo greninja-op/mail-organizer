@@ -137,6 +137,13 @@ fun SettingsScreen(
                 subtitle = "Calendar, Tasks and more",
                 onClick = { onNavigate(AppDestinations.INTEGRATIONS) },
             )
+            // Phase 20: noise, newsletter & cleanup system (§34–§37).
+            SettingsRow(
+                icon = Icons.Filled.MailOutline,
+                title = "Cleanup & Newsletters",
+                subtitle = "Review newsletters, notifications and low-value mail",
+                onClick = { onNavigate(AppDestinations.CLEANUP) },
+            )
             AppearanceSection(viewModel = appearanceViewModel)
             AboutSection()
         }
