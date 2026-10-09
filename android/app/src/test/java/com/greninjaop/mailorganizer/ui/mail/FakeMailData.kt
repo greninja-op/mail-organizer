@@ -213,6 +213,16 @@ class FakeMailRepository : MailRepository {
         return messages.value
             .filter { it.accountId == accountId }
             .sortedByDescending { it.timestampEpochMs }
+    }
+
+    override suspend fun getUnprioritizedMessages(
+        accountId: String,
+        limit: Int,
+    ): List<MessageRecord> {
+        check()
+        return messages.value
+            .filter { it.accountId == accountId }
+            .sortedByDescending { it.timestampEpochMs }
             .take(limit)
     }
 
@@ -329,6 +339,13 @@ class FakeIntelligenceRepository :
             emptyMap(),
         )
 
+    // ---- Phase 9: in-memory priority storage ----
+
+    private val priorities =
+        MutableStateFlow<Map<String, com.greninjaop.mailorganizer.data.local.PriorityRecord>>(
+            emptyMap(),
+        )
+
     // ---- Phase 8: in-memory sender/company tracking ----
 
     private val senders = mutableMapOf<String, SenderRecord>()
@@ -442,11 +459,19 @@ class FakeIntelligenceRepository :
 
     override suspend fun setPriority(
         record: com.greninjaop.mailorganizer.data.local.PriorityRecord,
-    ) = Unit
+    ) {
+        priorities.value = priorities.value + (record.messageId to record)
+    }
 
     override suspend fun getPriority(
         messageId: String,
-    ): com.greninjaop.mailorganizer.data.local.PriorityRecord? = null
+    ): com.greninjaop.mailorganizer.data.local.PriorityRecord? =
+        priorities.value[messageId]
+
+    override suspend fun getPriorities(
+        messageIds: List<String>,
+    ): Map<String, com.greninjaop.mailorganizer.data.local.PriorityRecord> =
+        priorities.value.filterKeys { it in messageIds }
 
     override suspend fun addActionItem(
         item: com.greninjaop.mailorganizer.data.local.ActionItemRecord,

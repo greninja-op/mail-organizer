@@ -62,6 +62,16 @@ class MailViewModelTest {
                 dispatchers = dispatchers(),
                 clock = { 1_800_000_000_000L },
             ),
+            prioritizeMailbox = com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase(
+                mail = mail,
+                prioritizeMessage = com.greninjaop.mailorganizer.domain.priority.PrioritizeMessageUseCase(
+                    mail = mail,
+                    intelligence = intelligence,
+                    dispatchers = dispatchers(),
+                    clock = { 1_800_000_000_000L },
+                ),
+                dispatchers = dispatchers(),
+            ),
             syncCoordinator = SyncCoordinator(
                 api = DeferredGmailSyncApi(),
                 mail = mail,

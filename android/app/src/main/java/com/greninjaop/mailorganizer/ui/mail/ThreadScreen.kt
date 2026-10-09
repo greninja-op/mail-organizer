@@ -103,6 +103,7 @@ fun ThreadScreen(
                                 openExternalLink(context, url)
                             },
                             classification = s.classifications[message.messageId],
+                            priority = s.priorities[message.messageId],
                         )
                     }
                 }

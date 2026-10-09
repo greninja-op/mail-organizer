@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.core.MoLogger
 import com.greninjaop.mailorganizer.data.local.ClassificationRecord
+import com.greninjaop.mailorganizer.data.local.PriorityRecord
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,11 +69,28 @@ class ThreadViewModel(
             }
         }
 
+    /**
+     * Phase 9: priority per message (message-level evidence preserved).
+     * Threads are bounded (200), so one batch lookup per visible thread
+     * is fine; failures degrade to "no priority shown".
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val priorities =
+        messages.mapLatest { items ->
+            try {
+                intelligence.getPriorities(items.map { it.messageId })
+            } catch (t: Throwable) {
+                MoLogger.e(TAG, "Priority lookup failed: ${t.javaClass.simpleName}")
+                emptyMap()
+            }
+        }
+
     val state: StateFlow<ThreadDetailState> = combine(
         messages,
         expandedIds,
         classifications,
-    ) { items, expanded, classById ->
+        priorities,
+    ) { items, expanded, classById, prioById ->
         if (items.isEmpty()) {
             ThreadDetailState.Empty
         } else {
@@ -80,6 +98,7 @@ class ThreadViewModel(
                 messages = items,
                 expandedIds = expanded,
                 classifications = classById,
+                priorities = prioById,
             )
         }
     }.stateIn(
@@ -121,6 +140,8 @@ sealed interface ThreadDetailState {
         val expandedIds: Set<String>,
         /** Message-level classifications by message id (Phase 7). */
         val classifications: Map<String, ClassificationRecord?> = emptyMap(),
+        /** Message-level priorities by message id (Phase 9). */
+        val priorities: Map<String, PriorityRecord?> = emptyMap(),
     ) : ThreadDetailState
     data object Empty : ThreadDetailState
 }

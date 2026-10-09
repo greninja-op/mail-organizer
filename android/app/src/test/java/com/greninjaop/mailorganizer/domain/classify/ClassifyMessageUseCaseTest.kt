@@ -303,6 +303,12 @@ class ClassifyMessageUseCaseTest {
         ): List<MessageRecord> =
             messages.filter { it.accountId == accountId }.take(limit)
 
+        override suspend fun getUnprioritizedMessages(
+            accountId: String,
+            limit: Int,
+        ): List<MessageRecord> =
+            messages.filter { it.accountId == accountId }.take(limit)
+
         override fun observeByLabel(
             accountId: String,
             label: String,
@@ -414,6 +420,8 @@ class ClassifyMessageUseCaseTest {
 
         override suspend fun setPriority(record: PriorityRecord) = Unit
         override suspend fun getPriority(messageId: String): PriorityRecord? = null
+        override suspend fun getPriorities(messageIds: List<String>): Map<String, PriorityRecord> =
+            emptyMap()
         override suspend fun addActionItem(item: ActionItemRecord): Long = 0L
         override fun observeOpenActionItems(
             accountId: String,

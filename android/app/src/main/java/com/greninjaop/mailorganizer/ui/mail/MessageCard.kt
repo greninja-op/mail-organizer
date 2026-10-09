@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.greninjaop.mailorganizer.data.local.ClassificationRecord
+import com.greninjaop.mailorganizer.data.local.PriorityRecord
 import com.greninjaop.mailorganizer.ui.theme.MoSpacing
 import java.time.Instant
 import java.time.ZoneId
@@ -56,6 +57,8 @@ fun MessageCard(
     modifier: Modifier = Modifier,
     /** Phase 7: message-level classification; null when not classified yet. */
     classification: ClassificationRecord? = null,
+    /** Phase 9: message-level priority; null when not prioritized yet. */
+    priority: PriorityRecord? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         MessageHeader(
@@ -67,6 +70,7 @@ fun MessageCard(
             MessageBody(
                 message = message,
                 classification = classification,
+                priority = priority,
                 onOpenLink = onOpenLink,
                 modifier = Modifier.padding(
                     start = MoSpacing.md,
@@ -160,6 +164,8 @@ private fun MessageBody(
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier,
     classification: ClassificationRecord? = null,
+    /** Phase 9: message-level priority; null when not prioritized yet. */
+    priority: PriorityRecord? = null,
 ) {
     var showDetails by remember { mutableStateOf(false) }
     Column(
@@ -169,6 +175,12 @@ private fun MessageBody(
         // Phase 7: category chip with explainable "why" (§52, §55).
         if (classification != null) {
             CategoryChipWithExplanation(classification = classification)
+        }
+        // Phase 9: priority with explainable "why" — same discipline as
+        // classification: the reason was recorded at compute time, so the
+        // UI never needs raw email content to explain it.
+        if (priority != null) {
+            PriorityWithExplanation(priority = priority)
         }
         // Progressive disclosure for full headers (§21).
         Text(
