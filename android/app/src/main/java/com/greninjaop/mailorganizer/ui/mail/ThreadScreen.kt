@@ -111,6 +111,8 @@ fun ThreadScreen(
                             },
                             classification = s.classifications[message.messageId],
                             priority = s.priorities[message.messageId],
+                            // Phase 13: extracted meetings/deadlines.
+                            temporalItems = s.temporalItems[message.messageId].orEmpty(),
                             // Phase 12: correction entry point (§4).
                             onCorrect = {
                                 val classification = s.classifications[message.messageId]

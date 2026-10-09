@@ -17,6 +17,7 @@ class MailViewModelFactory(
             classifyMailbox = container.classifyMailboxUseCase,
             companyIntelligence = container.companyIntelligenceUseCase,
             prioritizeMailbox = container.prioritizeMailboxUseCase,
+            extractMailbox = container.extractMailboxUseCase,
             syncCoordinator = container.syncCoordinator,
             connectivity = container.connectivityObserver,
             dispatchers = container.dispatchers,

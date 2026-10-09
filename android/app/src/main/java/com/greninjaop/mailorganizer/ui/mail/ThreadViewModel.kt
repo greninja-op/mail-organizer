@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.core.MoLogger
+import com.greninjaop.mailorganizer.core.temporal.ExtractedTemporal
 import com.greninjaop.mailorganizer.data.local.ClassificationRecord
 import com.greninjaop.mailorganizer.data.local.PriorityRecord
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
+import com.greninjaop.mailorganizer.domain.temporal.toExtractedTemporal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -85,12 +87,32 @@ class ThreadViewModel(
             }
         }
 
+    /**
+     * Phase 13: temporal items per message (meetings/deadlines extracted
+     * on-device). Threads are bounded (200); one lookup per visible message
+     * is fine; failures degrade to "no temporal section shown".
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val temporalItems =
+        messages.mapLatest { items ->
+            items.associate { item ->
+                item.messageId to try {
+                    intelligence.getExtractedItems(item.messageId)
+                        .mapNotNull { it.toExtractedTemporal() }
+                } catch (t: Throwable) {
+                    MoLogger.e(TAG, "Temporal lookup failed: ${t.javaClass.simpleName}")
+                    emptyList<ExtractedTemporal>()
+                }
+            }
+        }
+
     val state: StateFlow<ThreadDetailState> = combine(
         messages,
         expandedIds,
         classifications,
         priorities,
-    ) { items, expanded, classById, prioById ->
+        temporalItems,
+    ) { items, expanded, classById, prioById, temporalById ->
         if (items.isEmpty()) {
             ThreadDetailState.Empty
         } else {
@@ -99,6 +121,7 @@ class ThreadViewModel(
                 expandedIds = expanded,
                 classifications = classById,
                 priorities = prioById,
+                temporalItems = temporalById,
             )
         }
     }.stateIn(
@@ -142,6 +165,8 @@ sealed interface ThreadDetailState {
         val classifications: Map<String, ClassificationRecord?> = emptyMap(),
         /** Message-level priorities by message id (Phase 9). */
         val priorities: Map<String, PriorityRecord?> = emptyMap(),
+        /** Message-level temporal items by message id (Phase 13). */
+        val temporalItems: Map<String, List<ExtractedTemporal>> = emptyMap(),
     ) : ThreadDetailState
     data object Empty : ThreadDetailState
 }

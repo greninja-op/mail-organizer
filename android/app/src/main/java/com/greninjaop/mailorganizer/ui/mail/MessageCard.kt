@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import com.greninjaop.mailorganizer.core.temporal.ExtractedTemporal
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -64,6 +65,8 @@ fun MessageCard(
      * is shown next to the category/priority chips (§4).
      */
     onCorrect: (() -> Unit)? = null,
+    /** Phase 13: extracted meetings/deadlines; empty when none extracted. */
+    temporalItems: List<ExtractedTemporal> = emptyList(),
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         MessageHeader(
@@ -77,6 +80,7 @@ fun MessageCard(
                 classification = classification,
                 priority = priority,
                 onCorrect = onCorrect,
+                temporalItems = temporalItems,
                 onOpenLink = onOpenLink,
                 modifier = Modifier.padding(
                     start = MoSpacing.md,
@@ -174,6 +178,8 @@ private fun MessageBody(
     priority: PriorityRecord? = null,
     /** Phase 12: correction entry point (§4). */
     onCorrect: (() -> Unit)? = null,
+    /** Phase 13: extracted meetings/deadlines. */
+    temporalItems: List<ExtractedTemporal> = emptyList(),
 ) {
     var showDetails by remember { mutableStateOf(false) }
     Column(
@@ -189,6 +195,11 @@ private fun MessageBody(
         // UI never needs raw email content to explain it.
         if (priority != null) {
             PriorityWithExplanation(priority = priority)
+        }
+        // Phase 13: deadlines & meetings with explainable "why" — same
+        // discipline: explanations were recorded at extraction time.
+        if (temporalItems.isNotEmpty()) {
+            TemporalSection(items = temporalItems, onOpenLink = onOpenLink)
         }
         // Phase 12: "Correct" affordance next to the chips, plus the
         // "Set by you" marker comes from the records' overridden flag (§7).

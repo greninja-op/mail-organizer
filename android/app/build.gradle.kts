@@ -26,7 +26,7 @@ android {
         targetSdk = 35
         versionCode = 1
         // Phase 6 core inbox & email viewer. Versioning scheme (semantic) lands in Phase 29.
-        versionName = "0.1.0-phase11"
+        versionName = "0.1.0-phase13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

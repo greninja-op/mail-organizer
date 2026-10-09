@@ -20,6 +20,7 @@ import com.greninjaop.mailorganizer.data.sync.SyncTrigger
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
+import com.greninjaop.mailorganizer.domain.temporal.ExtractMailboxUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -68,6 +69,7 @@ class MailViewModel(
     private val classifyMailbox: ClassifyMailboxUseCase,
     private val companyIntelligence: CompanyIntelligenceUseCase,
     private val prioritizeMailbox: PrioritizeMailboxUseCase,
+    private val extractMailbox: ExtractMailboxUseCase,
     private val syncCoordinator: SyncCoordinator,
     private val connectivity: ConnectivityObserver,
     private val dispatchers: AppDispatchers,
@@ -424,6 +426,12 @@ class MailViewModel(
                         val p = prioritizeMailbox.prioritizeNew(account.accountId)
                         if (p > 0) {
                             MoLogger.i(TAG, "Background prioritization: $p messages")
+                        }
+                        // Phase 13: then extract meetings/deadlines
+                        // (best-effort, never breaks the inbox).
+                        val e = extractMailbox.extractNew(account.accountId)
+                        if (e > 0) {
+                            MoLogger.i(TAG, "Background temporal extraction: $e messages")
                         }
                     }
                 }
