@@ -255,4 +255,15 @@ interface MessageDao {
         accountId: String,
         label: String,
     ): List<CompanyMessageCount>
+
+    /**
+     * Total per-company message counts for the Companies destination
+     * (Phase 11). Global for the account, not page-limited — the company
+     * list must never show fabricated numbers.
+     */
+    @Query(
+        "SELECT companyId AS companyId, COUNT(*) AS messageCount FROM messages " +
+            "WHERE accountId = :accountId AND companyId IS NOT NULL GROUP BY companyId",
+    )
+    suspend fun companyMessageCounts(accountId: String): List<CompanyMessageCount>
 }

@@ -76,6 +76,12 @@ interface IntelligenceRepository {
         limit: Int = 50,
     ): Flow<List<ClassificationRecord>>
 
+    /**
+     * Per-category classification counts for the dashboard (Phase 11).
+     * One GROUP BY query — never N+1. Missing categories mean zero.
+     */
+    suspend fun categoryCounts(accountId: String): Map<MailCategory, Int>
+
     // priority
     suspend fun setPriority(record: PriorityRecord)
     suspend fun getPriority(messageId: String): PriorityRecord?
@@ -85,6 +91,16 @@ interface IntelligenceRepository {
      * never N+1. Returns a map keyed by messageId.
      */
     suspend fun getPriorities(messageIds: List<String>): Map<String, PriorityRecord>
+
+    /**
+     * Priority rows at one level for the dashboard (Phase 11) — e.g. the
+     * Home "High priority" section observes HIGH and CRITICAL. Bounded.
+     */
+    fun observeByPriority(
+        accountId: String,
+        priority: Priority,
+        limit: Int = 50,
+    ): Flow<List<PriorityRecord>>
 
     // action items
     suspend fun addActionItem(item: ActionItemRecord): Long
@@ -179,6 +195,12 @@ class RoomIntelligenceRepository(
     ): Flow<List<ClassificationRecord>> =
         classifications.observeByCategory(accountId, category, limit)
 
+    override suspend fun categoryCounts(accountId: String): Map<MailCategory, Int> =
+        withContext(dispatchers.io) {
+            classifications.countByCategory(accountId)
+                .associate { it.category to it.messageCount }
+        }
+
     override suspend fun setPriority(record: PriorityRecord) =
         withContext(dispatchers.io) { priorities.setPriority(record) }
 
@@ -190,6 +212,13 @@ class RoomIntelligenceRepository(
             if (messageIds.isEmpty()) emptyMap()
             else priorities.getByMessages(messageIds).associateBy { it.messageId }
         }
+
+    override fun observeByPriority(
+        accountId: String,
+        priority: Priority,
+        limit: Int,
+    ): Flow<List<PriorityRecord>> =
+        priorities.observeByPriority(accountId, priority, limit)
 
     override suspend fun addActionItem(item: ActionItemRecord): Long =
         withContext(dispatchers.io) { actions.insert(item) }

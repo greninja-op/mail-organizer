@@ -82,6 +82,7 @@ fun MailScreen(
     onOpenThread: (threadId: String, focusMessageId: String?) -> Unit,
     onOpenAccounts: () -> Unit,
     onOpenSearch: (String) -> Unit,
+    onNavigatePrimary: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -120,6 +121,15 @@ fun MailScreen(
                 )
             },
             snackbarHost = { SnackbarHost(snackbar) },
+            // Phase 11: primary-destination bottom bar (Home/Mail/
+            // Categories/Companies/Actions). The mailbox drawer keeps its
+            // mailbox destinations; this bar is the app-level IA.
+            bottomBar = {
+                com.greninjaop.mailorganizer.ui.navigation.MoNavBar(
+                    currentRoute = com.greninjaop.mailorganizer.ui.navigation.PrimaryDestination.MAIL.route,
+                    onNavigate = onNavigatePrimary,
+                )
+            },
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 if (state.isSampleData) {

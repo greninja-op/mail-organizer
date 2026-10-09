@@ -127,6 +127,12 @@ interface MailRepository {
         accountId: String,
         label: String,
     ): Map<String, Int>
+
+    /**
+     * Total per-company message counts for the Companies destination
+     * (Phase 11). Global for the account, not page-limited.
+     */
+    suspend fun companyMessageCounts(accountId: String): Map<String, Int>
 }
 
 class RoomMailRepository(
@@ -334,4 +340,10 @@ class RoomMailRepository(
         db.messageDao().companyCountsForLabel(accountId, label)
             .associate { it.companyId to it.messageCount }
     }
+
+    override suspend fun companyMessageCounts(accountId: String): Map<String, Int> =
+        withContext(dispatchers.io) {
+            db.messageDao().companyMessageCounts(accountId)
+                .associate { it.companyId to it.messageCount }
+        }
 }

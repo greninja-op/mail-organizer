@@ -47,4 +47,16 @@ interface ClassificationDao {
         category: MailCategory,
         limit: Int,
     ): Flow<List<ClassificationRecord>>
+
+    /**
+     * Per-category classification counts for the dashboard (Phase 11).
+     * One row per category that has at least one classification row;
+     * categories with zero rows are absent (callers treat missing as 0).
+     * Account-scoped — never mixes accounts.
+     */
+    @Query(
+        "SELECT category, COUNT(*) AS messageCount FROM classifications " +
+            "WHERE accountId = :accountId GROUP BY category",
+    )
+    suspend fun countByCategory(accountId: String): List<CategoryMessageCount>
 }
