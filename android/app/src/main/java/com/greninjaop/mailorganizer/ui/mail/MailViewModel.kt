@@ -12,11 +12,17 @@ import com.greninjaop.mailorganizer.data.local.Priority
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
+import com.greninjaop.mailorganizer.data.sync.AccountSyncStatus
+import com.greninjaop.mailorganizer.data.sync.AccountSyncStatusEvaluator
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
 import com.greninjaop.mailorganizer.data.sync.SyncOutcome
 import com.greninjaop.mailorganizer.data.sync.SyncProgress
+import com.greninjaop.mailorganizer.data.sync.SyncScheduler
 import com.greninjaop.mailorganizer.data.sync.SyncStage
+import com.greninjaop.mailorganizer.data.sync.SyncTimeFormatter
 import com.greninjaop.mailorganizer.data.sync.SyncTrigger
+import com.greninjaop.mailorganizer.data.sync.UnifiedSyncStatus
+import com.greninjaop.mailorganizer.data.repository.SyncStateRepository
 import com.greninjaop.mailorganizer.domain.actions.GenerateActionsUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
@@ -80,6 +86,8 @@ class MailViewModel(
     private val seeder: SampleMailboxSeeder,
     private val activeAccountPreferences: com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences? = null,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val syncScheduler: SyncScheduler? = null,
+    private val syncStateRepository: SyncStateRepository? = null,
 ) : ViewModel() {
 
     companion object {
@@ -435,6 +443,9 @@ class MailViewModel(
                 filterText = filterText.value,
                 companyFilter = companies,
                 actionRequiredOnly = actionOnly,
+                lastSyncedText = lastSyncedText.value,
+                unifiedSyncStatus = unifiedSyncStatus.value,
+                accountSyncStatus = accountSyncStatus.value,
             )
         }
     }.stateIn(
@@ -443,7 +454,72 @@ class MailViewModel(
         MailScreenState(),
     )
 
+    val lastSyncedText: StateFlow<String> = combine(
+        allAccounts,
+        activeSelection,
+        activeAccount,
+        connectivity.isOnline,
+    ) { all, selection, account, _ ->
+        val repo = syncStateRepository ?: return@combine ""
+        val isUnified = activeAccountPreferences != null && selection is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+        if (isUnified) {
+            val enabled = all.filter { it.isEnabled }
+            var maxSync: Long? = null
+            for (acc in enabled) {
+                val record = repo.ensureForAccount(acc.accountId)
+                val s = record.lastSuccessfulSyncEpochMs
+                if (s != null && (maxSync == null || s > maxSync)) maxSync = s
+            }
+            SyncTimeFormatter.formatLastSynced(maxSync, clock())
+        } else {
+            val accId = account?.accountId ?: return@combine ""
+            val record = repo.ensureForAccount(accId)
+            SyncTimeFormatter.formatLastSynced(record.lastSuccessfulSyncEpochMs, clock())
+        }
+    }.catch { emit("") }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    val accountSyncStatus: StateFlow<AccountSyncStatus> = combine(
+        activeAccount,
+        connectivity.isOnline,
+        syncCoordinator.progress,
+    ) { account, online, prog ->
+        if (account == null) {
+            AccountSyncStatus.NeverSynced
+        } else {
+            val repo = syncStateRepository
+            val record = repo?.ensureForAccount(account.accountId)
+            AccountSyncStatusEvaluator.evaluate(
+                record = record,
+                inProgress = prog,
+                isOnline = online,
+                account = account,
+            )
+        }
+    }.catch { emit(AccountSyncStatus.NeverSynced) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountSyncStatus.NeverSynced)
+
+    val unifiedSyncStatus: StateFlow<UnifiedSyncStatus?> = combine(
+        allAccounts,
+        activeSelection,
+        connectivity.isOnline,
+    ) { all, selection, online ->
+        val isUnified = activeAccountPreferences != null && selection is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+        if (!isUnified) return@combine null
+        val repo = syncStateRepository
+        val statuses = all.associate { acc ->
+            val rec = repo?.ensureForAccount(acc.accountId)
+            acc.accountId to AccountSyncStatusEvaluator.evaluate(
+                record = rec,
+                inProgress = syncCoordinator.progress.value,
+                isOnline = online,
+                account = acc,
+            )
+        }
+        AccountSyncStatusEvaluator.evaluateUnified(all, statuses, online)
+    }.catch { emit(null) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     init {
+        syncScheduler?.onAppStart()
+
         // Honest sync progress (stages, never fabricated percentages — §16).
         syncCoordinator.progress
             .onEach { progress ->
@@ -576,23 +652,54 @@ class MailViewModel(
      * pretending to sync.
      */
     fun refresh() {
-        val account = activeAccount.value ?: return
+        if (state.value.isOffline) {
+            syncUi.value = SyncUiState.Result("You're offline — showing synced mail.")
+            return
+        }
         if (syncUi.value is SyncUiState.Syncing) return
+        val selection = activeSelection.value
+        val isUnified = activeAccountPreferences != null && selection is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+
         viewModelScope.launch(dispatchers.io) {
             syncUi.value = SyncUiState.Syncing("Starting sync…")
-            val outcome = syncCoordinator.syncNow(
-                AccountId(account.accountId),
-                SyncTrigger.MANUAL,
-            )
-            syncUi.value = SyncUiState.Result(
-                when (outcome) {
-                    is SyncOutcome.Success ->
-                        "Sync complete — ${outcome.summary.messagesProcessed} messages processed."
-                    is SyncOutcome.Failed -> friendlySyncError(outcome.error)
-                    SyncOutcome.Cancelled -> "Sync cancelled."
-                },
-            )
+            if (isUnified) {
+                val results = syncScheduler?.syncAllEnabled(SyncTrigger.MANUAL)
+                    ?: syncAllAccountsManually()
+                val total = results.size
+                val succeeded = results.values.count { it is SyncOutcome.Success }
+                val failed = results.values.count { it is SyncOutcome.Failed }
+                val msg = when {
+                    total == 0 -> "No accounts connected."
+                    succeeded == total -> "All accounts synced."
+                    failed == total -> "Could not sync accounts."
+                    else -> "$succeeded of $total accounts synced."
+                }
+                syncUi.value = SyncUiState.Result(msg)
+            } else {
+                val account = activeAccount.value ?: return@launch
+                val outcome = syncCoordinator.syncNow(
+                    AccountId(account.accountId),
+                    SyncTrigger.MANUAL,
+                )
+                syncUi.value = SyncUiState.Result(
+                    when (outcome) {
+                        is SyncOutcome.Success ->
+                            "Sync complete — ${outcome.summary.messagesProcessed} messages processed."
+                        is SyncOutcome.Failed -> friendlySyncError(outcome.error)
+                        SyncOutcome.Cancelled -> "Sync cancelled."
+                    },
+                )
+            }
         }
+    }
+
+    private suspend fun syncAllAccountsManually(): Map<String, SyncOutcome> {
+        val enabled = allAccounts.value.filter { it.isEnabled }
+        val results = mutableMapOf<String, SyncOutcome>()
+        for (acc in enabled) {
+            results[acc.accountId] = syncCoordinator.syncNow(AccountId(acc.accountId), SyncTrigger.MANUAL)
+        }
+        return results
     }
 
     // ---- Internals ----
@@ -719,6 +826,7 @@ class MailViewModel(
         SyncStage.CONNECTING -> "Connecting…"
         SyncStage.FETCHING -> "Fetching mail…"
         SyncStage.SAVING -> "Saving…"
+        SyncStage.PROCESSING -> "Processing intelligence…"
         SyncStage.FINALIZING -> "Finishing…"
     }
 
@@ -750,6 +858,12 @@ data class MailScreenState(
     val companyFilter: CompanyFilterUiState = CompanyFilterUiState(),
     /** Phase 9: action-required view toggle state. */
     val actionRequiredOnly: Boolean = false,
+    /** Phase 19: truthful last synced relative text. */
+    val lastSyncedText: String = "",
+    /** Phase 19: aggregate unified sync status. */
+    val unifiedSyncStatus: UnifiedSyncStatus? = null,
+    /** Phase 19: per-account sync status. */
+    val accountSyncStatus: AccountSyncStatus = AccountSyncStatus.NeverSynced,
 )
 
 /** Sync affordance state: idle, honestly-staged progress, or a result message. */

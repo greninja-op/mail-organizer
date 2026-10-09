@@ -25,6 +25,8 @@ class MailViewModelFactory(
             samplePolicy = container.sampleDataPolicy,
             seeder = container.sampleMailboxSeeder,
             activeAccountPreferences = container.activeAccountPreferences,
+            syncScheduler = container.syncScheduler,
+            syncStateRepository = container.syncStateRepository,
         ) as T
     }
 }

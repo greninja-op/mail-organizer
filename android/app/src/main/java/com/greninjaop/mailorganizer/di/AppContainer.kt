@@ -401,6 +401,41 @@ class AppContainer(private val appContext: Context) {
         SampleMailboxSeeder(accountRepository, mailRepository)
     }
 
+    // ---- Phase 19: Background sync & offline behavior ----
+    val backgroundProcessingPipeline: com.greninjaop.mailorganizer.data.sync.BackgroundProcessingPipeline by lazy {
+        com.greninjaop.mailorganizer.data.sync.BackgroundProcessingPipeline(
+            companyIntelligence = companyIntelligenceUseCase,
+            classifyMailbox = classifyMailboxUseCase,
+            prioritizeMailbox = prioritizeMailboxUseCase,
+            extractMailbox = extractMailboxUseCase,
+            generateActions = generateActionsUseCase,
+            searchIndex = searchIndexUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val accountSyncWorker: com.greninjaop.mailorganizer.data.sync.AccountSyncWorker by lazy {
+        com.greninjaop.mailorganizer.data.sync.AccountSyncWorker(
+            syncCoordinator = syncCoordinator,
+            pipeline = backgroundProcessingPipeline,
+            accountRepository = accountRepository,
+            connectivity = connectivityObserver,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val syncScheduler: com.greninjaop.mailorganizer.data.sync.SyncScheduler by lazy {
+        com.greninjaop.mailorganizer.data.sync.BatteryConsciousSyncScheduler(
+            worker = accountSyncWorker,
+            syncCoordinator = syncCoordinator,
+            accountRepository = accountRepository,
+            syncStateRepository = syncStateRepository,
+            connectivity = connectivityObserver,
+            dispatchers = dispatchers,
+            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + dispatchers.default),
+        )
+    }
+
     private companion object {
         const val DATABASE_NAME = "mail_organizer.db"
     }
