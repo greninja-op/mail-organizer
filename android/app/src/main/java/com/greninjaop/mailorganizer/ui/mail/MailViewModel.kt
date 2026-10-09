@@ -45,6 +45,7 @@ private data class MailboxCore(
     val destination: MailboxDestination,
     val content: MailboxContent,
     val account: AccountRecord?,
+    val isUnified: Boolean,
     val all: List<AccountRecord>,
     val filter: String,
 )
@@ -77,6 +78,7 @@ class MailViewModel(
     private val dispatchers: AppDispatchers,
     private val samplePolicy: SampleDataPolicy,
     private val seeder: SampleMailboxSeeder,
+    private val activeAccountPreferences: com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
@@ -122,17 +124,43 @@ class MailViewModel(
      */
     private val allAccounts: StateFlow<List<AccountRecord>> =
         accounts.observeAll()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val activeSelection: StateFlow<com.greninjaop.mailorganizer.data.prefs.AccountSelection> =
+        if (activeAccountPreferences != null) {
+            activeAccountPreferences.activeSelection
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.Eagerly,
+                    com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified,
+                )
+        } else {
+            allAccounts.map { list ->
+                val primary = list.filter { it.isEnabled }.minWithOrNull(
+                    compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId },
+                )
+                if (primary != null) com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single(primary.accountId)
+                else com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified)
+        }
 
     private val activeAccount: StateFlow<AccountRecord?> =
-        allAccounts
-            .map { list ->
-                list.filter { it.isEnabled }.minWithOrNull(
-                    compareBy<AccountRecord> { it.createdAtEpochMs }
-                        .thenBy { it.accountId },
-                )
+        combine(allAccounts, activeSelection) { list, selection ->
+            val enabled = list.filter { it.isEnabled }
+            when (selection) {
+                is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single -> {
+                    enabled.firstOrNull { it.accountId == selection.accountId }
+                        ?: enabled.minWithOrNull(compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId })
+                }
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified -> {
+                    if (activeAccountPreferences == null) {
+                        enabled.minWithOrNull(compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId })
+                    } else {
+                        null
+                    }
+                }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /**
      * Fixture seeding (debug only, never touches real data — see seeder).
@@ -158,16 +186,29 @@ class MailViewModel(
         combine(
             seedDone,
             allAccounts,
+            activeSelection,
             destination,
             filterText,
-            pageLimit,
-        ) { done, all, dest, filter, limit ->
-            val account = all.filter { it.isEnabled }.minWithOrNull(
-                compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId },
-            )
+        ) { done, all, selection, dest, filter ->
+            val enabled = all.filter { it.isEnabled }
+            val account = when (selection) {
+                is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single ->
+                    enabled.firstOrNull { it.accountId == selection.accountId }
+                        ?: enabled.minWithOrNull(compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId })
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified -> {
+                    if (activeAccountPreferences == null) {
+                        enabled.minWithOrNull(compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId })
+                    } else {
+                        null
+                    }
+                }
+            }
+            val isUnified = activeAccountPreferences != null && selection is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
             // In debug the first paint waits for the seeding attempt.
             val resolved = done || !samplePolicy.shouldSeed()
-            ContentKey(resolved, account, dest, filter.trim(), limit, null)
+            ContentKey(resolved, account, isUnified, dest, filter.trim(), PAGE_SIZE, null)
+        }.combine(pageLimit) { key, limit ->
+            key.copy(limit = limit)
         }.combine(selectedCompany) { key, companyId ->
             // Phase 8: the company filter rides along in the content key so
             // the list queries the exact company+destination slice.
@@ -178,29 +219,41 @@ class MailViewModel(
         }.flatMapLatest { key ->
             when {
                 !key.resolved -> flowOf(MailboxContent.Loading)
-                key.account == null -> flowOf(MailboxContent.Empty(EmptyKind.NO_MAIL))
-                // Phase 9: the action-required view is global — it shows
-                // ACTION_REQUIRED-classified mail regardless of destination.
-                // Never fabricated: empty shows an honest empty state.
+                !key.isUnified && key.account == null -> flowOf(MailboxContent.Empty(EmptyKind.NO_MAIL))
+                // Unified mode presentation
+                key.isUnified -> {
+                    when (key.dest) {
+                        MailboxDestination.STARRED ->
+                            mail.observeUnifiedStarred(key.limit)
+                                .mapLatest { messages ->
+                                    val items = messages.map { it.toMessageItem() }
+                                        .applyMessageFilter(key.filter)
+                                    if (items.isEmpty()) {
+                                        if (key.filter.isNotEmpty()) MailboxContent.Empty(EmptyKind.NO_FILTER_RESULTS)
+                                        else MailboxContent.Empty(EmptyKind.NO_STARRED)
+                                    } else MailboxContent.Messages(items)
+                                }
+                        else ->
+                            mail.observeUnifiedThreads(key.limit)
+                                .mapLatest { threads ->
+                                    buildThreadContent(threads, key)
+                                }
+                    }
+                }
+                // Account-scoped presentation (key.account != null)
                 key.actionRequiredOnly ->
                     intelligence.observeByCategory(
-                        key.account.accountId,
+                        key.account!!.accountId,
                         MailCategory.ACTION_REQUIRED,
                         key.limit,
                     ).mapLatest { records ->
                         buildCategoryContent(records.map { it.messageId }, key)
                             ?: MailboxContent.Empty(EmptyKind.NO_ACTION_REQUIRED)
                     }
-                // Phase 7: classification-backed destinations are wired to
-                // real data — PROMOTIONAL via the deterministic classifier,
-                // SOCIAL/SPAM via Gmail's own labels. Never fabricated.
-                // Phase 8: a selected company narrows the destination via a
-                // direct company+destination query (never page-filtering),
-                // so the list always matches the chip counts.
                 key.dest == MailboxDestination.PROMOTIONAL ->
                     if (key.companyId != null) {
                         mail.observeMessagesByCompanyAndCategory(
-                            key.account.accountId,
+                            key.account!!.accountId,
                             MailCategory.PROMOTIONS,
                             key.companyId,
                             key.limit,
@@ -210,7 +263,7 @@ class MailViewModel(
                         }
                     } else {
                         intelligence.observeByCategory(
-                            key.account.accountId,
+                            key.account!!.accountId,
                             MailCategory.PROMOTIONS,
                             key.limit,
                         ).mapLatest { records ->
@@ -221,7 +274,7 @@ class MailViewModel(
                 key.dest == MailboxDestination.SOCIAL ->
                     if (key.companyId != null) {
                         mail.observeMessagesByCompanyAndLabel(
-                            key.account.accountId,
+                            key.account!!.accountId,
                             key.companyId,
                             "CATEGORY_SOCIAL",
                             key.limit,
@@ -230,16 +283,16 @@ class MailViewModel(
                                 ?: MailboxContent.Empty(EmptyKind.NO_COMPANY_RESULTS)
                         }
                     } else {
-                        mail.observeByLabel(key.account.accountId, "CATEGORY_SOCIAL", key.limit)
+                        mail.observeByLabel(key.account!!.accountId, "CATEGORY_SOCIAL", key.limit)
                             .mapLatest { messages ->
                                 buildMessageContent(messages.map { it.toMessageItem() }, key)
-                                    ?: MailboxContent.Empty(EmptyKind.NO_SOCIAL)
+                                ?: MailboxContent.Empty(EmptyKind.NO_SOCIAL)
                             }
                     }
                 key.dest == MailboxDestination.SPAM ->
                     if (key.companyId != null) {
                         mail.observeMessagesByCompanyAndLabel(
-                            key.account.accountId,
+                            key.account!!.accountId,
                             key.companyId,
                             "SPAM",
                             key.limit,
@@ -248,14 +301,14 @@ class MailViewModel(
                                 ?: MailboxContent.Empty(EmptyKind.NO_COMPANY_RESULTS)
                         }
                     } else {
-                        mail.observeByLabel(key.account.accountId, "SPAM", key.limit)
+                        mail.observeByLabel(key.account!!.accountId, "SPAM", key.limit)
                             .mapLatest { messages ->
                                 buildMessageContent(messages.map { it.toMessageItem() }, key)
-                                    ?: MailboxContent.Empty(EmptyKind.NO_SPAM)
+                                ?: MailboxContent.Empty(EmptyKind.NO_SPAM)
                             }
                     }
                 key.dest == MailboxDestination.STARRED ->
-                    mail.observeStarred(key.account.accountId, key.limit)
+                    mail.observeStarred(key.account!!.accountId, key.limit)
                         .mapLatest { messages ->
                             val items = messages.map { it.toMessageItem() }
                                 .applyMessageFilter(key.filter)
@@ -265,7 +318,7 @@ class MailViewModel(
                             } else MailboxContent.Messages(items)
                         }
                 else ->
-                    mail.observeThreads(key.account.accountId, key.limit)
+                    mail.observeThreads(key.account!!.accountId, key.limit)
                         .mapLatest { threads ->
                             buildThreadContent(threads, key)
                         }
@@ -354,10 +407,11 @@ class MailViewModel(
         destination,
         content,
         activeAccount,
+        activeSelection,
         allAccounts,
-        filterText,
-    ) { dest, cont, account, all, filter ->
-        MailboxCore(dest, cont, account, all, filter)
+    ) { dest, cont, account, selection, all ->
+        val isUnified = activeAccountPreferences != null && selection is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+        MailboxCore(dest, cont, account, isUnified, all, filterText.value)
     }.let { core ->
         // Typed combine() only goes to 5 flows in coroutines 1.9: fold the
         // remaining flows in a second, still fully-typed combine.
@@ -372,11 +426,13 @@ class MailViewModel(
                 destination = c.destination,
                 content = c.content,
                 activeAccount = c.account,
+                isUnified = c.isUnified,
+                accountsById = c.all.associateBy { it.accountId },
                 accountCount = c.all.size,
                 isSampleData = c.all.any { SampleMailboxSeeder.isFixtureAccount(it.accountId) },
                 isOffline = !online,
                 syncUi = sync,
-                filterText = c.filter,
+                filterText = filterText.value,
                 companyFilter = companies,
                 actionRequiredOnly = actionOnly,
             )
@@ -544,6 +600,7 @@ class MailViewModel(
     private data class ContentKey(
         val resolved: Boolean,
         val account: AccountRecord?,
+        val isUnified: Boolean,
         val dest: MailboxDestination,
         val filter: String,
         val limit: Int,
@@ -677,11 +734,13 @@ class MailViewModel(
     }
 }
 
-/** Top-level screen state (phase §35). */
+/** Top-level screen state (phase §35, updated Phase 18). */
 data class MailScreenState(
     val destination: MailboxDestination = MailboxDestination.ALL_INBOX,
     val content: MailboxContent = MailboxContent.Loading,
     val activeAccount: AccountRecord? = null,
+    val isUnified: Boolean = false,
+    val accountsById: Map<String, AccountRecord> = emptyMap(),
     val accountCount: Int = 0,
     val isSampleData: Boolean = false,
     val isOffline: Boolean = false,
