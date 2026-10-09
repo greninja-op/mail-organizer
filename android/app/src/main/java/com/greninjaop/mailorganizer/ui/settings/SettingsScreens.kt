@@ -1,6 +1,7 @@
 package com.greninjaop.mailorganizer.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,8 +18,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,15 +32,21 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -51,8 +63,11 @@ import com.greninjaop.mailorganizer.ui.mail.AccountAvatar
 import com.greninjaop.mailorganizer.ui.mail.MailFormatting
 import com.greninjaop.mailorganizer.ui.navigation.AppDestinations
 import com.greninjaop.mailorganizer.ui.theme.MoSpacing
+import kotlin.math.abs
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -177,20 +192,90 @@ private fun SettingsRow(
 
 /** ViewModel for the Accounts screen. */
 class AccountsViewModel(
-    accountRepository: AccountRepository,
+    private val accountRepository: AccountRepository,
+    private val activeAccountPreferences: com.greninjaop.mailorganizer.data.prefs.ActiveAccountPreferences,
+    private val integrationManager: com.greninjaop.mailorganizer.domain.integrations.IntegrationManager?,
     private val dispatchers: AppDispatchers,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     val accounts: StateFlow<List<AccountRecord>> =
         accountRepository.observeAll()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** The active account (first enabled, oldest) — same rule as the mailbox. */
+    val activeSelection: StateFlow<com.greninjaop.mailorganizer.data.prefs.AccountSelection> =
+        activeAccountPreferences.activeSelection
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified,
+            )
+
+    /** The active account id when a single account is active (null if Unified). */
     val activeAccountId: StateFlow<String?> =
-        accountRepository.observeAll().map { list ->
-            list.filter { it.isEnabled }.minWithOrNull(
-                compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId },
-            )?.accountId
+        combine(accounts, activeSelection) { list, selection ->
+            when (selection) {
+                is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single -> {
+                    list.firstOrNull { it.accountId == selection.accountId && it.isEnabled }?.accountId
+                }
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified -> null
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun selectAccount(accountId: String?) {
+        viewModelScope.launch(dispatchers.io) {
+            val target = if (accountId != null) {
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single(accountId)
+            } else {
+                com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+            }
+            activeAccountPreferences.setActiveSelection(target)
+        }
+    }
+
+    fun toggleEnabled(account: AccountRecord) {
+        viewModelScope.launch(dispatchers.io) {
+            val newEnabled = !account.isEnabled
+            accountRepository.setEnabled(account.accountId, newEnabled)
+            // If the currently active single account was disabled, fallback to next or unified
+            val currentSel = activeAccountPreferences.activeSelection.first()
+            if (!newEnabled && currentSel is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single && currentSel.accountId == account.accountId) {
+                activeAccountPreferences.setActiveSelection(com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified)
+            }
+        }
+    }
+
+    fun disconnectAccount(accountId: String) {
+        viewModelScope.launch(dispatchers.io) {
+            // Integration cleanup
+            integrationManager?.handleAccountRemoved(accountId)
+            // Delete account cascades to all account-owned rows in Room and cleans FTS
+            accountRepository.deleteById(accountId)
+            // If deleted was active, fallback to unified
+            val currentSel = activeAccountPreferences.activeSelection.first()
+            if (currentSel is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single && currentSel.accountId == accountId) {
+                activeAccountPreferences.setActiveSelection(com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified)
+            }
+        }
+    }
+
+    fun addLocalAccount(email: String, displayName: String?) {
+        val trimmed = email.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch(dispatchers.io) {
+            val now = clock()
+            val id = "local-" + abs(trimmed.lowercase().hashCode())
+            val record = AccountRecord(
+                accountId = id,
+                emailAddress = trimmed,
+                displayName = displayName?.trim()?.takeIf { it.isNotEmpty() },
+                createdAtEpochMs = now,
+                updatedAtEpochMs = now,
+                connectionState = ConnectionState.DISCONNECTED, // Honest local state until Phase 3
+                isEnabled = true,
+            )
+            accountRepository.upsert(record)
+        }
+    }
 }
 
 /** Factory for the Accounts screen. */
@@ -201,6 +286,8 @@ class AccountsViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return AccountsViewModel(
             accountRepository = container.accountRepository,
+            activeAccountPreferences = container.activeAccountPreferences,
+            integrationManager = container.integrationManager,
             dispatchers = container.dispatchers,
         ) as T
     }
@@ -223,7 +310,47 @@ fun AccountsScreen(
     modifier: Modifier = Modifier,
 ) {
     val accounts by viewModel.accounts.collectAsState()
-    val activeId by viewModel.activeAccountId.collectAsState()
+    val activeSelection by viewModel.activeSelection.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var disconnectTarget by remember { mutableStateOf<AccountRecord?>(null) }
+
+    if (showAddDialog) {
+        AddLocalAccountDialog(
+            onDismiss = { showAddDialog = false },
+            onAdd = { email, name ->
+                showAddDialog = false
+                viewModel.addLocalAccount(email, name)
+            },
+        )
+    }
+
+    disconnectTarget?.let { account ->
+        AlertDialog(
+            onDismissRequest = { disconnectTarget = null },
+            title = { Text("Disconnect account?") },
+            text = {
+                Text(
+                    "Disconnecting ${account.displayName ?: account.emailAddress} removes its synced data from this device. Other accounts will remain completely unaffected.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = account.accountId
+                        disconnectTarget = null
+                        viewModel.disconnectAccount(id)
+                    },
+                ) {
+                    Text("Disconnect", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { disconnectTarget = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -238,6 +365,11 @@ fun AccountsScreen(
                         )
                     }
                 },
+                actions = {
+                    TextButton(onClick = { showAddDialog = true }) {
+                        Text("Add Local")
+                    }
+                },
             )
         },
     ) { padding ->
@@ -245,8 +377,8 @@ fun AccountsScreen(
             MoEmptyState(
                 title = "No accounts connected",
                 message = "Gmail account connection uses the official Google " +
-                    "sign-in flow and arrives with Phase 3. Until then, the app " +
-                    "works with local sample data in debug builds.",
+                    "sign-in flow and arrives with Phase 3. You can add a local test " +
+                    "account using the 'Add Local' action above.",
                 modifier = Modifier.padding(padding),
             )
         } else {
@@ -256,17 +388,68 @@ fun AccountsScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
+                // Unified Inbox option
+                val isUnified = activeSelection is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.selectAccount(null) }
+                        .padding(horizontal = MoSpacing.md, vertical = MoSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MailOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(MoSpacing.xxl),
+                        tint = if (isUnified) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(MoSpacing.md))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "All Accounts (Unified Inbox)",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (isUnified) FontWeight.Bold else FontWeight.Normal,
+                            )
+                            if (isUnified) {
+                                Spacer(Modifier.width(MoSpacing.xs))
+                                Text(
+                                    text = "Active",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        Text(
+                            text = "View combined threads across all enabled accounts",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = MoSpacing.xs))
+
                 accounts.forEach { account ->
-                    val isActive = account.accountId == activeId
+                    val isAccountActive = when (val sel = activeSelection) {
+                        is com.greninjaop.mailorganizer.data.prefs.AccountSelection.Single -> sel.accountId == account.accountId
+                        com.greninjaop.mailorganizer.data.prefs.AccountSelection.Unified -> false
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable {
+                                if (account.isEnabled) {
+                                    viewModel.selectAccount(account.accountId)
+                                }
+                            }
                             .padding(horizontal = MoSpacing.md, vertical = MoSpacing.sm)
                             .semantics {
                                 contentDescription = buildString {
                                     append(account.displayName ?: account.emailAddress)
-                                    if (isActive) append(". Active account.")
+                                    if (isAccountActive) append(". Active account.")
                                     append(" Connection: ${account.connectionState.name.lowercase()}.")
+                                    if (!account.isEnabled) append(" Account is disabled.")
                                 }
                             },
                         verticalAlignment = Alignment.CenterVertically,
@@ -278,11 +461,12 @@ fun AccountsScreen(
                                 Text(
                                     text = account.displayName ?: account.emailAddress,
                                     style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isAccountActive) FontWeight.Bold else FontWeight.Normal,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false),
                                 )
-                                if (isActive) {
+                                if (isAccountActive) {
                                     Spacer(Modifier.width(MoSpacing.xs))
                                     Text(
                                         text = "Active",
@@ -302,12 +486,18 @@ fun AccountsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        IconButton(onClick = { disconnectTarget = account }) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Disconnect account ${account.emailAddress}",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.height(MoSpacing.md))
                 Text(
-                    text = "Adding another Gmail account uses the official Google " +
-                        "sign-in flow and arrives with Phase 3.",
+                    text = "Google OAuth sign-in arrives with Phase 3. Local accounts can be added for multi-account testing.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = MoSpacing.md),
@@ -316,6 +506,51 @@ fun AccountsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun AddLocalAccountDialog(
+    onDismiss: () -> Unit,
+    onAdd: (String, String?) -> Unit,
+) {
+    var accountEmail by remember { mutableStateOf("") }
+    var accountDisplayName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Local Account") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+                TextField(
+                    value = accountEmail,
+                    onValueChange = { accountEmail = it },
+                    label = { Text("Email address") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                TextField(
+                    value = accountDisplayName,
+                    onValueChange = { accountDisplayName = it },
+                    label = { Text("Display name (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onAdd(accountEmail, accountDisplayName.takeIf { it.isNotBlank() }) },
+                enabled = accountEmail.isNotBlank() && accountEmail.contains("@"),
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 private fun connectionText(account: AccountRecord): String = when (account.connectionState) {

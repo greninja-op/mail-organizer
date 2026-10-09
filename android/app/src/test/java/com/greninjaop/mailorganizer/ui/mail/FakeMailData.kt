@@ -86,6 +86,12 @@ class FakeMailRepository : MailRepository {
                 .take(limit)
         }
 
+    override fun observeUnifiedThreads(limit: Int): Flow<List<ThreadRecord>> =
+        threads.map { list ->
+            check()
+            list.sortedByDescending { it.latestMessageEpochMs }.take(limit)
+        }
+
     override fun observeMessages(threadId: String, limit: Int): Flow<List<MessageRecord>> =
         messages.map { list ->
             check()
@@ -99,12 +105,24 @@ class FakeMailRepository : MailRepository {
             list.filter { it.accountId == accountId && it.unread }.take(limit)
         }
 
+    override fun observeUnifiedUnread(limit: Int): Flow<List<MessageRecord>> =
+        messages.map { list ->
+            check()
+            list.filter { it.unread }.sortedByDescending { it.timestampEpochMs }.take(limit)
+        }
+
     override fun observeStarred(accountId: String, limit: Int): Flow<List<MessageRecord>> =
         messages.map { list ->
             check()
             list.filter { it.accountId == accountId && it.starred }
                 .sortedByDescending { it.timestampEpochMs }
                 .take(limit)
+        }
+
+    override fun observeUnifiedStarred(limit: Int): Flow<List<MessageRecord>> =
+        messages.map { list ->
+            check()
+            list.filter { it.starred }.sortedByDescending { it.timestampEpochMs }.take(limit)
         }
 
     override suspend fun searchByText(
