@@ -97,6 +97,10 @@ data class ThreadItem(
      * Priority is independent from category (requirements.md).
      */
     val priority: Priority? = null,
+    /**
+     * Phase 21: state of conversation/thread (awaiting reply, waiting for other party, etc.).
+     */
+    val conversationState: com.greninjaop.mailorganizer.core.conversation.ConversationState? = null,
 )
 
 /** Full message model for thread/detail views. */

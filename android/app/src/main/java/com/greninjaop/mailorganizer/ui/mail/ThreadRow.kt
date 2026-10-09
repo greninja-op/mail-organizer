@@ -70,6 +70,7 @@ fun ThreadRow(
         showAttachment = item.hasAttachment,
         messageCount = item.messageCount,
         priority = item.priority,
+        conversationState = item.conversationState,
         account = account,
         showAccountIndicator = showAccountIndicator,
         onClick = onClick,
@@ -123,6 +124,7 @@ private fun MailRowLayout(
     showAttachment: Boolean,
     messageCount: Int,
     priority: Priority?,
+    conversationState: com.greninjaop.mailorganizer.core.conversation.ConversationState? = null,
     account: AccountRecord?,
     showAccountIndicator: Boolean,
     onClick: () -> Unit,
@@ -191,6 +193,10 @@ private fun MailRowLayout(
                 if (priority != null && priority.visuals() != null) {
                     Spacer(Modifier.width(MoSpacing.xs))
                     PriorityBadge(priority = priority)
+                }
+                if (conversationState != null && conversationState != com.greninjaop.mailorganizer.core.conversation.ConversationState.NO_ACTION) {
+                    Spacer(Modifier.width(MoSpacing.xs))
+                    ConversationStateBadge(state = conversationState)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

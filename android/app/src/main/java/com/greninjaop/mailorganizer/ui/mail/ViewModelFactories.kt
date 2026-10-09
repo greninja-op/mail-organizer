@@ -43,6 +43,7 @@ class ThreadViewModelFactory(
             mail = container.mailRepository,
             intelligence = container.intelligenceRepository,
             dispatchers = container.dispatchers,
+            conversationIntelligence = container.conversationUseCase,
         ) as T
     }
 }

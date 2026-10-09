@@ -101,6 +101,11 @@ fun ThreadScreen(
                         .padding(padding)
                         .fillMaxSize(),
                 ) {
+                    if (s.conversation != null && s.conversation.state != com.greninjaop.mailorganizer.core.conversation.ConversationState.NO_ACTION) {
+                        item(key = "conversation_intelligence") {
+                            ConversationIntelligenceSection(result = s.conversation)
+                        }
+                    }
                     items(s.messages, key = { it.messageId }) { message ->
                         MessageCard(
                             message = message,

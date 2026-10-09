@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 
+import com.greninjaop.mailorganizer.core.conversation.ConversationAnalysisResult
+import com.greninjaop.mailorganizer.domain.conversation.ConversationIntelligenceUseCase
+
 /**
  * Backs the Phase 6 thread/conversation screen.
  *
@@ -29,11 +32,12 @@ import kotlinx.coroutines.flow.stateIn
  * just to read a thread). Account scope is inherited from the thread row
  * itself (threads are account-scoped by schema, §33).
  */
-class ThreadViewModel(
+class ThreadViewModel @JvmOverloads constructor(
     private val threadId: String,
     private val mail: MailRepository,
     private val intelligence: IntelligenceRepository,
     private val dispatchers: AppDispatchers,
+    private val conversationIntelligence: ConversationIntelligenceUseCase? = null,
 ) : ViewModel() {
 
     private val expandedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -106,7 +110,22 @@ class ThreadViewModel(
             }
         }
 
-    val state: StateFlow<ThreadDetailState> = combine(
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val conversationState =
+        messages.mapLatest { items ->
+            if (conversationIntelligence != null && items.isNotEmpty()) {
+                try {
+                    conversationIntelligence.analyzeThread(threadId)
+                } catch (t: Throwable) {
+                    MoLogger.w(TAG, "Conversation analysis failed: ${t.javaClass.simpleName}")
+                    null
+                }
+            } else {
+                null
+            }
+        }
+
+    private val baseState = combine(
         messages,
         expandedIds,
         classifications,
@@ -122,7 +141,19 @@ class ThreadViewModel(
                 classifications = classById,
                 priorities = prioById,
                 temporalItems = temporalById,
+                conversation = null,
             )
+        }
+    }
+
+    val state: StateFlow<ThreadDetailState> = combine(
+        baseState,
+        conversationState,
+    ) { base, conv ->
+        if (base is ThreadDetailState.Content) {
+            base.copy(conversation = conv)
+        } else {
+            base
         }
     }.stateIn(
         viewModelScope,
@@ -167,6 +198,8 @@ sealed interface ThreadDetailState {
         val priorities: Map<String, PriorityRecord?> = emptyMap(),
         /** Message-level temporal items by message id (Phase 13). */
         val temporalItems: Map<String, List<ExtractedTemporal>> = emptyMap(),
+        /** Thread-level conversation analysis result (Phase 21). */
+        val conversation: ConversationAnalysisResult? = null,
     ) : ThreadDetailState
     data object Empty : ThreadDetailState
 }
