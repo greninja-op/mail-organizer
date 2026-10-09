@@ -1,3 +1,5 @@
+![Mail Stack — Organise your inbox. Simplify your day.](banner/banner.png)
+
 # Mail Organizer — Execution Plan
 
 This repository contains the execution plan for Mail Organizer. Execute one phase at a time from the cloned repository.
