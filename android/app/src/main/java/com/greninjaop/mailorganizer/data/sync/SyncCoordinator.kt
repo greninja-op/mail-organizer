@@ -18,11 +18,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** What triggered a sync run. */
-enum class SyncTrigger { MANUAL, PERIODIC, APP_START }
-
 /** Honest progress stages (phase §31: stages, never fabricated percentages). */
-enum class SyncStage { CONNECTING, FETCHING, SAVING, FINALIZING }
+enum class SyncStage { CONNECTING, FETCHING, SAVING, PROCESSING, FINALIZING }
 
 sealed interface SyncProgress {
     data object Idle : SyncProgress
@@ -363,6 +360,26 @@ class SyncCoordinator(
         is SyncApiException.InvalidRequest -> ERROR_API
         is SyncApiException.HistoryInvalid -> ERROR_HISTORY_INVALID
         is SyncApiException.NotConfigured -> ERROR_NOT_CONFIGURED
+    }
+
+    /**
+     * Observes rich per-account sync status (Phase 19 §20).
+     */
+    fun observeAccountSyncStatus(
+        accountId: String,
+        isOnlineFlow: kotlinx.coroutines.flow.Flow<Boolean>,
+        accountFlow: kotlinx.coroutines.flow.Flow<com.greninjaop.mailorganizer.data.local.AccountRecord?>? = null,
+    ): kotlinx.coroutines.flow.Flow<AccountSyncStatus> {
+        val stateFlow = syncState.observe(accountId)
+        val accFlow = accountFlow ?: kotlinx.coroutines.flow.flowOf(null)
+        return kotlinx.coroutines.flow.combine(stateFlow, progress, isOnlineFlow, accFlow) { record, prog, online, acc ->
+            AccountSyncStatusEvaluator.evaluate(
+                record = record,
+                inProgress = prog,
+                isOnline = online,
+                account = acc,
+            )
+        }
     }
 
     private companion object {
