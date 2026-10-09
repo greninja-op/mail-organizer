@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.greninjaop.mailorganizer.data.local.AccountRecord
+import com.greninjaop.mailorganizer.data.local.Priority
 import com.greninjaop.mailorganizer.ui.theme.MoSpacing
 
 /**
@@ -56,6 +57,7 @@ fun ThreadRow(
             if (item.snippet.isNotBlank()) append(", ${item.snippet}")
             if (timeText.isNotBlank()) append(", $timeText")
             if (item.messageCount > 1) append(", ${item.messageCount} messages")
+            item.priority?.visuals()?.let { append(", ${it.contentDescription}") }
         }
     }
     MailRowLayout(
@@ -67,6 +69,7 @@ fun ThreadRow(
         showStar = item.anyStarred,
         showAttachment = item.hasAttachment,
         messageCount = item.messageCount,
+        priority = item.priority,
         account = account,
         showAccountIndicator = showAccountIndicator,
         onClick = onClick,
@@ -100,6 +103,7 @@ fun StarredMessageRow(
         showStar = true,
         showAttachment = item.attachments.isNotEmpty(),
         messageCount = 1,
+        priority = item.priority,
         account = account,
         showAccountIndicator = false,
         onClick = onClick,
@@ -117,6 +121,7 @@ private fun MailRowLayout(
     showStar: Boolean,
     showAttachment: Boolean,
     messageCount: Int,
+    priority: Priority?,
     account: AccountRecord?,
     showAccountIndicator: Boolean,
     onClick: () -> Unit,
@@ -181,6 +186,10 @@ private fun MailRowLayout(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (priority != null && priority.visuals() != null) {
+                    Spacer(Modifier.width(MoSpacing.xs))
+                    PriorityBadge(priority = priority)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -144,6 +144,16 @@ fun MailScreen(
                     onClearFilter = viewModel::clearFilter,
                     modifier = Modifier.weight(1f),
                     header = {
+                        // Phase 9: action-required view toggle — global
+                        // "what needs my attention" filter.
+                        ActionRequiredFilterChip(
+                            active = state.actionRequiredOnly,
+                            onToggle = viewModel::toggleActionRequired,
+                            modifier = Modifier.padding(
+                                horizontal = MoSpacing.md,
+                                vertical = MoSpacing.xs,
+                            ),
+                        )
                         // Phase 8: company filter lives inside the selected
                         // category — never a navigation destination.
                         if (state.companyFilter.visible) {
@@ -426,6 +436,12 @@ private fun MailContent(
                         EmptyKind.NO_COMPANY_RESULTS -> MoEmptyState(
                             title = "No mail from this company here",
                             message = "Nothing from the selected company in this mailbox.",
+                            modifier = Modifier.weight(1f),
+                        )
+                        EmptyKind.NO_ACTION_REQUIRED -> MoEmptyState(
+                            title = "Nothing needs action",
+                            message = "No mail classified as action-required. " +
+                                "You're all caught up.",
                             modifier = Modifier.weight(1f),
                         )
                     }

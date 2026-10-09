@@ -8,6 +8,7 @@ import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.core.MoLogger
 import com.greninjaop.mailorganizer.data.local.AccountRecord
 import com.greninjaop.mailorganizer.data.local.MailCategory
+import com.greninjaop.mailorganizer.data.local.Priority
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
@@ -18,6 +19,7 @@ import com.greninjaop.mailorganizer.data.sync.SyncStage
 import com.greninjaop.mailorganizer.data.sync.SyncTrigger
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
+import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -65,6 +67,7 @@ class MailViewModel(
     private val intelligence: IntelligenceRepository,
     private val classifyMailbox: ClassifyMailboxUseCase,
     private val companyIntelligence: CompanyIntelligenceUseCase,
+    private val prioritizeMailbox: PrioritizeMailboxUseCase,
     private val syncCoordinator: SyncCoordinator,
     private val connectivity: ConnectivityObserver,
     private val dispatchers: AppDispatchers,
@@ -98,6 +101,14 @@ class MailViewModel(
      * filter *within* a category, not global navigation (requirements.md).
      */
     private val selectedCompany = MutableStateFlow<String?>(null)
+
+    /**
+     * Action-required view (Phase 9). When on, the content shows mail
+     * classified ACTION_REQUIRED by the deterministic engine — a global
+     * "what needs my attention" view. Cleared on destination change like
+     * the company filter.
+     */
+    private val actionRequiredOnly = MutableStateFlow(false)
 
     /**
      * Active account: earliest-created enabled account. Deterministic and
@@ -157,10 +168,25 @@ class MailViewModel(
             // Phase 8: the company filter rides along in the content key so
             // the list queries the exact company+destination slice.
             key.copy(companyId = companyId)
+        }.combine(actionRequiredOnly) { key, actionOnly ->
+            // Phase 9: the action-required view rides along too.
+            key.copy(actionRequiredOnly = actionOnly)
         }.flatMapLatest { key ->
             when {
                 !key.resolved -> flowOf(MailboxContent.Loading)
                 key.account == null -> flowOf(MailboxContent.Empty(EmptyKind.NO_MAIL))
+                // Phase 9: the action-required view is global — it shows
+                // ACTION_REQUIRED-classified mail regardless of destination.
+                // Never fabricated: empty shows an honest empty state.
+                key.actionRequiredOnly ->
+                    intelligence.observeByCategory(
+                        key.account.accountId,
+                        MailCategory.ACTION_REQUIRED,
+                        key.limit,
+                    ).mapLatest { records ->
+                        buildCategoryContent(records.map { it.messageId }, key)
+                            ?: MailboxContent.Empty(EmptyKind.NO_ACTION_REQUIRED)
+                    }
                 // Phase 7: classification-backed destinations are wired to
                 // real data — PROMOTIONAL via the deterministic classifier,
                 // SOCIAL/SPAM via Gmail's own labels. Never fabricated.
@@ -331,7 +357,13 @@ class MailViewModel(
     }.let { core ->
         // Typed combine() only goes to 5 flows in coroutines 1.9: fold the
         // remaining flows in a second, still fully-typed combine.
-        combine(core, syncUi, connectivity.isOnline, companyFilter) { c, sync, online, companies ->
+        combine(
+            core,
+            syncUi,
+            connectivity.isOnline,
+            companyFilter,
+            actionRequiredOnly,
+        ) { c, sync, online, companies, actionOnly ->
             MailScreenState(
                 destination = c.destination,
                 content = c.content,
@@ -342,6 +374,7 @@ class MailViewModel(
                 syncUi = sync,
                 filterText = c.filter,
                 companyFilter = companies,
+                actionRequiredOnly = actionOnly,
             )
         }
     }.stateIn(
@@ -386,6 +419,12 @@ class MailViewModel(
                         if (n > 0) {
                             MoLogger.i(TAG, "Background classification: $n messages")
                         }
+                        // Phase 9: then prioritize (consumes the fresh
+                        // classifications as one signal among several).
+                        val p = prioritizeMailbox.prioritizeNew(account.accountId)
+                        if (p > 0) {
+                            MoLogger.i(TAG, "Background prioritization: $p messages")
+                        }
                     }
                 }
             } catch (t: Throwable) {
@@ -402,6 +441,17 @@ class MailViewModel(
         // Company selection is a filter *within* a category — switching
         // destinations clears it (requirements.md).
         selectedCompany.value = null
+        // The action-required view is likewise destination-scoped.
+        actionRequiredOnly.value = false
+    }
+
+    /**
+     * Toggles the action-required view (Phase 9): when on, the content
+     * shows ACTION_REQUIRED-classified mail regardless of destination.
+     */
+    fun toggleActionRequired() {
+        actionRequiredOnly.value = !actionRequiredOnly.value
+        pageLimit.value = PAGE_SIZE
     }
 
     /**
@@ -482,6 +532,8 @@ class MailViewModel(
         val limit: Int,
         /** Phase 8: selected company filter (null = no filter). */
         val companyId: String?,
+        /** Phase 9: action-required view (global, overrides destination). */
+        val actionRequiredOnly: Boolean = false,
     )
 
     /**
@@ -503,11 +555,17 @@ class MailViewModel(
      * when there is nothing to show, so callers pick the honest empty kind
      * for their destination.
      */
-    private fun buildMessageContent(
+    private suspend fun buildMessageContent(
         items: List<MessageItem>,
         key: ContentKey,
     ): MailboxContent? {
-        val filtered = items.applyMessageFilter(key.filter)
+        // Phase 9: attach priorities (one bounded query for the page).
+        val priorities = priorityMap(items.map { it.messageId })
+        val withPriorities = items.map { item ->
+            val p = priorities[item.messageId]
+            if (p == null) item else item.copy(priority = p)
+        }
+        val filtered = withPriorities.applyMessageFilter(key.filter)
         if (filtered.isEmpty()) {
             return if (key.filter.isNotEmpty()) {
                 MailboxContent.Empty(EmptyKind.NO_FILTER_RESULTS)
@@ -526,8 +584,14 @@ class MailViewModel(
         val latestById = mail.getMessagesByIds(
             threads.mapNotNull { it.latestMessageId },
         ).associateBy { it.messageId }
+        // Phase 9: one bounded query for the visible page's priorities.
+        val priorities = priorityMap(latestById.keys.toList())
         val items = threads
-            .map { it.toThreadItem(latestById[it.latestMessageId]) }
+            .map {
+                it.toThreadItem(latestById[it.latestMessageId]).withPriority(
+                    latestById[it.latestMessageId]?.messageId?.let { id -> priorities[id] },
+                )
+            }
             .applyThreadFilter(key.filter)
         if (items.isEmpty()) {
             return if (key.filter.isNotEmpty()) {
@@ -538,6 +602,25 @@ class MailViewModel(
         }
         return MailboxContent.Threads(items, hasMore = threads.size >= key.limit)
     }
+
+    /**
+     * Phase 9: batch priority lookup for the visible page — one query,
+     * never N+1. Failures degrade to "no priorities shown", never break
+     * the list.
+     */
+    private suspend fun priorityMap(messageIds: List<String>): Map<String, Priority> {
+        if (messageIds.isEmpty()) return emptyMap()
+        return try {
+            intelligence.getPriorities(messageIds)
+                .mapValues { it.value.priority }
+        } catch (t: Throwable) {
+            MoLogger.e(TAG, "Priority lookup failed: ${t.javaClass.simpleName}")
+            emptyMap()
+        }
+    }
+
+    private fun ThreadItem.withPriority(priority: Priority?): ThreadItem =
+        if (priority == this.priority) this else copy(priority = priority)
 
     private fun List<ThreadItem>.applyThreadFilter(filter: String): List<ThreadItem> {
         if (filter.isEmpty()) return this
@@ -589,6 +672,8 @@ data class MailScreenState(
     val filterText: String = "",
     /** Phase 8: company filter row state (visible on grouping destinations). */
     val companyFilter: CompanyFilterUiState = CompanyFilterUiState(),
+    /** Phase 9: action-required view toggle state. */
+    val actionRequiredOnly: Boolean = false,
 )
 
 /** Sync affordance state: idle, honestly-staged progress, or a result message. */

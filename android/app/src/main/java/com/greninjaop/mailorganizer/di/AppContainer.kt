@@ -23,6 +23,8 @@ import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
+import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
+import com.greninjaop.mailorganizer.domain.priority.PrioritizeMessageUseCase
 import com.greninjaop.mailorganizer.ui.mail.AndroidConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
@@ -140,6 +142,28 @@ class AppContainer(private val appContext: Context) {
         ClassifyMailboxUseCase(
             mail = mailRepository,
             classifyMessage = classifyMessageUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 9: priority & action-required engine ----
+    // Pure-Kotlin engine (core.priority) driven through use cases so the UI
+    // never holds priority logic. Local-only: no network, no AI. Priority is
+    // independent from category (requirements.md).
+
+    val prioritizeMessageUseCase: PrioritizeMessageUseCase by lazy {
+        PrioritizeMessageUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+            recurringSenderProvider = companyIntelligenceUseCase,
+        )
+    }
+
+    val prioritizeMailboxUseCase: PrioritizeMailboxUseCase by lazy {
+        PrioritizeMailboxUseCase(
+            mail = mailRepository,
+            prioritizeMessage = prioritizeMessageUseCase,
             dispatchers = dispatchers,
         )
     }

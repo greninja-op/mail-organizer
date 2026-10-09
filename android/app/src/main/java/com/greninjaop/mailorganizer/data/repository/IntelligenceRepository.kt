@@ -74,6 +74,12 @@ interface IntelligenceRepository {
     suspend fun setPriority(record: PriorityRecord)
     suspend fun getPriority(messageId: String): PriorityRecord?
 
+    /**
+     * Batch priority lookup for the visible page (Phase 9) — one query,
+     * never N+1. Returns a map keyed by messageId.
+     */
+    suspend fun getPriorities(messageIds: List<String>): Map<String, PriorityRecord>
+
     // action items
     suspend fun addActionItem(item: ActionItemRecord): Long
     fun observeOpenActionItems(accountId: String, limit: Int = 50): Flow<List<ActionItemRecord>>
@@ -166,6 +172,12 @@ class RoomIntelligenceRepository(
 
     override suspend fun getPriority(messageId: String) =
         withContext(dispatchers.io) { priorities.getByMessage(messageId) }
+
+    override suspend fun getPriorities(messageIds: List<String>) =
+        withContext(dispatchers.io) {
+            if (messageIds.isEmpty()) emptyMap()
+            else priorities.getByMessages(messageIds).associateBy { it.messageId }
+        }
 
     override suspend fun addActionItem(item: ActionItemRecord): Long =
         withContext(dispatchers.io) { actions.insert(item) }

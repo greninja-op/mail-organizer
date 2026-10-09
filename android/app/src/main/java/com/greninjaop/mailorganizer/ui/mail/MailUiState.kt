@@ -2,6 +2,7 @@ package com.greninjaop.mailorganizer.ui.mail
 
 import com.greninjaop.mailorganizer.core.email.AttachmentMeta
 import com.greninjaop.mailorganizer.data.local.MessageRecord
+import com.greninjaop.mailorganizer.data.local.Priority
 import com.greninjaop.mailorganizer.data.local.ThreadRecord
 
 /**
@@ -56,6 +57,9 @@ enum class EmptyKind {
 
     /** Company filter selected but no mail from that company here. */
     NO_COMPANY_RESULTS,
+
+    /** Action-required filter with no action-required mail. */
+    NO_ACTION_REQUIRED,
 }
 
 /** Explicit mailbox content state (phase §35: sealed, no scattered booleans). */
@@ -88,6 +92,11 @@ data class ThreadItem(
     val anyStarred: Boolean,
     val hasAttachment: Boolean,
     val messageCount: Int,
+    /**
+     * Phase 9: priority of the latest message (null when not yet computed).
+     * Priority is independent from category (requirements.md).
+     */
+    val priority: Priority? = null,
 )
 
 /** Full message model for thread/detail views. */
@@ -109,6 +118,11 @@ data class MessageItem(
     val timestampEpochMs: Long,
     val unread: Boolean,
     val starred: Boolean,
+    /**
+     * Phase 9: priority (null when not yet computed). Independent from
+     * category (requirements.md).
+     */
+    val priority: Priority? = null,
 ) {
     /** Sanitized HTML takes precedence; plain text fallback; never an error (§29). */
     val hasRenderableBody: Boolean
