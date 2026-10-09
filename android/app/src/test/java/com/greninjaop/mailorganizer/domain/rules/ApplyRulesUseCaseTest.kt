@@ -484,6 +484,13 @@ class ApplyRulesUseCaseTest {
         override fun observeOpenActionItems(accountId: String, limit: Int) = MutableStateFlow(emptyList<ActionItemRecord>())
         override suspend fun completeActionItem(id: Long) = Unit
         override suspend fun dismissActionItem(id: Long) = Unit
+
+        override suspend fun getActionItem(id: Long): ActionItemRecord? = null
+        override suspend fun getActionItemsByMessage(messageId: String): List<ActionItemRecord> = emptyList()
+        override suspend fun getOpenActionItemsByThread(threadId: String): List<ActionItemRecord> = emptyList()
+        override suspend fun setActionItemStatus(id: Long, status: com.greninjaop.mailorganizer.core.actions.ActionStatus) = Unit
+        override suspend fun deleteActionItems(ids: List<Long>) = Unit
+        override suspend fun expireOverdueActionItems(accountId: String, cutoffEpochMs: Long): Int = 0
         override suspend fun addExtractedItem(item: ExtractedItemRecord) = 1L
         override fun observeOpenExtracted(accountId: String, type: ExtractedItemType, limit: Int) = MutableStateFlow(emptyList<ExtractedItemRecord>())
         override suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord> = emptyList()

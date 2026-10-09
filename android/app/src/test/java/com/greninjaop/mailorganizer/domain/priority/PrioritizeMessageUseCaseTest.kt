@@ -459,6 +459,13 @@ class PrioritizeMessageUseCaseTest {
         override suspend fun completeActionItem(id: Long) = Unit
         override suspend fun dismissActionItem(id: Long) = Unit
 
+        override suspend fun getActionItem(id: Long): com.greninjaop.mailorganizer.data.local.ActionItemRecord? = null
+        override suspend fun getActionItemsByMessage(messageId: String): List<com.greninjaop.mailorganizer.data.local.ActionItemRecord> = emptyList()
+        override suspend fun getOpenActionItemsByThread(threadId: String): List<com.greninjaop.mailorganizer.data.local.ActionItemRecord> = emptyList()
+        override suspend fun setActionItemStatus(id: Long, status: com.greninjaop.mailorganizer.core.actions.ActionStatus) = Unit
+        override suspend fun deleteActionItems(ids: List<Long>) = Unit
+        override suspend fun expireOverdueActionItems(accountId: String, cutoffEpochMs: Long): Int = 0
+
         override suspend fun addExtractedItem(
             item: com.greninjaop.mailorganizer.data.local.ExtractedItemRecord,
         ): Long = 0L
