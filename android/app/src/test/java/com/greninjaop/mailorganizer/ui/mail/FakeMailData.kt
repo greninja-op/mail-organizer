@@ -226,6 +226,17 @@ class FakeMailRepository : MailRepository {
             .take(limit)
     }
 
+    override suspend fun getUnextractedMessages(
+        accountId: String,
+        limit: Int,
+    ): List<MessageRecord> {
+        check()
+        return messages.value
+            .filter { it.accountId == accountId }
+            .sortedByDescending { it.timestampEpochMs }
+            .take(limit)
+    }
+
     override fun observeByLabel(
         accountId: String,
         label: String,
@@ -561,6 +572,13 @@ class FakeIntelligenceRepository :
         limit: Int,
     ): Flow<List<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord>> =
         MutableStateFlow(emptyList())
+
+    override suspend fun getExtractedItems(
+        messageId: String,
+    ): List<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord> =
+        emptyList()
+
+    override suspend fun deleteExtractedItems(ids: List<Long>) = Unit
 
     fun seedClassification(
         record: com.greninjaop.mailorganizer.data.local.ClassificationRecord,

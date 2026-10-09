@@ -46,6 +46,18 @@ priorities, `domain` on senders). Lists that are never query keys
 anything filtered or sorted by is a real column — the JSON `payload` on
 `extracted_items` is never the query key (§25).
 
+### Temporal payload (Phase 13)
+`extracted_items` stores meeting/deadline intelligence. Typed columns:
+`itemType` (extended with 11 temporal values — EVENT, INTERVIEW,
+*_DEADLINE ×4, REMINDER_DATE, DATE_ONLY, TIME_ONLY, DATE_TIME, DATE_RANGE;
+enums stored by name so no migration was needed), `title`,
+`dueDateEpochMs` (= item start, the sort key), `completed`. The versioned
+payload JSON (`TemporalPayloadJson`, hand-rolled, total both ways) carries:
+end, dateOnly, tz, tzSource (EXPLICIT_IN_EMAIL / APP_FALLBACK / UNKNOWN),
+loc, url (meeting URL, stored never fetched), status (UPCOMING/PAST/
+UNKNOWN), conf, signals, expl (human-readable "why"), ver (extractor
+version for idempotent re-extraction).
+
 ## Migrations (§32)
 
 - v1 (Phase 0): `accounts` seed only.

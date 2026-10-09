@@ -686,7 +686,7 @@ Deterministic, on-device priority engine — no network, no AI:
   engine (ActionItemRecord storage already exists from Phase 2), Phase 26
   optional AI fallback.
 
-## Next: Phase 12 — Rules & User Corrections
+## Next: Phase 13 — Meeting & Deadline Extraction
 Do NOT start unprompted.
 
 ## Phase 11 — Dashboard & Information Architecture: COMPLETE (2026-10-09)
@@ -864,3 +864,60 @@ outrank, but never duplicate, the Phase 7/9 base:
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 13 meeting/deadline
   extraction, Phase 14 action engine, Phase 26 optional AI fallback.
+
+## Phase 13 — Meeting & Deadline Extraction: COMPLETE (2026-10-09)
+
+### What was built
+Deterministic, on-device meeting/deadline extraction — structured temporal
+intelligence, not external action (no calendar/task writes; those are later
+phases' seams).
+
+- **Core** (`core/temporal/`, pure Kotlin): `TemporalModels.kt` (14 types,
+  confidence/status/timezone-source enums, explainable result model),
+  `TemporalPatterns.kt` (bounded total regexes), `DateTimeParser.kt`
+  (explicit/relative dates, times incl. 12AM/12PM, fixed-offset timezone
+  tokens, documented ambiguity policy), `DeterministicTemporalExtractor.kt`
+  (VERSION=1; candidate scan → type resolution → validation → ranking →
+  explanation; never invents end times, timezones, or precision).
+- **Reference time** is the message's received timestamp (phase §12) —
+  relative dates ("tomorrow", "next Monday") resolve deterministically.
+- **Domain** (`domain/temporal/`): `ExtractTemporalUseCase`
+  (extract+persist, idempotent, account-isolated, user-completed rows never
+  replaced, failures degrade safely), `ExtractMailboxUseCase` (bounded
+  incremental background extraction), `TemporalMappings.kt` (hand-rolled
+  versioned payload JSON codec; core↔storage type mapping).
+- **Storage**: reuses Phase 2's `extracted_items` table — no migration
+  (enums stored by name; 11 new `ExtractedItemType` values appended).
+  Queryable attributes stay typed columns; temporal detail (end, timezone,
+  location, URL, confidence, explanation, version) lives in the payload
+  JSON. New DAO/repository methods: `getUnextracted`, `getExtractedItems`,
+  `deleteExtractedItems`.
+- **UI** (`ui/mail/TemporalSection.kt`): "Deadlines & meetings" section in
+  the expanded message view with type icons (material-icons-core only),
+  formatted date/time in the item's own timezone, location, "Join meeting"
+  external link, and expandable "why" (recorded at extraction time).
+  Wired through ThreadViewModel → ThreadScreen → MessageCard; extraction
+  runs in MailViewModel's background pipeline after prioritization.
+
+### Verification
+- New tests: `DateTimeParserTest` (22), `DeterministicTemporalExtractorTest`
+  (20), `TemporalPayloadJsonTest` + `ExtractTemporalUseCaseTest` (14).
+  Three real bugs found and fixed by the tests: year-capture regex
+  (`(19|20)\d{2}` captured only the prefix), "October 2026" misread as
+  "October 20" (day ate the year's digits — added `(?!\d)` guards), and
+  force re-extract duplicating alongside user-completed rows (now skipped).
+- Full suite via direct JUnitCore: **454/456 pass**. The 2 failures are
+  `RepositoryTest` + `SyncCoordinatorTest` — Robolectric-runner tests that
+  cannot initialize in this sandbox (pre-existing environment limitation;
+  unrelated to Phase 13 — they fail in JUnit annotation parsing before any
+  app code loads).
+- `:app:compileDebugKotlin` BUILD SUCCESSFUL; `:app:compileDebugUnitTestKotlin`
+  BUILD SUCCESSFUL (after updating 5 test fakes for new interface methods
+  and fixing 2 python-edit mistakes caught by the compiler).
+- Secret audit clean. No device — device checks blocked, never faked.
+  No OAuth.
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 14 action engine,
+  Phase 26 optional AI fallback.
