@@ -53,6 +53,9 @@ enum class EmptyKind {
 
     /** Spam destination with no spam. */
     NO_SPAM,
+
+    /** Company filter selected but no mail from that company here. */
+    NO_COMPANY_RESULTS,
 }
 
 /** Explicit mailbox content state (phase §35: sealed, no scattered booleans). */
@@ -157,3 +160,19 @@ fun MessageRecord.toMessageItem(): MessageItem = MessageItem(
 /** Thread ordering (phase §51): oldest message first, newest last — documented. */
 fun List<MessageItem>.inThreadOrder(): List<MessageItem> =
     sortedBy { it.timestampEpochMs }
+
+/** One company entry in the filter row. */
+data class CompanyFilterEntry(
+    val companyId: String,
+    val displayName: String,
+    val messageCount: Int,
+    val pinned: Boolean,
+)
+
+/** Filter-row state for the mailbox screen. */
+data class CompanyFilterUiState(
+    /** False when the destination doesn't support company filtering. */
+    val visible: Boolean = false,
+    val entries: List<CompanyFilterEntry> = emptyList(),
+    val selectedCompanyId: String? = null,
+)

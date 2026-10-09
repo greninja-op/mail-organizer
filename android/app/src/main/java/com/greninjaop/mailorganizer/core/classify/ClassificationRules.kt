@@ -46,7 +46,7 @@ data class ClassificationRule(
 )
 
 /**
- * Builds the v1 production rule set.
+ * Builds the production rule set (v2: 31 rules).
  *
  * Known-domain lists are intentionally small and architectural (phase §20):
  * [DomainSignals] is the seam where a future sender-intelligence layer
@@ -685,6 +685,46 @@ object ClassificationRuleSet {
         },
     )
 
+    /**
+     * Rule ID: IMPORTANT_RECURRING_SENDER — mail from a sender the user
+     * actually corresponds with (Phase 8).
+     * Strength: MEDIUM (45) — deliberately below IMPORTANT_PERSONAL (50)
+     * so direct personal correspondence wins ties; above nothing else in
+     * the IMPORTANT bucket. Signals: the real recurring-sender flag from
+     * local sender frequency ([SenderIntelligence]), with bulk-mail
+     * markers as a veto — a recurring newsletter is still a newsletter,
+     * and noreply senders are never "correspondents".
+     * This is a frequency heuristic, documented as such in the
+     * explanation — never a probability or a learned model.
+     */
+    private val IMPORTANT_RECURRING_SENDER = ClassificationRule(
+        id = "IMPORTANT_RECURRING_SENDER",
+        category = ClassifierCategory.IMPORTANT,
+        weight = 45,
+        description = "Mail from a recurring sender",
+        explanationTemplate = "From someone who emails you regularly",
+        match = { s ->
+            val out = mutableListOf<MatchedSignal>()
+            val addr = s.senderAddress
+            val isNoReply = addr.startsWith("noreply") ||
+                addr.startsWith("no-reply") ||
+                addr.startsWith("donotreply") ||
+                addr.startsWith("do-not-reply")
+            val isBulkLike = s.hasUnsubscribe ||
+                "CATEGORY_PROMOTIONS" in s.gmailCategories
+            if (s.isRecurringSender && !isNoReply && !isBulkLike) {
+                out.add(
+                    MatchedSignal(
+                        "recurring_sender",
+                        "Sender has emailed repeatedly (local frequency signal)",
+                        SignalStrength.MEDIUM,
+                    ),
+                )
+            }
+            out
+        },
+    )
+
     // ------------------------------------------------------------------
     // NEWSLETTERS (precedence 7)
     // ------------------------------------------------------------------
@@ -1022,6 +1062,7 @@ object ClassificationRuleSet {
         EDUCATION_COURSE,
         // Important — precedence 6
         IMPORTANT_PERSONAL,
+        IMPORTANT_RECURRING_SENDER,
         // Newsletters — precedence 7
         NEWSLETTER_UNSUBSCRIBE,
         NEWSLETTER_FORMAT,

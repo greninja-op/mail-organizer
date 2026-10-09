@@ -7,6 +7,7 @@ import com.greninjaop.mailorganizer.core.classify.ClassificationResult
 import com.greninjaop.mailorganizer.core.classify.ClassifierCategory
 import com.greninjaop.mailorganizer.core.classify.Confidence
 import com.greninjaop.mailorganizer.core.classify.DeterministicClassifier
+import com.greninjaop.mailorganizer.core.company.SenderIntelligence
 import com.greninjaop.mailorganizer.data.local.ClassificationRecord
 import com.greninjaop.mailorganizer.data.local.ClassificationSource
 import com.greninjaop.mailorganizer.data.local.MailCategory
@@ -39,6 +40,12 @@ class ClassifyMessageUseCase(
     private val mail: MailRepository,
     private val intelligence: IntelligenceRepository,
     private val dispatchers: AppDispatchers,
+    /**
+     * Real recurring-sender signal (Phase 8). Null keeps Phase 7 behavior
+     * (signal hard-coded false) — used by tests and callers without
+     * sender history.
+     */
+    private val recurringSenderProvider: RecurringSenderProvider? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -93,8 +100,17 @@ class ClassifyMessageUseCase(
         // (phase §36).
         if (message.accountId != accountId) return null
 
+        // Phase 8: the recurring-sender signal is real now — looked up
+        // from local sender frequency, never fabricated. Without a
+        // provider the signal stays false (Phase 7 behavior).
+        val normalizedEmail = SenderIntelligence.normalizeEmail(message.fromAddress)
+        val isRecurringSender = recurringSenderProvider
+            ?.isRecurring(accountId, normalizedEmail)
+            ?: false
+
         val result = DeterministicClassifier.classify(
             input = message.toClassificationInput(),
+            isRecurringSender = isRecurringSender,
             clock = clock,
         )
         intelligence.setClassification(result.toRecord(messageId, accountId))

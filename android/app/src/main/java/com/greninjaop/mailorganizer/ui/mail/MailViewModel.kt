@@ -17,6 +17,7 @@ import com.greninjaop.mailorganizer.data.sync.SyncProgress
 import com.greninjaop.mailorganizer.data.sync.SyncStage
 import com.greninjaop.mailorganizer.data.sync.SyncTrigger
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
+import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -63,6 +64,7 @@ class MailViewModel(
     private val mail: MailRepository,
     private val intelligence: IntelligenceRepository,
     private val classifyMailbox: ClassifyMailboxUseCase,
+    private val companyIntelligence: CompanyIntelligenceUseCase,
     private val syncCoordinator: SyncCoordinator,
     private val connectivity: ConnectivityObserver,
     private val dispatchers: AppDispatchers,
@@ -89,6 +91,13 @@ class MailViewModel(
     private val filterText = MutableStateFlow("")
     private val pageLimit = MutableStateFlow(PAGE_SIZE)
     private val syncUi = MutableStateFlow<SyncUiState>(SyncUiState.Idle)
+
+    /**
+     * Selected company filter (Phase 8). Scoped to the current category:
+     * switching destinations clears it, because company selection is a
+     * filter *within* a category, not global navigation (requirements.md).
+     */
+    private val selectedCompany = MutableStateFlow<String?>(null)
 
     /**
      * Active account: earliest-created enabled account. Deterministic and
@@ -131,13 +140,23 @@ class MailViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val content: StateFlow<MailboxContent> =
-        combine(seedDone, allAccounts, destination, filterText, pageLimit) { done, all, dest, filter, limit ->
+        combine(
+            seedDone,
+            allAccounts,
+            destination,
+            filterText,
+            pageLimit,
+        ) { done, all, dest, filter, limit ->
             val account = all.filter { it.isEnabled }.minWithOrNull(
                 compareBy<AccountRecord> { it.createdAtEpochMs }.thenBy { it.accountId },
             )
             // In debug the first paint waits for the seeding attempt.
             val resolved = done || !samplePolicy.shouldSeed()
-            ContentKey(resolved, account, dest, filter.trim(), limit)
+            ContentKey(resolved, account, dest, filter.trim(), limit, null)
+        }.combine(selectedCompany) { key, companyId ->
+            // Phase 8: the company filter rides along in the content key so
+            // the list queries the exact company+destination slice.
+            key.copy(companyId = companyId)
         }.flatMapLatest { key ->
             when {
                 !key.resolved -> flowOf(MailboxContent.Loading)
@@ -145,27 +164,66 @@ class MailViewModel(
                 // Phase 7: classification-backed destinations are wired to
                 // real data — PROMOTIONAL via the deterministic classifier,
                 // SOCIAL/SPAM via Gmail's own labels. Never fabricated.
+                // Phase 8: a selected company narrows the destination via a
+                // direct company+destination query (never page-filtering),
+                // so the list always matches the chip counts.
                 key.dest == MailboxDestination.PROMOTIONAL ->
-                    intelligence.observeByCategory(
-                        key.account.accountId,
-                        MailCategory.PROMOTIONS,
-                        key.limit,
-                    ).mapLatest { records ->
-                        buildCategoryContent(records.map { it.messageId }, key)
-                            ?: MailboxContent.Empty(EmptyKind.NO_PROMOTIONS)
+                    if (key.companyId != null) {
+                        mail.observeMessagesByCompanyAndCategory(
+                            key.account.accountId,
+                            MailCategory.PROMOTIONS,
+                            key.companyId,
+                            key.limit,
+                        ).mapLatest { messages ->
+                            buildMessageContent(messages.map { it.toMessageItem() }, key)
+                                ?: MailboxContent.Empty(EmptyKind.NO_COMPANY_RESULTS)
+                        }
+                    } else {
+                        intelligence.observeByCategory(
+                            key.account.accountId,
+                            MailCategory.PROMOTIONS,
+                            key.limit,
+                        ).mapLatest { records ->
+                            buildCategoryContent(records.map { it.messageId }, key)
+                                ?: MailboxContent.Empty(EmptyKind.NO_PROMOTIONS)
+                        }
                     }
                 key.dest == MailboxDestination.SOCIAL ->
-                    mail.observeByLabel(key.account.accountId, "CATEGORY_SOCIAL", key.limit)
-                        .mapLatest { messages ->
+                    if (key.companyId != null) {
+                        mail.observeMessagesByCompanyAndLabel(
+                            key.account.accountId,
+                            key.companyId,
+                            "CATEGORY_SOCIAL",
+                            key.limit,
+                        ).mapLatest { messages ->
                             buildMessageContent(messages.map { it.toMessageItem() }, key)
-                                ?: MailboxContent.Empty(EmptyKind.NO_SOCIAL)
+                                ?: MailboxContent.Empty(EmptyKind.NO_COMPANY_RESULTS)
                         }
+                    } else {
+                        mail.observeByLabel(key.account.accountId, "CATEGORY_SOCIAL", key.limit)
+                            .mapLatest { messages ->
+                                buildMessageContent(messages.map { it.toMessageItem() }, key)
+                                    ?: MailboxContent.Empty(EmptyKind.NO_SOCIAL)
+                            }
+                    }
                 key.dest == MailboxDestination.SPAM ->
-                    mail.observeByLabel(key.account.accountId, "SPAM", key.limit)
-                        .mapLatest { messages ->
+                    if (key.companyId != null) {
+                        mail.observeMessagesByCompanyAndLabel(
+                            key.account.accountId,
+                            key.companyId,
+                            "SPAM",
+                            key.limit,
+                        ).mapLatest { messages ->
                             buildMessageContent(messages.map { it.toMessageItem() }, key)
-                                ?: MailboxContent.Empty(EmptyKind.NO_SPAM)
+                                ?: MailboxContent.Empty(EmptyKind.NO_COMPANY_RESULTS)
                         }
+                    } else {
+                        mail.observeByLabel(key.account.accountId, "SPAM", key.limit)
+                            .mapLatest { messages ->
+                                buildMessageContent(messages.map { it.toMessageItem() }, key)
+                                    ?: MailboxContent.Empty(EmptyKind.NO_SPAM)
+                            }
+                    }
                 key.dest == MailboxDestination.STARRED ->
                     mail.observeStarred(key.account.accountId, key.limit)
                         .mapLatest { messages ->
@@ -188,6 +246,80 @@ class MailViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MailboxContent.Loading)
 
+    /**
+     * Company filter row state (Phase 8).
+     *
+     * Visible only on destinations where company grouping is meaningful
+     * (Promotional/Social/Spam — the category/grouping surfaces). Entries
+     * join the pinned-first company list with global per-destination
+     * counts; only companies with mail in this destination appear, so
+     * counts are never fabricated. Ordered pinned-first, then by count.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val companyFilter: StateFlow<CompanyFilterUiState> =
+        combine(activeAccount, destination, selectedCompany) { account, dest, selected ->
+            Triple(account, dest, selected)
+        }.flatMapLatest { (account, dest, selected) ->
+            val scope = when (dest) {
+                MailboxDestination.PROMOTIONAL ->
+                    CompanyScope.Category(MailCategory.PROMOTIONS)
+                MailboxDestination.SOCIAL ->
+                    CompanyScope.Label("CATEGORY_SOCIAL")
+                MailboxDestination.SPAM ->
+                    CompanyScope.Label("SPAM")
+                else -> null
+            }
+            if (account == null || scope == null) {
+                flowOf(CompanyFilterUiState(visible = false))
+            } else {
+                companyIntelligence.observeCompanyFilterList(account.accountId)
+                    .mapLatest { companies ->
+                        val counts = when (scope) {
+                            is CompanyScope.Category ->
+                                companyIntelligence.companyCountsForCategory(
+                                    account.accountId,
+                                    scope.category,
+                                )
+                            is CompanyScope.Label ->
+                                companyIntelligence.companyCountsForLabel(
+                                    account.accountId,
+                                    scope.label,
+                                )
+                        }
+                        val entries = companies.mapNotNull { company ->
+                            val count = counts[company.companyId] ?: 0
+                            if (count <= 0) null
+                            else CompanyFilterEntry(
+                                companyId = company.companyId,
+                                displayName = company.userOverrideName
+                                    ?: company.canonicalName,
+                                messageCount = count,
+                                pinned = company.pinned,
+                            )
+                        }.sortedWith(
+                            compareByDescending<CompanyFilterEntry> { it.pinned }
+                                .thenByDescending { it.messageCount }
+                                .thenBy { it.displayName },
+                        )
+                        CompanyFilterUiState(
+                            visible = true,
+                            entries = entries,
+                            selectedCompanyId = selected,
+                        )
+                    }
+            }
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            CompanyFilterUiState(),
+        )
+
+    /** Destination scope for company counts (Phase 8). */
+    private sealed interface CompanyScope {
+        data class Category(val category: MailCategory) : CompanyScope
+        data class Label(val label: String) : CompanyScope
+    }
+
     val state: StateFlow<MailScreenState> = combine(
         destination,
         content,
@@ -198,8 +330,8 @@ class MailViewModel(
         MailboxCore(dest, cont, account, all, filter)
     }.let { core ->
         // Typed combine() only goes to 5 flows in coroutines 1.9: fold the
-        // remaining two in a second, still fully-typed combine.
-        combine(core, syncUi, connectivity.isOnline) { c, sync, online ->
+        // remaining flows in a second, still fully-typed combine.
+        combine(core, syncUi, connectivity.isOnline, companyFilter) { c, sync, online, companies ->
             MailScreenState(
                 destination = c.destination,
                 content = c.content,
@@ -209,6 +341,7 @@ class MailViewModel(
                 isOffline = !online,
                 syncUi = sync,
                 filterText = c.filter,
+                companyFilter = companies,
             )
         }
     }.stateIn(
@@ -227,9 +360,12 @@ class MailViewModel(
             }
             .launchIn(viewModelScope)
 
-        // Phase 7: classify new mail in the background (bounded, incremental).
-        // Best-effort — classification must never break the inbox. Runs after
-        // the fixture seeding attempt so debug sample mail is classified too.
+        // Phase 8: attribute senders/companies in the background (bounded,
+        // incremental), BEFORE classification — the classifier's
+        // recurring-sender signal is real only once sender frequency is
+        // recorded. Best-effort — attribution must never break the inbox.
+        // Runs after the fixture seeding attempt so debug sample mail is
+        // attributed too.
         viewModelScope.launch(dispatchers.io) {
             try {
                 withTimeoutOrNull(CLASSIFY_STARTUP_TIMEOUT_MS) {
@@ -238,6 +374,14 @@ class MailViewModel(
                         activeAccount.first { it != null }
                     }
                     if (account != null) {
+                        // Phase 8 first: sender/company attribution.
+                        val attributed =
+                            companyIntelligence.processNew(account.accountId)
+                        if (attributed > 0) {
+                            MoLogger.i(TAG, "Background attribution: $attributed messages")
+                        }
+                        // Phase 7: then classify (now with the real
+                        // recurring-sender signal).
                         val n = classifyMailbox.classifyNew(account.accountId)
                         if (n > 0) {
                             MoLogger.i(TAG, "Background classification: $n messages")
@@ -245,7 +389,7 @@ class MailViewModel(
                     }
                 }
             } catch (t: Throwable) {
-                MoLogger.e(TAG, "Background classification failed: ${t.javaClass.simpleName}")
+                MoLogger.e(TAG, "Background attribution/classification failed: ${t.javaClass.simpleName}")
             }
         }
     }
@@ -255,6 +399,35 @@ class MailViewModel(
     fun setDestination(dest: MailboxDestination) {
         destination.value = dest
         pageLimit.value = PAGE_SIZE
+        // Company selection is a filter *within* a category — switching
+        // destinations clears it (requirements.md).
+        selectedCompany.value = null
+    }
+
+    /**
+     * Selects (or clears, when null) the company filter (Phase 8).
+     * The list re-queries the exact company+destination slice.
+     */
+    fun selectCompany(companyId: String?) {
+        selectedCompany.value = companyId
+        pageLimit.value = PAGE_SIZE
+    }
+
+    /**
+     * Toggles company pinning (Phase 8). Pinning only reorders the
+     * company filter list — it never moves mail, stars messages, or
+     * touches navigation (requirements.md).
+     */
+    fun toggleCompanyPin(companyId: String) {
+        viewModelScope.launch(dispatchers.io) {
+            try {
+                val entry = companyFilter.value.entries
+                    .find { it.companyId == companyId } ?: return@launch
+                companyIntelligence.setCompanyPinned(companyId, !entry.pinned)
+            } catch (t: Throwable) {
+                MoLogger.e(TAG, "Pin toggle failed: ${t.javaClass.simpleName}")
+            }
+        }
     }
 
     fun setFilterText(text: String) {
@@ -307,6 +480,8 @@ class MailViewModel(
         val dest: MailboxDestination,
         val filter: String,
         val limit: Int,
+        /** Phase 8: selected company filter (null = no filter). */
+        val companyId: String?,
     )
 
     /**
@@ -412,6 +587,8 @@ data class MailScreenState(
     val isOffline: Boolean = false,
     val syncUi: SyncUiState = SyncUiState.Idle,
     val filterText: String = "",
+    /** Phase 8: company filter row state (visible on grouping destinations). */
+    val companyFilter: CompanyFilterUiState = CompanyFilterUiState(),
 )
 
 /** Sync affordance state: idle, honestly-staged progress, or a result message. */
