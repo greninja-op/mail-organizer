@@ -18,6 +18,7 @@ class SearchViewModelFactory(
             connectivity = container.connectivityObserver,
             dispatchers = container.dispatchers,
             initialQuery = initialQuery,
+            activeAccountPreferences = container.activeAccountPreferences,
         ) as T
     }
 }

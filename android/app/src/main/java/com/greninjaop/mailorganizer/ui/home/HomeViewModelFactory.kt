@@ -18,6 +18,7 @@ class HomeViewModelFactory(
             dispatchers = container.dispatchers,
             samplePolicy = container.sampleDataPolicy,
             seeder = container.sampleMailboxSeeder,
+            activeAccountPreferences = container.activeAccountPreferences,
         ) as T
     }
 }
