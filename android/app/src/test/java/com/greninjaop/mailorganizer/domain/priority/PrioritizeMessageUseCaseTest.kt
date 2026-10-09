@@ -260,6 +260,11 @@ class PrioritizeMessageUseCaseTest {
         override suspend fun getMessage(messageId: String): MessageRecord? =
             messages.firstOrNull { it.messageId == messageId }
 
+        override suspend fun getUnextractedMessages(
+            accountId: String,
+            limit: Int,
+        ): List<MessageRecord> = emptyList()
+
         override suspend fun getUnclassifiedMessages(
             accountId: String,
             limit: Int,
@@ -464,6 +469,13 @@ class PrioritizeMessageUseCaseTest {
             limit: Int,
         ): Flow<List<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord>> =
             MutableStateFlow(emptyList())
+
+        override suspend fun getExtractedItems(
+            messageId: String,
+        ): List<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord> =
+            emptyList()
+
+        override suspend fun deleteExtractedItems(ids: List<Long>) = Unit
 
         // Phase 12.
         override suspend fun deleteClassification(messageId: String) = Unit

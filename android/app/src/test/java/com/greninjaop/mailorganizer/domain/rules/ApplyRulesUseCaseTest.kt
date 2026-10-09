@@ -422,6 +422,7 @@ class ApplyRulesUseCaseTest {
         override suspend fun deleteMessagesByGmailIds(accountId: String, gmailIds: List<String>) = emptyList<String>()
         override suspend fun getUnclassifiedMessages(accountId: String, limit: Int) = emptyList<MessageRecord>()
         override suspend fun getUnprioritizedMessages(accountId: String, limit: Int) = emptyList<MessageRecord>()
+        override suspend fun getUnextractedMessages(accountId: String, limit: Int) = emptyList<MessageRecord>()
         override fun observeByLabel(accountId: String, label: String, limit: Int): Flow<List<MessageRecord>> = MutableStateFlow(emptyList())
         override suspend fun setMessageCompanyId(messageId: String, companyId: String?) = Unit
         override suspend fun getMessagesWithoutCompany(accountId: String, limit: Int) = emptyList<MessageRecord>()
@@ -485,6 +486,8 @@ class ApplyRulesUseCaseTest {
         override suspend fun dismissActionItem(id: Long) = Unit
         override suspend fun addExtractedItem(item: ExtractedItemRecord) = 1L
         override fun observeOpenExtracted(accountId: String, type: ExtractedItemType, limit: Int) = MutableStateFlow(emptyList<ExtractedItemRecord>())
+        override suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord> = emptyList()
+        override suspend fun deleteExtractedItems(ids: List<Long>) = Unit
     }
 
     private class FakeRuleRepository : RuleRepository {

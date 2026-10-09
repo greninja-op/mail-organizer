@@ -90,6 +90,7 @@ class RecurringSenderWiringTest {
                 emptyList<String>()
             override suspend fun getMessage(messageId: String) =
                 if (messageId == "m1") msg else null
+            override suspend fun getUnextractedMessages(accountId: String, limit: Int) = emptyList<com.greninjaop.mailorganizer.data.local.MessageRecord>()
             override suspend fun getUnclassifiedMessages(accountId: String, limit: Int) =
                 listOf(msg).take(limit)
             override suspend fun getUnprioritizedMessages(accountId: String, limit: Int) =
@@ -188,6 +189,9 @@ class RecurringSenderWiringTest {
             type: com.greninjaop.mailorganizer.data.local.ExtractedItemType,
             limit: Int,
         ) = MutableStateFlow(emptyList<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord>())
+        override suspend fun getExtractedItems(messageId: String) =
+            emptyList<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord>()
+        override suspend fun deleteExtractedItems(ids: List<Long>) = Unit
         // Phase 12.
         override suspend fun deleteClassification(messageId: String) = Unit
         override suspend fun deletePriority(messageId: String) = Unit

@@ -72,6 +72,16 @@ class MailViewModelTest {
                 ),
                 dispatchers = dispatchers(),
             ),
+            extractMailbox = com.greninjaop.mailorganizer.domain.temporal.ExtractMailboxUseCase(
+                mail = mail,
+                extractMessage = com.greninjaop.mailorganizer.domain.temporal.ExtractTemporalUseCase(
+                    mail = mail,
+                    intelligence = intelligence,
+                    dispatchers = dispatchers(),
+                    clock = { 1_800_000_000_000L },
+                ),
+                dispatchers = dispatchers(),
+            ),
             syncCoordinator = SyncCoordinator(
                 api = DeferredGmailSyncApi(),
                 mail = mail,

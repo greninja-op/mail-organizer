@@ -297,6 +297,11 @@ class ClassifyMessageUseCaseTest {
         override suspend fun getMessage(messageId: String): MessageRecord? =
             messages.firstOrNull { it.messageId == messageId }
 
+        override suspend fun getUnextractedMessages(
+            accountId: String,
+            limit: Int,
+        ): List<MessageRecord> = emptyList()
+
         override suspend fun getUnclassifiedMessages(
             accountId: String,
             limit: Int,
@@ -476,6 +481,11 @@ class ClassifyMessageUseCaseTest {
             type: ExtractedItemType,
             limit: Int,
         ): Flow<List<ExtractedItemRecord>> = MutableStateFlow(emptyList())
+
+        override suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord> =
+            emptyList()
+
+        override suspend fun deleteExtractedItems(ids: List<Long>) = Unit
 
         // Phase 12.
         override suspend fun deleteClassification(messageId: String) {
