@@ -26,6 +26,13 @@ interface PriorityDao {
     @Query("SELECT * FROM priorities WHERE messageId = :messageId")
     suspend fun getByMessage(messageId: String): PriorityRecord?
 
+    /**
+     * Batch priority lookup for the visible page (Phase 9) — one query,
+     * never N+1.
+     */
+    @Query("SELECT * FROM priorities WHERE messageId IN (:messageIds)")
+    suspend fun getByMessages(messageIds: List<String>): List<PriorityRecord>
+
     @Query(
         "SELECT * FROM priorities WHERE accountId = :accountId AND priority = :priority " +
             "LIMIT :limit",

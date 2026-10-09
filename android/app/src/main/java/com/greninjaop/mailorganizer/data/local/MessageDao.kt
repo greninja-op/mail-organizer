@@ -117,6 +117,19 @@ interface MessageDao {
     )
     suspend fun getUnclassified(accountId: String, limit: Int): List<MessageRecord>
 
+    // ---- Phase 9 priority support ----
+
+    /**
+     * Messages with no priority row yet (incremental prioritization).
+     * Bounded; newest first so fresh mail prioritizes first.
+     */
+    @Query(
+        "SELECT m.* FROM messages m LEFT JOIN priorities p " +
+            "ON p.messageId = m.messageId WHERE m.accountId = :accountId " +
+            "AND p.messageId IS NULL ORDER BY m.timestampEpochMs DESC LIMIT :limit",
+    )
+    suspend fun getUnprioritized(accountId: String, limit: Int): List<MessageRecord>
+
     /**
      * Messages carrying one Gmail label. Labels are stored as a U+001F
      * (char(31)) delimited string ([MoConverters]); wrapping both sides in
