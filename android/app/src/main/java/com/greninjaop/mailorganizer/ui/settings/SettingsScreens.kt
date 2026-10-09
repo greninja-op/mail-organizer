@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Lock
@@ -104,6 +105,13 @@ fun SettingsScreen(
                 title = "Privacy",
                 subtitle = "How your data is handled",
                 onClick = { onNavigate(AppDestinations.PRIVACY) },
+            )
+            // Phase 12: rules & corrections management (§9).
+            SettingsRow(
+                icon = Icons.AutoMirrored.Filled.List,
+                title = "Rules",
+                subtitle = "Automatic sorting and your corrections",
+                onClick = { onNavigate(AppDestinations.RULES) },
             )
             SettingsRow(
                 icon = Icons.Filled.Build,

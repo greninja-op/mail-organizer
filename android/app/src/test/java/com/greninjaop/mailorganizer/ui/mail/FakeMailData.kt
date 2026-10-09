@@ -339,6 +339,37 @@ class FakeMailRepository : MailRepository {
     fun threadCount(): Int = threads.value.size
     fun messageCount(): Int = messages.value.size
     fun allMessages(): List<MessageRecord> = messages.value
+
+    // Phase 12: scoped ID lookups for rule/correction reprocessing.
+    override suspend fun getMessageIdsByAccount(accountId: String, limit: Int): List<String> =
+        messages.value.filter { it.accountId == accountId }.take(limit).map { it.messageId }
+
+    override suspend fun getMessageIdsBySender(
+        accountId: String,
+        email: String,
+        limit: Int,
+    ): List<String> = messages.value
+        .filter { it.accountId == accountId && it.fromAddress.equals(email, ignoreCase = true) }
+        .take(limit).map { it.messageId }
+
+    override suspend fun getMessageIdsByDomain(
+        accountId: String,
+        domain: String,
+        limit: Int,
+    ): List<String> = messages.value
+        .filter {
+            it.accountId == accountId &&
+                it.fromAddress.substringAfter('@', "").equals(domain, ignoreCase = true)
+        }
+        .take(limit).map { it.messageId }
+
+    override suspend fun getMessageIdsByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int,
+    ): List<String> = messages.value
+        .filter { it.accountId == accountId && it.companyId == companyId }
+        .take(limit).map { it.messageId }
 }
 
 /** In-memory IntelligenceRepository fake for Phase 7 ViewModel/use-case tests. */
@@ -535,6 +566,15 @@ class FakeIntelligenceRepository :
         record: com.greninjaop.mailorganizer.data.local.ClassificationRecord,
     ) {
         classifications.value = classifications.value + (record.messageId to record)
+    }
+
+    // Phase 12: deletion for undo/revert.
+    override suspend fun deleteClassification(messageId: String) {
+        classifications.value = classifications.value - messageId
+    }
+
+    override suspend fun deletePriority(messageId: String) {
+        priorities.value = priorities.value - messageId
     }
 }
 
