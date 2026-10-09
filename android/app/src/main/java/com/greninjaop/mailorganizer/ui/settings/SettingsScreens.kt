@@ -58,18 +58,21 @@ import com.greninjaop.mailorganizer.data.prefs.ThemeMode
 import com.greninjaop.mailorganizer.data.prefs.ThemePreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
 import com.greninjaop.mailorganizer.di.AppContainer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import com.greninjaop.mailorganizer.ui.components.MoEmptyState
 import com.greninjaop.mailorganizer.ui.mail.AccountAvatar
 import com.greninjaop.mailorganizer.ui.mail.MailFormatting
 import com.greninjaop.mailorganizer.ui.navigation.AppDestinations
 import com.greninjaop.mailorganizer.ui.theme.MoSpacing
 import kotlin.math.abs
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -197,10 +200,32 @@ class AccountsViewModel(
     private val integrationManager: com.greninjaop.mailorganizer.domain.integrations.IntegrationManager?,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val syncStateRepository: com.greninjaop.mailorganizer.data.repository.SyncStateRepository? = null,
 ) : ViewModel() {
     val accounts: StateFlow<List<AccountRecord>> =
         accountRepository.observeAll()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val syncStatesByAccountId: StateFlow<Map<String, String>> =
+        if (syncStateRepository != null) {
+            accounts.flatMapLatest { list ->
+                if (list.isEmpty()) {
+                    flowOf(emptyMap())
+                } else {
+                    val flows = list.map { acc ->
+                        syncStateRepository.observe(acc.accountId).map { record ->
+                            acc.accountId to com.greninjaop.mailorganizer.data.sync.SyncTimeFormatter.formatLastSynced(
+                                record?.lastSuccessfulSyncEpochMs,
+                                clock(),
+                            )
+                        }
+                    }
+                    combine(flows) { pairs -> pairs.toMap() }
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        } else {
+            MutableStateFlow(emptyMap())
+        }
 
     val activeSelection: StateFlow<com.greninjaop.mailorganizer.data.prefs.AccountSelection> =
         activeAccountPreferences.activeSelection
@@ -289,6 +314,7 @@ class AccountsViewModelFactory(
             activeAccountPreferences = container.activeAccountPreferences,
             integrationManager = container.integrationManager,
             dispatchers = container.dispatchers,
+            syncStateRepository = container.syncStateRepository,
         ) as T
     }
 }
@@ -311,6 +337,7 @@ fun AccountsScreen(
 ) {
     val accounts by viewModel.accounts.collectAsState()
     val activeSelection by viewModel.activeSelection.collectAsState()
+    val syncStates by viewModel.syncStatesByAccountId.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var disconnectTarget by remember { mutableStateOf<AccountRecord?>(null) }
 
@@ -485,6 +512,14 @@ fun AccountsScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            val lastSync = syncStates[account.accountId]
+                            if (!lastSync.isNullOrEmpty()) {
+                                Text(
+                                    text = "Last synced: $lastSync",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         IconButton(onClick = { disconnectTarget = account }) {
                             Icon(

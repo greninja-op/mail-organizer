@@ -398,4 +398,24 @@ class MailViewModelTest {
         advanceUntilIdle()
         assertTrue(vm.awaitContent() is MailboxContent.Threads)
     }
+
+    @Test
+    fun `refresh while offline surfaces honest offline notice`() = runTest(testDispatcher) {
+        val vm = viewModel(seed = true, online = false)
+        advanceUntilIdle()
+
+        vm.state.test {
+            var s = awaitItem()
+            while (s.content is MailboxContent.Loading) s = awaitItem()
+            assertTrue(s.isOffline)
+
+            vm.refresh()
+            s = awaitItem()
+            while (s.syncUi !is SyncUiState.Result) s = awaitItem()
+            assertEquals(
+                "You're offline — showing synced mail.",
+                (s.syncUi as SyncUiState.Result).message,
+            )
+        }
+    }
 }
