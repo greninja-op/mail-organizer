@@ -1042,3 +1042,39 @@ reports AUTH_REQUIRED (OAuth deferred) — never CONNECTED.
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 26 optional AI
   fallback.
+
+## Phase 18 — Multi-Account & Unified Inbox: COMPLETE (2026-10-09)
+
+### What was built
+Multi-account support and unified inbox presentation layer on top of the established account-isolated architecture:
+- **Active Account Preferences** (`data/prefs/`): `AccountSelection` (`Unified` vs `Single(accountId)`) and `ActiveAccountPreferences` with DataStore persistence (`active_account_selection`).
+- **Database & DAOs** (`data/local/`):
+  - `ThreadDao`: `observeUnified(limit)` joining `accounts` where `isEnabled = 1` ordered by `latestMessageEpochMs DESC`.
+  - `MessageDao`: `observeUnified(limit)`, `observeUnifiedUnread(limit)`, `observeUnifiedStarred(limit)` joining enabled accounts.
+  - `SenderDao` & `CompanyDao`: `suggestByTextUnified(like, limit)`.
+  - `AccountDao`: `setEnabled(accountId, isEnabled)`.
+- **Repository Layer** (`data/repository/`):
+  - `MailRepository`: `observeUnifiedThreads`, `observeUnifiedUnread`, `observeUnifiedStarred`.
+  - `RoomMailRepository` + test fakes in `FakeMailData.kt`.
+- **Search Engine** (`core/search/`, `data/repository/`, `ui/search/`):
+  - `SearchQuery.accountId: String? = null` (nullable) enables unified search across all enabled accounts.
+  - `RoomSearchRepository`: performs cross-account FTS and relational queries joining `accounts a WHERE a.isEnabled = 1` when `query.accountId == null`.
+  - `SearchUiState` and `SearchResultRows`: `isUnified` flag, `accountsById` map, renders clear account badge chips when in unified mode.
+- **UI & ViewModels** (`ui/`):
+  - `AccountsViewModel` & `AccountsScreen`: Switch active account, toggle enabled state, disconnect account with confirmation dialog and cascading cleanup (`integrationManager.handleAccountRemoved`), add local test accounts.
+  - `MailViewModel` & `MailScreen`: Top bar and drawer account indicator shows "All Accounts (Unified)" or specific account email; thread rows in unified mode display distinct account badges.
+  - `HomeViewModel`, `ActionsViewModel`, `CategoriesViewModel`, `CompaniesViewModel`, `IntegrationsViewModel`: All observe `ActiveAccountPreferences` with backward-compatible fallback to primary account when preferences are null.
+- **Dependency Injection**:
+  - `AppContainer`: instantiates `DataStoreActiveAccountPreferences` and wires into all ViewModel factories.
+
+### Verification
+- 10 new unit tests added across `ActiveAccountPreferencesTest` (3), `AccountsViewModelTest` (5), `SearchViewModelTest` (2), plus `MultiAccountUnifiedInboxTest` (6 in-memory Room suite).
+- Full pure-JVM unit test suite: **545/545 tests pass** via direct JUnitCore (0 failures).
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` **BUILD SUCCESSFUL** via Gradle 8.14.6.
+- Secret audit clean: no credentials, keys, or passwords.
+- No device / emulator checks: honestly marked UNVERIFIED (sandbox environment limitations).
+- Stopped strictly at Phase 18 boundary (did not begin Phase 19).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play).
