@@ -7,6 +7,7 @@ import com.greninjaop.mailorganizer.core.actions.ActionStatus
 import com.greninjaop.mailorganizer.core.actions.ExternalEffect
 import com.greninjaop.mailorganizer.data.local.ActionItemRecord
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
+import com.greninjaop.mailorganizer.domain.integrations.IntegrationManager
 import kotlinx.coroutines.withContext
 
 /**
@@ -32,6 +33,13 @@ class ReviewActionUseCase(
     private val executors: ActionExecutorRegistry,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * Integration Manager (Phase 17, phase §28): consulted for honest
+     * capability information when no executor is registered. Optional so
+     * existing call sites keep working; when absent the outcome carries
+     * no detail and the UI falls back to its generic copy.
+     */
+    private val integrations: IntegrationManager? = null,
 ) {
 
     companion object {
@@ -98,11 +106,22 @@ class ReviewActionUseCase(
         }
 
         // External proposal: consult the executor registry. Phase 14
-        // registers none, so this is honestly "not connected".
+        // registers none, so this is honestly "not connected". Phase 17:
+        // the Integration Manager names the responsible integration and
+        // its honest state for the message (phase §28).
         val executor = executors.find(row.actionType)
         if (executor == null) {
             intelligence.setActionItemStatus(id, ActionStatus.CONFIRMED)
-            return@withContext ConfirmationOutcome.ExternalNotConnected(row)
+            return@withContext ConfirmationOutcome.ExternalNotConnected(
+                row,
+                detail = integrations?.let { manager ->
+                    val integrationId = manager.integrationForAction(row.actionType)
+                        ?: return@let null
+                    val snapshot = manager.snapshot(integrationId, row.accountId)
+                        ?: return@let null
+                    "${snapshot.displayName}: ${snapshot.statusReason}"
+                },
+            )
         }
 
         // A future executor exists: validate, then execute — only ever
@@ -187,9 +206,14 @@ sealed interface ConfirmationOutcome {
     /**
      * External effect proposed but no executor is connected (Phase 14:
      * always, for CALENDAR/TASKS/GMAIL_WRITE). The confirmed intent is
-     * recorded locally; nothing external happened.
+     * recorded locally; nothing external happened. [detail] optionally
+     * carries the Integration Manager's honest per-integration reason
+     * (Phase 17, phase §28); null keeps the UI's generic copy.
      */
-    data class ExternalNotConnected(val item: ActionItemRecord) : ConfirmationOutcome
+    data class ExternalNotConnected(
+        val item: ActionItemRecord,
+        val detail: String? = null,
+    ) : ConfirmationOutcome
 
     /** A real executor ran and returned a receipt (future phases). */
     data class Executed(val item: ActionItemRecord, val receipt: ExecutionReceipt) : ConfirmationOutcome

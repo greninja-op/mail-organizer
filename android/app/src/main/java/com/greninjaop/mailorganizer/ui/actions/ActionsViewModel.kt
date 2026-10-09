@@ -207,7 +207,10 @@ class ActionsViewModel(
                 is ConfirmationOutcome.ExternalNotConnected ->
                     _events.emit(
                         ActionsEvent.Message(
-                            "Calendar isn't connected yet — nothing was " +
+                            outcome.detail?.let { detail ->
+                                "$detail Your confirmation was saved — " +
+                                    "nothing was created."
+                            } ?: "Calendar isn't connected yet — nothing was " +
                                 "created. Your confirmation was saved.",
                         ),
                     )

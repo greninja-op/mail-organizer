@@ -8,13 +8,18 @@ import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.data.local.AppDatabase
 import com.greninjaop.mailorganizer.data.local.Migrations
 import com.greninjaop.mailorganizer.data.local.SearchIndexStore
+import com.greninjaop.mailorganizer.data.integrations.CalendarIntegrationAdapter
+import com.greninjaop.mailorganizer.data.integrations.GmailIntegrationAdapter
+import com.greninjaop.mailorganizer.data.integrations.TasksIntegrationAdapter
 import com.greninjaop.mailorganizer.data.prefs.DataStoreThemePreferences
 import com.greninjaop.mailorganizer.data.prefs.ThemePreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
+import com.greninjaop.mailorganizer.data.repository.IntegrationStateRepository
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
 import com.greninjaop.mailorganizer.data.repository.RoomAccountRepository
 import com.greninjaop.mailorganizer.data.repository.RoomIntelligenceRepository
+import com.greninjaop.mailorganizer.data.repository.RoomIntegrationStateRepository
 import com.greninjaop.mailorganizer.data.repository.RoomMailRepository
 import com.greninjaop.mailorganizer.data.repository.RoomRuleRepository
 import com.greninjaop.mailorganizer.data.repository.RoomSearchRepository
@@ -31,6 +36,7 @@ import com.greninjaop.mailorganizer.domain.actions.ReviewActionUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
+import com.greninjaop.mailorganizer.domain.integrations.IntegrationManager
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMessageUseCase
 import com.greninjaop.mailorganizer.domain.rules.ApplyRulesUseCase
@@ -78,7 +84,8 @@ class AppContainer(private val appContext: Context) {
             // v3 -> v4 (Phase 8 company link) by Migrations.MIGRATION_3_4;
             // v4 -> v5 (Phase 10 search index) by Migrations.MIGRATION_4_5;
             // v5 -> v6 (Phase 12 rule engine columns) by Migrations.MIGRATION_5_6;
-            // v6 -> v7 (Phase 14 action-engine columns) by Migrations.MIGRATION_6_7.
+            // v6 -> v7 (Phase 14 action-engine columns) by Migrations.MIGRATION_6_7;
+            // v7 -> v8 (Phase 17 integration metadata) by Migrations.MIGRATION_7_8.
             .addMigrations(
                 Migrations.MIGRATION_1_2,
                 Migrations.MIGRATION_2_3,
@@ -86,6 +93,7 @@ class AppContainer(private val appContext: Context) {
                 Migrations.MIGRATION_4_5,
                 Migrations.MIGRATION_5_6,
                 Migrations.MIGRATION_6_7,
+                Migrations.MIGRATION_7_8,
             )
             // Fresh installs: the FTS search index is a standalone virtual
             // table (not a Room entity), so it is created here. Upgrades
@@ -320,6 +328,48 @@ class AppContainer(private val appContext: Context) {
         ReviewActionUseCase(
             intelligence = intelligenceRepository,
             executors = actionExecutorRegistry,
+            dispatchers = dispatchers,
+            integrations = integrationManager,
+        )
+    }
+
+    // ---- Phase 17: Integration Manager ----
+    // Coordinates the app's integrations (Gmail, Calendar, Tasks) without
+    // absorbing their API-specific logic. Calendar/Tasks adapters are
+    // honest UNAVAILABLE placeholders (Phases 15/16 deferred); the Gmail
+    // adapter wraps Phase 4's fail-closed sync seam. Nothing here performs
+    // external side effects or bypasses Phase 14's confirmation boundary.
+
+    val integrationStateRepository: IntegrationStateRepository by lazy {
+        RoomIntegrationStateRepository(
+            dao = database.integrationStateDao(),
+            dispatchers = dispatchers,
+        )
+    }
+
+    val gmailIntegrationAdapter: GmailIntegrationAdapter by lazy {
+        GmailIntegrationAdapter(
+            syncApi = gmailSyncApi,
+            accounts = accountRepository,
+        )
+    }
+
+    val calendarIntegrationAdapter: CalendarIntegrationAdapter by lazy {
+        CalendarIntegrationAdapter()
+    }
+
+    val tasksIntegrationAdapter: TasksIntegrationAdapter by lazy {
+        TasksIntegrationAdapter()
+    }
+
+    val integrationManager: IntegrationManager by lazy {
+        IntegrationManager(
+            adapters = listOf(
+                gmailIntegrationAdapter,
+                calendarIntegrationAdapter,
+                tasksIntegrationAdapter,
+            ),
+            states = integrationStateRepository,
             dispatchers = dispatchers,
         )
     }
