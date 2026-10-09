@@ -809,7 +809,58 @@ snippets, bodies, senders, classifications. No network, no AI, no OAuth.
 
 ### Deferred work (user-approved, unchanged)
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
-  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 12 user-correction
-  UI, Phase 13 meeting/deadline extraction, Phase 14 action engine
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 13 meeting/deadline
+  extraction, Phase 14 action engine
   (ActionItemRecord storage already exists from Phase 2), Phase 26
   optional AI fallback.
+
+## Phase 12 — Rules & User Corrections: COMPLETE (2026-10-09)
+
+### What was built
+User authority over the deterministic engines — corrections and rules that
+outrank, but never duplicate, the Phase 7/9 base:
+
+- **Core engine** (`core/rules/`): `RuleModels.kt` (10 condition fields,
+  EQUALS/CONTAINS operators — no regex by design, SET_CATEGORY/SET_PRIORITY
+  actions), `RuleEngine.kt` (pure deterministic evaluator v1: enabled rules
+  sorted by (order, id), first match per action type wins, empty-condition
+  rules never match, conflict detection), `RuleJson.kt` (hand-rolled JSON
+  codecs, no kotlinx.serialization in core).
+- **Domain layer** (`domain/rules/`): `UserRule.kt` (with `describe()` for
+  natural-language summaries), `RuleMappings.kt` (record↔domain; legacy
+  Phase 2 rows derive equivalent structured rules), `ApplyRulesUseCase.kt`
+  (the effective pipeline: explicit correction [message > sender > domain]
+  → enabled user rule → deterministic base; writes ClassificationRecord
+  with source USER_CORRECTION/USER_RULE, overridden=true, confidence 1.0f;
+  stale user rows deleted so engines restore the base; idempotent),
+  `RecordCorrectionUseCase.kt` (message/sender/domain/company scopes + undo
+  via `CompanyRecord.userOverrideName`), `RuleManagementUseCase.kt` (CRUD,
+  enable/disable, reorder, local-data preview with exact count + samples,
+  conflict detection, bounded reprocessing).
+- **Data layer** (schema v5→v6): `UserRuleRecord` gains name/conditionsJson/
+  actionsJson/ruleOrder/ruleVersion/source; `MIGRATION_5_6` additive with
+  `ruleOrder = id` backfill; `CorrectionField.COMPANY_NAME`; new DAO methods
+  for scoped ID lookups; repository interface extensions.
+- **UI** (`ui/rules/`): correction bottom sheet (category/priority pickers,
+  scope selector, "Set by you" markers from overridden flags, undo),
+  rules list (Active/Disabled, toggles, delete-with-confirm, conflict
+  banner), rule editor (name, condition/action builders, precedence order,
+  live preview, conflict warnings). ThreadScreen "Correct" affordance next
+  to chips; Settings → Rules route; RULES + RULE_EDITOR nav destinations.
+
+### Verification
+- 68 unit tests pass via direct JUnitCore (25 core: RuleEngine 19 +
+  RuleJson 6; 17 domain: ApplyRulesUseCase; 26 regression: classify +
+  priority). One test expectation fixed during development (conflict
+  precedence follows (order, id), not input order).
+- `:app:compileDebugKotlin` BUILD SUCCESSFUL; `:app:compileDebugUnitTestKotlin`
+  BUILD SUCCESSFUL (after updating 4 test fakes for new interface methods).
+- MIGRATION_5_6 SQL validated against real SQLite (columns, defaults,
+  ruleOrder backfill).
+- Secret audit clean. No device — device checks blocked, never faked.
+  No OAuth.
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 13 meeting/deadline
+  extraction, Phase 14 action engine, Phase 26 optional AI fallback.
