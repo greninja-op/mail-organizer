@@ -446,6 +446,11 @@ class FakeIntelligenceRepository :
     ): com.greninjaop.mailorganizer.data.local.ClassificationRecord? =
         classifications.value[messageId]
 
+    override suspend fun getClassifications(
+        messageIds: List<String>,
+    ): Map<String, com.greninjaop.mailorganizer.data.local.ClassificationRecord> =
+        classifications.value.filterKeys { it in messageIds }
+
     override fun observeByCategory(
         accountId: String,
         category: com.greninjaop.mailorganizer.data.local.MailCategory,

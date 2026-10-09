@@ -144,6 +144,7 @@ class RecurringSenderWiringTest {
             last = record
         }
         override suspend fun getClassification(messageId: String) = null
+        override suspend fun getClassifications(messageIds: List<String>) = emptyMap<String, com.greninjaop.mailorganizer.data.local.ClassificationRecord>()
         override fun observeByCategory(accountId: String, category: MailCategory, limit: Int) =
             MutableStateFlow(emptyList<ClassificationRecord>())
         override suspend fun setPriority(record: com.greninjaop.mailorganizer.data.local.PriorityRecord) = Unit

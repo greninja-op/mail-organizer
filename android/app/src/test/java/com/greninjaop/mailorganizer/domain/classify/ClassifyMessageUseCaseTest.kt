@@ -358,6 +358,9 @@ class ClassifyMessageUseCaseTest {
     private class FakeIntelligenceRepository : IntelligenceRepository {
         private val classifications = mutableMapOf<String, ClassificationRecord>()
 
+        override suspend fun getClassifications(messageIds: List<String>): Map<String, ClassificationRecord> =
+            classifications.filterKeys { it in messageIds }
+
         override suspend fun upsertSender(sender: SenderRecord) = Unit
         override fun observeTopSenders(
             accountId: String,

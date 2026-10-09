@@ -335,6 +335,9 @@ class PrioritizeMessageUseCaseTest {
 
     private class FakePriorityIntelligence : IntelligenceRepository {
         private val classifications = mutableMapOf<String, ClassificationRecord>()
+
+        override suspend fun getClassifications(messageIds: List<String>): Map<String, ClassificationRecord> =
+            classifications.filterKeys { it in messageIds }
         private val priorities = mutableMapOf<String, PriorityRecord>()
 
         fun seedClassification(record: ClassificationRecord) {

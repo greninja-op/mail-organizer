@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
@@ -78,6 +81,7 @@ fun MailScreen(
     viewModel: MailViewModel,
     onOpenThread: (threadId: String, focusMessageId: String?) -> Unit,
     onOpenAccounts: () -> Unit,
+    onOpenSearch: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -110,6 +114,7 @@ fun MailScreen(
                     state = state,
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onFilterChange = viewModel::setFilterText,
+                    onSearchSubmit = { onOpenSearch(state.filterText) },
                     onRefresh = viewModel::refresh,
                     onAccountClick = onOpenAccounts,
                 )
@@ -176,6 +181,7 @@ private fun MailTopBar(
     state: MailScreenState,
     onMenuClick: () -> Unit,
     onFilterChange: (String) -> Unit,
+    onSearchSubmit: () -> Unit,
     onRefresh: () -> Unit,
     onAccountClick: () -> Unit,
 ) {
@@ -202,6 +208,8 @@ private fun MailTopBar(
                     }
                 },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearchSubmit() }),
                 shape = RoundedCornerShape(MoSpacing.xxl),
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
