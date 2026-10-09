@@ -17,6 +17,7 @@ import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMessageUseCase
+import com.greninjaop.mailorganizer.domain.actions.GenerateActionsUseCase
 import com.greninjaop.mailorganizer.domain.temporal.ExtractMailboxUseCase
 import com.greninjaop.mailorganizer.domain.temporal.ExtractTemporalUseCase
 import kotlinx.coroutines.Dispatchers
@@ -109,6 +110,12 @@ class CompanyFilterViewModelTest {
                     clock = { 1_800_000_000_000L },
                 ),
                 dispatchers = dispatchers(),
+            ),
+            generateActions = GenerateActionsUseCase(
+                mail = mail,
+                intelligence = intelligence,
+                dispatchers = dispatchers(),
+                clock = { 1_800_000_000_000L },
             ),
             syncCoordinator = SyncCoordinator(
                 api = DeferredGmailSyncApi(),

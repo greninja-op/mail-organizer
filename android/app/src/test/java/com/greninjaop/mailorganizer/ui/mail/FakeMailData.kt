@@ -557,10 +557,59 @@ class FakeIntelligenceRepository :
         accountId: String,
         limit: Int,
     ): Flow<List<com.greninjaop.mailorganizer.data.local.ActionItemRecord>> =
-        MutableStateFlow(emptyList())
+        actionItems.map { list ->
+            list.filter { it.accountId == accountId }.take(limit)
+        }
 
     override suspend fun completeActionItem(id: Long) = Unit
     override suspend fun dismissActionItem(id: Long) = Unit
+
+    // ---- Phase 14: action-engine methods (in-memory for ViewModel tests) ----
+
+    private val actionItems =
+        MutableStateFlow<List<com.greninjaop.mailorganizer.data.local.ActionItemRecord>>(
+            emptyList(),
+        )
+
+    /** Test helper: seed action rows for the Actions screen. */
+    fun seedActionItems(
+        items: List<com.greninjaop.mailorganizer.data.local.ActionItemRecord>,
+    ) {
+        actionItems.value = items
+    }
+
+    override suspend fun getActionItem(
+        id: Long,
+    ): com.greninjaop.mailorganizer.data.local.ActionItemRecord? =
+        actionItems.value.firstOrNull { it.id == id }
+
+    override suspend fun getActionItemsByMessage(
+        messageId: String,
+    ): List<com.greninjaop.mailorganizer.data.local.ActionItemRecord> =
+        actionItems.value.filter { it.messageId == messageId }
+
+    override suspend fun getOpenActionItemsByThread(
+        threadId: String,
+    ): List<com.greninjaop.mailorganizer.data.local.ActionItemRecord> =
+        actionItems.value.filter { it.threadId == threadId }
+
+    override suspend fun setActionItemStatus(
+        id: Long,
+        status: com.greninjaop.mailorganizer.core.actions.ActionStatus,
+    ) {
+        actionItems.value = actionItems.value.map {
+            if (it.id == id) it.copy(status = status) else it
+        }
+    }
+
+    override suspend fun deleteActionItems(ids: List<Long>) {
+        actionItems.value = actionItems.value.filterNot { it.id in ids }
+    }
+
+    override suspend fun expireOverdueActionItems(
+        accountId: String,
+        cutoffEpochMs: Long,
+    ): Int = 0
 
     override suspend fun addExtractedItem(
         item: com.greninjaop.mailorganizer.data.local.ExtractedItemRecord,

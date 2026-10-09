@@ -82,6 +82,12 @@ class MailViewModelTest {
                 ),
                 dispatchers = dispatchers(),
             ),
+            generateActions = com.greninjaop.mailorganizer.domain.actions.GenerateActionsUseCase(
+                mail = mail,
+                intelligence = intelligence,
+                dispatchers = dispatchers(),
+                clock = { 1_800_000_000_000L },
+            ),
             syncCoordinator = SyncCoordinator(
                 api = DeferredGmailSyncApi(),
                 mail = mail,
