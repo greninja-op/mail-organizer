@@ -29,6 +29,14 @@ import com.greninjaop.mailorganizer.ui.mail.MailViewModelFactory
 import com.greninjaop.mailorganizer.ui.mail.ThreadScreen
 import com.greninjaop.mailorganizer.ui.mail.ThreadViewModel
 import com.greninjaop.mailorganizer.ui.mail.ThreadViewModelFactory
+import com.greninjaop.mailorganizer.ui.rules.CorrectionViewModel
+import com.greninjaop.mailorganizer.ui.rules.CorrectionViewModelFactory
+import com.greninjaop.mailorganizer.ui.rules.RuleEditorScreen
+import com.greninjaop.mailorganizer.ui.rules.RuleEditorViewModel
+import com.greninjaop.mailorganizer.ui.rules.RuleEditorViewModelFactory
+import com.greninjaop.mailorganizer.ui.rules.RulesScreen
+import com.greninjaop.mailorganizer.ui.rules.RulesViewModel
+import com.greninjaop.mailorganizer.ui.rules.RulesViewModelFactory
 import com.greninjaop.mailorganizer.ui.search.SearchScreen
 import com.greninjaop.mailorganizer.ui.search.SearchViewModel
 import com.greninjaop.mailorganizer.ui.search.SearchViewModelFactory
@@ -61,6 +69,19 @@ object AppDestinations {
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
     const val ACCOUNTS = "accounts"
+
+    /** Phase 12: rules list. */
+    const val RULES = "rules"
+
+    /**
+     * Phase 12: rule editor. [ruleId] is null when creating a new rule.
+     * Navigation arg validation (§34): a non-numeric ruleId is treated
+     * as "create new" rather than crashing.
+     */
+    const val RULE_EDITOR = "rules/editor?ruleId={ruleId}"
+
+    fun ruleEditorRoute(ruleId: Long? = null): String =
+        if (ruleId == null) "rules/editor" else "rules/editor?ruleId=$ruleId"
 
     /**
      * Thread route with an optional deep-link focus arg (Phase 6, phase §37):
@@ -338,9 +359,45 @@ fun AppNavGraph(
             val focusMessageId = entry.arguments?.getString("focusMessageId")
             val vm: ThreadViewModel =
                 viewModel(factory = ThreadViewModelFactory(container, threadId))
+            val correctionVm: CorrectionViewModel =
+                viewModel(factory = CorrectionViewModelFactory(container))
             ThreadScreen(
                 viewModel = vm,
+                correctionViewModel = correctionVm,
                 focusMessageId = focusMessageId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        // Phase 12: rules list + editor.
+        composable(AppDestinations.RULES) {
+            val vm: RulesViewModel =
+                viewModel(factory = RulesViewModelFactory(container))
+            RulesScreen(
+                viewModel = vm,
+                onAddRule = { navController.navigate(AppDestinations.ruleEditorRoute()) },
+                onEditRule = { ruleId ->
+                    navController.navigate(AppDestinations.ruleEditorRoute(ruleId))
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(
+            route = AppDestinations.RULE_EDITOR,
+            arguments = listOf(
+                navArgument("ruleId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
+            // §34: non-numeric ruleId degrades to "create new", never a crash.
+            val ruleId = entry.arguments?.getString("ruleId")?.toLongOrNull()
+            val vm: RuleEditorViewModel =
+                viewModel(factory = RuleEditorViewModelFactory(container, ruleId))
+            RuleEditorScreen(
+                viewModel = vm,
+                onDone = { navController.popBackStack() },
                 onBack = { navController.popBackStack() },
             )
         }

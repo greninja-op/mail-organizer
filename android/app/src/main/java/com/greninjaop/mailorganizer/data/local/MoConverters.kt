@@ -62,6 +62,9 @@ class MoConverters {
     @TypeConverter fun fromRuleType(v: RuleType): String = v.name
     @TypeConverter fun toRuleType(v: String): RuleType = RuleType.valueOf(v)
 
+    @TypeConverter fun fromRuleSource(v: RuleSource): String = v.name
+    @TypeConverter fun toRuleSource(v: String): RuleSource = RuleSource.valueOf(v)
+
     @TypeConverter fun fromCorrectionScope(v: CorrectionScope): String = v.name
     @TypeConverter fun toCorrectionScope(v: String): CorrectionScope = CorrectionScope.valueOf(v)
 

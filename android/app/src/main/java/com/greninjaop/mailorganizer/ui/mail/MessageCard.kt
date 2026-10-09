@@ -59,6 +59,11 @@ fun MessageCard(
     classification: ClassificationRecord? = null,
     /** Phase 9: message-level priority; null when not prioritized yet. */
     priority: PriorityRecord? = null,
+    /**
+     * Phase 12: correction entry point. When non-null, a "Correct" affordance
+     * is shown next to the category/priority chips (§4).
+     */
+    onCorrect: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         MessageHeader(
@@ -71,6 +76,7 @@ fun MessageCard(
                 message = message,
                 classification = classification,
                 priority = priority,
+                onCorrect = onCorrect,
                 onOpenLink = onOpenLink,
                 modifier = Modifier.padding(
                     start = MoSpacing.md,
@@ -166,6 +172,8 @@ private fun MessageBody(
     classification: ClassificationRecord? = null,
     /** Phase 9: message-level priority; null when not prioritized yet. */
     priority: PriorityRecord? = null,
+    /** Phase 12: correction entry point (§4). */
+    onCorrect: (() -> Unit)? = null,
 ) {
     var showDetails by remember { mutableStateOf(false) }
     Column(
@@ -181,6 +189,19 @@ private fun MessageBody(
         // UI never needs raw email content to explain it.
         if (priority != null) {
             PriorityWithExplanation(priority = priority)
+        }
+        // Phase 12: "Correct" affordance next to the chips, plus the
+        // "Set by you" marker comes from the records' overridden flag (§7).
+        if (onCorrect != null && (classification != null || priority != null)) {
+            Text(
+                text = "Correct",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClick = onCorrect)
+                    .padding(vertical = MoSpacing.xs)
+                    .semantics { contentDescription = "Correct category or priority" },
+            )
         }
         // Progressive disclosure for full headers (§21).
         Text(

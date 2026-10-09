@@ -2,9 +2,12 @@ package com.greninjaop.mailorganizer.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.data.local.AppDatabase
 import com.greninjaop.mailorganizer.data.local.Migrations
+import com.greninjaop.mailorganizer.data.local.SearchIndexStore
 import com.greninjaop.mailorganizer.data.prefs.DataStoreThemePreferences
 import com.greninjaop.mailorganizer.data.prefs.ThemePreferences
 import com.greninjaop.mailorganizer.data.repository.AccountRepository
@@ -14,8 +17,10 @@ import com.greninjaop.mailorganizer.data.repository.RoomAccountRepository
 import com.greninjaop.mailorganizer.data.repository.RoomIntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.RoomMailRepository
 import com.greninjaop.mailorganizer.data.repository.RoomRuleRepository
+import com.greninjaop.mailorganizer.data.repository.RoomSearchRepository
 import com.greninjaop.mailorganizer.data.repository.RoomSyncStateRepository
 import com.greninjaop.mailorganizer.data.repository.RuleRepository
+import com.greninjaop.mailorganizer.data.repository.SearchRepository
 import com.greninjaop.mailorganizer.data.repository.SyncStateRepository
 import com.greninjaop.mailorganizer.data.sync.DeferredGmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.GmailSyncApi
@@ -25,6 +30,10 @@ import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMessageUseCase
+import com.greninjaop.mailorganizer.domain.rules.ApplyRulesUseCase
+import com.greninjaop.mailorganizer.domain.rules.RecordCorrectionUseCase
+import com.greninjaop.mailorganizer.domain.rules.RuleManagementUseCase
+import com.greninjaop.mailorganizer.domain.search.SearchIndexUseCase
 import com.greninjaop.mailorganizer.ui.mail.AndroidConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
@@ -61,13 +70,36 @@ class AppContainer(private val appContext: Context) {
             // Production migrations must preserve user data: no destructive
             // fallback. v1 -> v2 is covered by Migrations.MIGRATION_1_2;
             // v2 -> v3 (Phase 5 parser columns) by Migrations.MIGRATION_2_3;
-            // v3 -> v4 (Phase 8 company link) by Migrations.MIGRATION_3_4.
+            // v3 -> v4 (Phase 8 company link) by Migrations.MIGRATION_3_4;
+            // v4 -> v5 (Phase 10 search index) by Migrations.MIGRATION_4_5;
+            // v5 -> v6 (Phase 12 rule engine columns) by Migrations.MIGRATION_5_6.
             .addMigrations(
                 Migrations.MIGRATION_1_2,
                 Migrations.MIGRATION_2_3,
                 Migrations.MIGRATION_3_4,
+                Migrations.MIGRATION_4_5,
+                Migrations.MIGRATION_5_6,
+            )
+            // Fresh installs: the FTS search index is a standalone virtual
+            // table (not a Room entity), so it is created here. Upgrades
+            // are covered by MIGRATION_4_5.
+            .addCallback(
+                object : RoomDatabase.Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        db.execSQL(SearchIndexStore.CREATE_SQL)
+                    }
+                },
             )
             .build()
+    }
+
+    // ---- Phase 10: local search ----
+    // FTS5 index store: raw-SQLite access to the derived `messages_fts`
+    // virtual table. Wired into the repositories' write paths so the index
+    // always reflects committed data (phase §57, §58).
+
+    val searchIndexStore: SearchIndexStore by lazy {
+        SearchIndexStore(database.openHelper.writableDatabase)
     }
 
     // ---- Phase 2: local data repositories ----
@@ -75,11 +107,19 @@ class AppContainer(private val appContext: Context) {
     // DAOs or the database directly.
 
     val accountRepository: AccountRepository by lazy {
-        RoomAccountRepository(database.accountDao(), dispatchers)
+        RoomAccountRepository(
+            accountDao = database.accountDao(),
+            dispatchers = dispatchers,
+            searchIndex = searchIndexStore,
+        )
     }
 
     val mailRepository: MailRepository by lazy {
-        RoomMailRepository(database, dispatchers)
+        RoomMailRepository(
+            db = database,
+            dispatchers = dispatchers,
+            searchIndex = searchIndexStore,
+        )
     }
 
     val intelligenceRepository: IntelligenceRepository by lazy {
@@ -126,6 +166,7 @@ class AppContainer(private val appContext: Context) {
             mail = mailRepository,
             intelligence = intelligenceRepository,
             dispatchers = dispatchers,
+            searchIndex = searchIndexStore,
         )
     }
 
@@ -164,6 +205,65 @@ class AppContainer(private val appContext: Context) {
         PrioritizeMailboxUseCase(
             mail = mailRepository,
             prioritizeMessage = prioritizeMessageUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 10: search & local indexing ----
+    // FTS5 index over synchronized mail. Local-only: no network, no AI,
+    // no Gmail search endpoints. The index is derived data — rebuildable
+    // from `messages` without resynchronization.
+
+    val searchRepository: SearchRepository by lazy {
+        RoomSearchRepository(
+            db = database,
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val searchIndexUseCase: SearchIndexUseCase by lazy {
+        SearchIndexUseCase(
+            db = database,
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 12: rules & user corrections ----
+    // The effective-intelligence layer: explicit user corrections outrank
+    // enabled user rules, which outrank the deterministic engines
+    // (Phases 7/9). Pure rule evaluation lives in core.rules; these use
+    // cases orchestrate persistence, reprocessing, and the management UI.
+
+    val applyRulesUseCase: ApplyRulesUseCase by lazy {
+        ApplyRulesUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            rules = ruleRepository,
+            classify = classifyMessageUseCase,
+            prioritize = prioritizeMessageUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val recordCorrectionUseCase: RecordCorrectionUseCase by lazy {
+        RecordCorrectionUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            rules = ruleRepository,
+            apply = applyRulesUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val ruleManagementUseCase: RuleManagementUseCase by lazy {
+        RuleManagementUseCase(
+            mail = mailRepository,
+            rules = ruleRepository,
+            apply = applyRulesUseCase,
             dispatchers = dispatchers,
         )
     }

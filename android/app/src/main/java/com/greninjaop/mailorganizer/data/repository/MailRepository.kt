@@ -133,6 +133,22 @@ interface MailRepository {
      * (Phase 11). Global for the account, not page-limited.
      */
     suspend fun companyMessageCounts(accountId: String): Map<String, Int>
+
+    // ---- Phase 12 rule engine support ----
+    // Candidate-message lookups for rule preview and safe reprocessing.
+    // All account-scoped and bounded; newest first.
+
+    /** Message ids for an account, bounded (Phase 12 reprocess fallback). */
+    suspend fun getMessageIdsByAccount(accountId: String, limit: Int): List<String>
+
+    /** Message ids from one exact sender address (Phase 12). */
+    suspend fun getMessageIdsBySender(accountId: String, email: String, limit: Int): List<String>
+
+    /** Message ids from one sender domain (Phase 12). */
+    suspend fun getMessageIdsByDomain(accountId: String, domain: String, limit: Int): List<String>
+
+    /** Message ids attributed to one company (Phase 12). */
+    suspend fun getMessageIdsByCompany(accountId: String, companyId: String, limit: Int): List<String>
 }
 
 class RoomMailRepository(
@@ -346,4 +362,37 @@ class RoomMailRepository(
             db.messageDao().companyMessageCounts(accountId)
                 .associate { it.companyId to it.messageCount }
         }
+
+    // ---- Phase 12 rule engine support ----
+
+    override suspend fun getMessageIdsByAccount(
+        accountId: String,
+        limit: Int,
+    ): List<String> = withContext(dispatchers.io) {
+        db.messageDao().getIdsByAccount(accountId, limit)
+    }
+
+    override suspend fun getMessageIdsBySender(
+        accountId: String,
+        email: String,
+        limit: Int,
+    ): List<String> = withContext(dispatchers.io) {
+        db.messageDao().getIdsBySenderEmail(accountId, email, limit)
+    }
+
+    override suspend fun getMessageIdsByDomain(
+        accountId: String,
+        domain: String,
+        limit: Int,
+    ): List<String> = withContext(dispatchers.io) {
+        db.messageDao().getIdsBySenderDomain(accountId, domain, limit)
+    }
+
+    override suspend fun getMessageIdsByCompany(
+        accountId: String,
+        companyId: String,
+        limit: Int,
+    ): List<String> = withContext(dispatchers.io) {
+        db.messageDao().getIdsByCompany(accountId, companyId, limit)
+    }
 }

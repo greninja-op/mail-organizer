@@ -23,6 +23,9 @@ import androidx.room.TypeConverters
  * - v5 (Phase 10): local search index — derived FTS5 `messages_fts`
  *   (standalone virtual table, managed by [SearchIndexStore]) plus the
  *   `search_index_meta` version table. See [Migrations.MIGRATION_4_5].
+ * - v6 (Phase 12): user rules & corrections engine columns on
+ *   `user_rules` (`name`, `conditionsJson`, `actionsJson`, `ruleOrder`,
+ *   `ruleVersion`, `source`). See [Migrations.MIGRATION_5_6].
  *
  * Schema is exported to `app/schemas` so migrations stay verifiable.
  * Destructive fallback is deliberately NOT enabled: production migrations
@@ -44,7 +47,7 @@ import androidx.room.TypeConverters
         ExtractedItemRecord::class,
         SearchIndexMeta::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)

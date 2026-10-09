@@ -19,12 +19,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.net.toUri
 import com.greninjaop.mailorganizer.ui.components.MoEmptyState
 import com.greninjaop.mailorganizer.ui.components.MoLoadingState
+import com.greninjaop.mailorganizer.ui.rules.CorrectionSheet
+import com.greninjaop.mailorganizer.ui.rules.CorrectionViewModel
 
 /**
  * Conversation/thread view (Phase 6, phase §18–19).
@@ -38,6 +43,7 @@ import com.greninjaop.mailorganizer.ui.components.MoLoadingState
 @Composable
 fun ThreadScreen(
     viewModel: ThreadViewModel,
+    correctionViewModel: CorrectionViewModel,
     focusMessageId: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -46,6 +52,7 @@ fun ThreadScreen(
     val subject by viewModel.subject.collectAsState()
     val context = LocalContext.current
     val listState = rememberLazyListState()
+    var correctingMessage by remember { mutableStateOf<MessageItem?>(null) }
 
     // Deep-link focus: expand the target message and scroll to it.
     LaunchedEffect(focusMessageId) {
@@ -104,11 +111,36 @@ fun ThreadScreen(
                             },
                             classification = s.classifications[message.messageId],
                             priority = s.priorities[message.messageId],
+                            // Phase 12: correction entry point (§4).
+                            onCorrect = {
+                                val classification = s.classifications[message.messageId]
+                                val priority = s.priorities[message.messageId]
+                                correctionViewModel.start(
+                                    accountId = message.accountId,
+                                    messageId = message.messageId,
+                                    senderEmail = message.fromAddress,
+                                    senderDomain = message.fromAddress.substringAfter('@', ""),
+                                    companyName = null,
+                                    currentCategory = classification?.category,
+                                    currentPriority = priority?.priority,
+                                    categoryOverridden = classification?.overridden == true,
+                                    priorityOverridden = priority?.manualOverride == true,
+                                )
+                                correctingMessage = message
+                            },
                         )
                     }
                 }
             }
         }
+    }
+
+    // Phase 12: correction bottom sheet (§4–§6).
+    if (correctingMessage != null) {
+        CorrectionSheet(
+            viewModel = correctionViewModel,
+            onDismiss = { correctingMessage = null },
+        )
     }
 }
 

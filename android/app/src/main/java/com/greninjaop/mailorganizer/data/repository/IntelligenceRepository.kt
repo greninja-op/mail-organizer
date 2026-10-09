@@ -66,6 +66,14 @@ interface IntelligenceRepository {
     suspend fun getClassification(messageId: String): ClassificationRecord?
 
     /**
+     * Deletes a message's classification row (Phase 12) — used to clear a
+     * stale user-sourced row so the deterministic base can be restored.
+     * The row is only ever re-created by the engines, never resurrected
+     * with user intent.
+     */
+    suspend fun deleteClassification(messageId: String)
+
+    /**
      * Batch classification lookup for search results (Phase 10) — one
      * query, never N+1. Returns a map keyed by messageId.
      */
@@ -85,6 +93,12 @@ interface IntelligenceRepository {
     // priority
     suspend fun setPriority(record: PriorityRecord)
     suspend fun getPriority(messageId: String): PriorityRecord?
+
+    /**
+     * Deletes a message's priority row (Phase 12) — used to clear a stale
+     * user-sourced row so the deterministic base can be restored.
+     */
+    suspend fun deletePriority(messageId: String)
 
     /**
      * Batch priority lookup for the visible page (Phase 9) — one query,
@@ -179,6 +193,9 @@ class RoomIntelligenceRepository(
     override suspend fun setClassification(record: ClassificationRecord) =
         withContext(dispatchers.io) { classifications.setClassification(record) }
 
+    override suspend fun deleteClassification(messageId: String) =
+        withContext(dispatchers.io) { classifications.deleteByMessage(messageId) }
+
     override suspend fun getClassification(messageId: String) =
         withContext(dispatchers.io) { classifications.getByMessage(messageId) }
 
@@ -203,6 +220,9 @@ class RoomIntelligenceRepository(
 
     override suspend fun setPriority(record: PriorityRecord) =
         withContext(dispatchers.io) { priorities.setPriority(record) }
+
+    override suspend fun deletePriority(messageId: String) =
+        withContext(dispatchers.io) { priorities.deleteByMessage(messageId) }
 
     override suspend fun getPriority(messageId: String) =
         withContext(dispatchers.io) { priorities.getByMessage(messageId) }
