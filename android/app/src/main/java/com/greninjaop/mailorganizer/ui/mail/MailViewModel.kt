@@ -17,6 +17,7 @@ import com.greninjaop.mailorganizer.data.sync.SyncOutcome
 import com.greninjaop.mailorganizer.data.sync.SyncProgress
 import com.greninjaop.mailorganizer.data.sync.SyncStage
 import com.greninjaop.mailorganizer.data.sync.SyncTrigger
+import com.greninjaop.mailorganizer.domain.actions.GenerateActionsUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
 import com.greninjaop.mailorganizer.domain.priority.PrioritizeMailboxUseCase
@@ -70,6 +71,7 @@ class MailViewModel(
     private val companyIntelligence: CompanyIntelligenceUseCase,
     private val prioritizeMailbox: PrioritizeMailboxUseCase,
     private val extractMailbox: ExtractMailboxUseCase,
+    private val generateActions: GenerateActionsUseCase,
     private val syncCoordinator: SyncCoordinator,
     private val connectivity: ConnectivityObserver,
     private val dispatchers: AppDispatchers,
@@ -432,6 +434,13 @@ class MailViewModel(
                         val e = extractMailbox.extractNew(account.accountId)
                         if (e > 0) {
                             MoLogger.i(TAG, "Background temporal extraction: $e messages")
+                        }
+                        // Phase 14: then generate action cards from the
+                        // fresh intelligence (best-effort, never breaks
+                        // the inbox).
+                        val a = generateActions.generateNew(account.accountId)
+                        if (a > 0) {
+                            MoLogger.i(TAG, "Background action generation: $a cards")
                         }
                     }
                 }
