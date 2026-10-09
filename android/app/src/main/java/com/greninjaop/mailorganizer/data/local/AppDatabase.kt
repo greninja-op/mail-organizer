@@ -20,6 +20,9 @@ import androidx.room.TypeConverters
  *   `attachments` metadata). See [Migrations.MIGRATION_2_3].
  * - v4 (Phase 8): company-intelligence link on `messages` (`companyId`,
  *   nullable) plus its index. See [Migrations.MIGRATION_3_4].
+ * - v5 (Phase 10): local search index — derived FTS5 `messages_fts`
+ *   (standalone virtual table, managed by [SearchIndexStore]) plus the
+ *   `search_index_meta` version table. See [Migrations.MIGRATION_4_5].
  *
  * Schema is exported to `app/schemas` so migrations stay verifiable.
  * Destructive fallback is deliberately NOT enabled: production migrations
@@ -39,8 +42,9 @@ import androidx.room.TypeConverters
         UserRuleRecord::class,
         UserCorrectionRecord::class,
         ExtractedItemRecord::class,
+        SearchIndexMeta::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)
@@ -57,4 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userRuleDao(): UserRuleDao
     abstract fun userCorrectionDao(): UserCorrectionDao
     abstract fun extractedItemDao(): ExtractedItemDao
+
+    /** Search-index version bookkeeping (Phase 10). */
+    abstract fun searchIndexMetaDao(): SearchIndexMetaDao
 }

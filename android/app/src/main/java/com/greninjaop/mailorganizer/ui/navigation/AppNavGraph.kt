@@ -17,6 +17,9 @@ import com.greninjaop.mailorganizer.ui.mail.MailViewModelFactory
 import com.greninjaop.mailorganizer.ui.mail.ThreadScreen
 import com.greninjaop.mailorganizer.ui.mail.ThreadViewModel
 import com.greninjaop.mailorganizer.ui.mail.ThreadViewModelFactory
+import com.greninjaop.mailorganizer.ui.search.SearchScreen
+import com.greninjaop.mailorganizer.ui.search.SearchViewModel
+import com.greninjaop.mailorganizer.ui.search.SearchViewModelFactory
 
 /**
  * Navigation foundation — Phase 1 (phase-01 §25).
@@ -53,6 +56,16 @@ object AppDestinations {
                 append("?focusMessageId=").append(focusMessageId)
             }
         }
+
+    /**
+     * Search route with an optional initial query (Phase 10): tapping the
+     * mailbox search field's IME action opens the dedicated search screen
+     * with the typed text (phase §10, §11).
+     */
+    const val SEARCH_ROUTE = "search?query={query}"
+
+    fun searchRoute(query: String = ""): String =
+        "search?query=" + android.net.Uri.encode(query)
 
     /** Primary destinations, in display order. */
     val primary: List<String> = listOf(HOME, MAIL, CATEGORIES, COMPANIES, ACTIONS)
@@ -120,6 +133,36 @@ fun AppNavGraph(
                     )
                 },
                 onOpenAccounts = { navController.navigate(AppDestinations.ACCOUNTS) },
+                // Phase 10: the mailbox search field's IME action opens the
+                // dedicated search screen with the typed query.
+                onOpenSearch = { query ->
+                    navController.navigate(AppDestinations.searchRoute(query))
+                },
+            )
+        }
+        // Phase 10: the real search experience (replaces the placeholder).
+        composable(
+            route = AppDestinations.SEARCH_ROUTE,
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val initialQuery = entry.arguments?.getString("query").orEmpty()
+            val vm: SearchViewModel = viewModel(
+                factory = SearchViewModelFactory(container, initialQuery),
+            )
+            SearchScreen(
+                viewModel = vm,
+                onOpenThread = { threadId, focusMessageId ->
+                    navController.navigate(
+                        AppDestinations.threadRoute(threadId, focusMessageId),
+                    )
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable(
@@ -144,7 +187,10 @@ fun AppNavGraph(
             )
         }
         AppDestinations.all
-            .filter { it != AppDestinations.HOME && it != AppDestinations.MAIL }
+            .filter {
+                it != AppDestinations.HOME && it != AppDestinations.MAIL &&
+                    it != AppDestinations.SEARCH
+            }
             .forEach { route ->
                 composable(route) {
                     PlaceholderScreen(

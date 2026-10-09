@@ -5,6 +5,7 @@ import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.data.local.AppDatabase
 import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.local.MessageRecord
+import com.greninjaop.mailorganizer.data.local.SearchIndexStore
 import com.greninjaop.mailorganizer.data.local.ThreadRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -132,6 +133,13 @@ class RoomMailRepository(
     private val db: AppDatabase,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * FTS index writer (Phase 10). Null in unit tests that don't create
+     * the FTS table. When present, message writes update the index in the
+     * SAME transaction (phase §57, §58 — the index always reflects
+     * committed data).
+     */
+    private val searchIndex: SearchIndexStore? = null,
 ) : MailRepository {
 
     override suspend fun saveThreadWithMessages(
@@ -141,6 +149,24 @@ class RoomMailRepository(
         db.withTransaction {
             db.threadDao().upsert(thread)
             db.messageDao().upsertAll(messages)
+            indexMessagesForSearch(messages)
+        }
+    }
+
+    /**
+     * Writes FTS documents for [messages] inside the caller's transaction.
+     * Company names resolve account-scoped (company ids are deterministic
+     * across accounts — never leak another account's company row).
+     */
+    private suspend fun indexMessagesForSearch(messages: List<MessageRecord>) {
+        val store = searchIndex ?: return
+        store.ensureCreated()
+        for (m in messages) {
+            val companyName = m.companyId?.let { cid ->
+                db.companyDao().getByAccountAndId(m.accountId, cid)
+                    ?.let { it.userOverrideName ?: it.canonicalName }
+            }
+            store.indexDocument(SearchIndexStore.FtsDocument.fromMessage(m, companyName))
         }
     }
 
@@ -245,7 +271,13 @@ class RoomMailRepository(
         if (gmailIds.isEmpty()) return@withContext emptyList()
         db.withTransaction {
             val threadIds = db.messageDao().threadIdsForGmailIds(accountId, gmailIds)
+            val messageIds = db.messageDao().messageIdsForGmailIds(accountId, gmailIds)
             for (gmailId in gmailIds) db.messageDao().deleteByGmailId(accountId, gmailId)
+            // Keep the FTS index consistent: no row may point at a deleted
+            // message (phase §58). Same transaction as the deletes.
+            searchIndex?.let { store ->
+                for (id in messageIds) store.deleteDocument(id)
+            }
             threadIds
         }
     }

@@ -19,6 +19,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * (`companyId`, the detected company link) plus its index. Existing rows
  * keep their data; `companyId` defaults to NULL ("not yet processed").
  *
+ * v4 → v5 (Phase 10) is purely additive: the derived FTS5 search index
+ * (`messages_fts`, created empty and backfilled from `messages` — never
+ * requiring a Gmail resync) plus the `search_index_meta` version table.
+ * No normalized data is touched.
+ *
  * Production migrations must preserve user data; destructive fallback is
  * deliberately NOT enabled (see AppDatabase builder configuration).
  */
@@ -352,6 +357,32 @@ object Migrations {
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS index_messages_companyId " +
                     "ON messages(companyId)",
+            )
+        }
+    }
+
+    /**
+     * v4 → v5 (Phase 10): local search index.
+     *
+     * - `messages_fts`: standalone FTS5 virtual table holding the
+     *   searchable document per message (see [SearchIndexStore]). It is
+     *   *derived* data — created empty here and backfilled from `messages`
+     *   by `SearchIndexUseCase` on next launch; no Gmail resynchronization
+     *   is ever required (phase §22, §54).
+     * - `search_index_meta`: Room-managed version table so a future index
+     *   schema change triggers a rebuild instead of silent staleness
+     *   (phase §23).
+     *
+     * Purely additive — no normalized email, classification, sender,
+     * company, or priority data is touched.
+     */
+    val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(SearchIndexStore.CREATE_SQL)
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS search_index_meta (" +
+                    "accountId TEXT NOT NULL PRIMARY KEY, " +
+                    "version INTEGER NOT NULL)",
             )
         }
     }

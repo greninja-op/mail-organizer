@@ -31,6 +31,13 @@ interface ClassificationDao {
     @Query("SELECT * FROM classifications WHERE messageId = :messageId")
     suspend fun getByMessage(messageId: String): ClassificationRecord?
 
+    /**
+     * Batch classification lookup for search results (Phase 10) — one
+     * query, never N+1. Mirrors [PriorityDao.getByMessages].
+     */
+    @Query("SELECT * FROM classifications WHERE messageId IN (:messageIds)")
+    suspend fun getByMessages(messageIds: List<String>): List<ClassificationRecord>
+
     @Query(
         "SELECT * FROM classifications WHERE accountId = :accountId AND category = :category " +
             "LIMIT :limit",

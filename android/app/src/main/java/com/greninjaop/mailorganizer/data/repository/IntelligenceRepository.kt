@@ -64,6 +64,12 @@ interface IntelligenceRepository {
     // classification
     suspend fun setClassification(record: ClassificationRecord)
     suspend fun getClassification(messageId: String): ClassificationRecord?
+
+    /**
+     * Batch classification lookup for search results (Phase 10) — one
+     * query, never N+1. Returns a map keyed by messageId.
+     */
+    suspend fun getClassifications(messageIds: List<String>): Map<String, ClassificationRecord>
     fun observeByCategory(
         accountId: String,
         category: MailCategory,
@@ -159,6 +165,12 @@ class RoomIntelligenceRepository(
 
     override suspend fun getClassification(messageId: String) =
         withContext(dispatchers.io) { classifications.getByMessage(messageId) }
+
+    override suspend fun getClassifications(messageIds: List<String>) =
+        withContext(dispatchers.io) {
+            if (messageIds.isEmpty()) emptyMap()
+            else classifications.getByMessages(messageIds).associateBy { it.messageId }
+        }
 
     override fun observeByCategory(
         accountId: String,

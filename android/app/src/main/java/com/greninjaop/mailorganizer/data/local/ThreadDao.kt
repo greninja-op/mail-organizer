@@ -19,6 +19,13 @@ interface ThreadDao {
     @Query("SELECT * FROM threads WHERE threadId = :threadId")
     suspend fun getById(threadId: String): ThreadRecord?
 
+    /**
+     * Batch thread lookup for search results (Phase 10) — one query,
+     * never N+1. Empty input returns empty output.
+     */
+    @Query("SELECT * FROM threads WHERE threadId IN (:threadIds)")
+    suspend fun getByIds(threadIds: List<String>): List<ThreadRecord>
+
     @Query(
         "SELECT * FROM threads WHERE accountId = :accountId " +
             "ORDER BY latestMessageEpochMs DESC LIMIT :limit",

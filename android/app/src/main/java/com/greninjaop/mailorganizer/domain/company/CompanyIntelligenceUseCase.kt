@@ -8,6 +8,7 @@ import com.greninjaop.mailorganizer.core.company.SenderIntelligence
 import com.greninjaop.mailorganizer.data.local.CompanyRecord
 import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.data.local.MessageRecord
+import com.greninjaop.mailorganizer.data.local.SearchIndexStore
 import com.greninjaop.mailorganizer.data.local.SenderRecord
 import com.greninjaop.mailorganizer.data.repository.IntelligenceRepository
 import com.greninjaop.mailorganizer.data.repository.MailRepository
@@ -45,6 +46,13 @@ class CompanyIntelligenceUseCase(
     private val intelligence: IntelligenceRepository,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * FTS index writer (Phase 10). After attribution links a company, the
+     * message's search document is refreshed with the company name so
+     * company search stays truthful. Best-effort: failures never break
+     * attribution.
+     */
+    private val searchIndex: SearchIndexStore? = null,
 ) : RecurringSenderProvider {
 
     companion object {
@@ -209,6 +217,22 @@ class CompanyIntelligenceUseCase(
         }
         intelligence.upsertCompany(company)
         mail.setMessageCompanyId(message.messageId, detected.companyId)
+        refreshSearchDocument(message, company.userOverrideName ?: company.canonicalName)
         return Attribution(sender = sender, company = company)
+    }
+
+    /**
+     * Refreshes the message's FTS document with its company name (Phase
+     * 10). The document was first indexed at insert time without a
+     * company; attribution is what makes the company name real.
+     */
+    private fun refreshSearchDocument(message: MessageRecord, companyName: String?) {
+        val store = searchIndex ?: return
+        try {
+            store.ensureCreated()
+            store.indexDocument(SearchIndexStore.FtsDocument.fromMessage(message, companyName))
+        } catch (t: Throwable) {
+            MoLogger.e(TAG, "Search re-index failed safely: ${t.javaClass.simpleName}")
+        }
     }
 }

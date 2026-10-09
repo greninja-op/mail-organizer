@@ -76,4 +76,16 @@ interface SenderDao {
 
     @Query("DELETE FROM senders WHERE accountId = :accountId")
     suspend fun deleteByAccount(accountId: String)
+
+    /**
+     * Sender name/address suggestions for search (Phase 10). [like] must
+     * be a caller-built `%…%` pattern passed as a bound parameter — never
+     * string-concatenated into SQL (phase §48).
+     */
+    @Query(
+        "SELECT * FROM senders WHERE accountId = :accountId AND " +
+            "(displayName LIKE :like COLLATE NOCASE OR emailAddress LIKE :like COLLATE NOCASE) " +
+            "ORDER BY messageCount DESC LIMIT :limit",
+    )
+    suspend fun suggestByText(accountId: String, like: String, limit: Int): List<SenderRecord>
 }

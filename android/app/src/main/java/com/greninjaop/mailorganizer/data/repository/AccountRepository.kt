@@ -4,6 +4,7 @@ import com.greninjaop.mailorganizer.core.AppDispatchers
 import com.greninjaop.mailorganizer.data.local.AccountDao
 import com.greninjaop.mailorganizer.data.local.AccountRecord
 import com.greninjaop.mailorganizer.data.local.ConnectionState
+import com.greninjaop.mailorganizer.data.local.SearchIndexStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
@@ -29,6 +30,13 @@ class RoomAccountRepository(
     private val accountDao: AccountDao,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * FTS index writer (Phase 10). Account deletion cascades to messages
+     * via foreign keys, which would orphan FTS rows — the account's index
+     * rows are dropped first. If the account delete then fails, the
+     * background indexer re-adds them (self-healing).
+     */
+    private val searchIndex: SearchIndexStore? = null,
 ) : AccountRepository {
 
     override suspend fun upsert(account: AccountRecord) =
@@ -55,5 +63,8 @@ class RoomAccountRepository(
         withContext(dispatchers.io) { accountDao.setEnabled(accountId, enabled) }
 
     override suspend fun deleteById(accountId: String) =
-        withContext(dispatchers.io) { accountDao.deleteById(accountId) }
+        withContext(dispatchers.io) {
+            searchIndex?.deleteForAccount(accountId)
+            accountDao.deleteById(accountId)
+        }
 }

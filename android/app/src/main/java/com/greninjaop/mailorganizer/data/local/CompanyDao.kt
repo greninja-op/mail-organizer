@@ -22,6 +22,16 @@ interface CompanyDao {
     suspend fun getById(companyId: String): CompanyRecord?
 
     /**
+     * Company row for one id *within one account* (Phase 10): company ids
+     * (`co:<domain>`) are deterministic across accounts, so the account
+     * scope must be explicit to avoid cross-account leakage.
+     */
+    @Query(
+        "SELECT * FROM companies WHERE accountId = :accountId AND companyId = :companyId",
+    )
+    suspend fun getByAccountAndId(accountId: String, companyId: String): CompanyRecord?
+
+    /**
      * Company row for one canonical domain in one account (Phase 8).
      * The (accountId, normalizedDomain) unique index makes this the
      * canonical lookup for detection output.
@@ -43,4 +53,16 @@ interface CompanyDao {
 
     @Query("DELETE FROM companies WHERE accountId = :accountId")
     suspend fun deleteByAccount(accountId: String)
+
+    /**
+     * Company-name suggestions for search (Phase 10). [like] must be a
+     * caller-built `%…%` pattern passed as a bound parameter — never
+     * string-concatenated into SQL (phase §48).
+     */
+    @Query(
+        "SELECT * FROM companies WHERE accountId = :accountId AND " +
+            "(canonicalName LIKE :like COLLATE NOCASE OR userOverrideName LIKE :like COLLATE NOCASE) " +
+            "ORDER BY pinned DESC, canonicalName ASC LIMIT :limit",
+    )
+    suspend fun suggestByText(accountId: String, like: String, limit: Int): List<CompanyRecord>
 }

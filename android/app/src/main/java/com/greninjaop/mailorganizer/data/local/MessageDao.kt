@@ -97,6 +97,20 @@ interface MessageDao {
     )
     suspend fun threadIdsForGmailIds(accountId: String, gmailIds: List<String>): List<String>
 
+    /**
+     * Local message ids for Gmail ids (Phase 10): lets the FTS index drop
+     * the exact documents when synced messages are deleted, so no index
+     * row ever points at a missing message (phase §58).
+     */
+    @Query(
+        "SELECT messageId FROM messages WHERE accountId = :accountId " +
+            "AND gmailMessageId IN (:gmailIds)",
+    )
+    suspend fun messageIdsForGmailIds(
+        accountId: String,
+        gmailIds: List<String>,
+    ): List<String>
+
     /** Removes one synced message by its Gmail id (incremental delete, phase §23). */
     @Query(
         "DELETE FROM messages WHERE accountId = :accountId " +
