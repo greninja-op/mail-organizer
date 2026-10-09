@@ -315,6 +315,10 @@ class PrioritizeMessageUseCaseTest {
             label: String,
         ): Map<String, Int> = emptyMap()
 
+        override suspend fun companyMessageCounts(
+            accountId: String,
+        ): Map<String, Int> = emptyMap()
+
         override suspend fun getThreadByGmailId(
             accountId: String,
             gmailThreadId: String,
@@ -397,6 +401,16 @@ class PrioritizeMessageUseCaseTest {
             category: MailCategory,
             limit: Int,
         ): Flow<List<ClassificationRecord>> = MutableStateFlow(emptyList())
+
+        override suspend fun categoryCounts(
+            accountId: String,
+        ): Map<MailCategory, Int> = emptyMap()
+
+        override fun observeByPriority(
+            accountId: String,
+            priority: com.greninjaop.mailorganizer.data.local.Priority,
+            limit: Int,
+        ): Flow<List<PriorityRecord>> = MutableStateFlow(emptyList())
 
         override suspend fun setPriority(record: PriorityRecord) {
             priorities[record.messageId] = record

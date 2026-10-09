@@ -353,6 +353,10 @@ class ClassifyMessageUseCaseTest {
             accountId: String,
             label: String,
         ): Map<String, Int> = emptyMap()
+
+        override suspend fun companyMessageCounts(
+            accountId: String,
+        ): Map<String, Int> = emptyMap()
     }
 
     private class FakeIntelligenceRepository : IntelligenceRepository {
@@ -420,6 +424,20 @@ class ClassifyMessageUseCaseTest {
                     .filter { it.accountId == accountId && it.category == category }
                     .take(limit),
             )
+
+        override suspend fun categoryCounts(
+            accountId: String,
+        ): Map<MailCategory, Int> =
+            classifications.values
+                .filter { it.accountId == accountId }
+                .groupingBy { it.category }
+                .eachCount()
+
+        override fun observeByPriority(
+            accountId: String,
+            priority: com.greninjaop.mailorganizer.data.local.Priority,
+            limit: Int,
+        ): Flow<List<PriorityRecord>> = MutableStateFlow(emptyList())
 
         override suspend fun setPriority(record: PriorityRecord) = Unit
         override suspend fun getPriority(messageId: String): PriorityRecord? = null

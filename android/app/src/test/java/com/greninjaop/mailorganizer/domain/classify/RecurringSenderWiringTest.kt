@@ -119,6 +119,8 @@ class RecurringSenderWiringTest {
             ) = emptyMap<String, Int>()
             override suspend fun companyCountsForLabel(accountId: String, label: String) =
                 emptyMap<String, Int>()
+            override suspend fun companyMessageCounts(accountId: String) =
+                emptyMap<String, Int>()
         }
 
     /** Minimal IntelligenceRepository: captures the persisted record. */
@@ -147,6 +149,12 @@ class RecurringSenderWiringTest {
         override suspend fun getClassifications(messageIds: List<String>) = emptyMap<String, com.greninjaop.mailorganizer.data.local.ClassificationRecord>()
         override fun observeByCategory(accountId: String, category: MailCategory, limit: Int) =
             MutableStateFlow(emptyList<ClassificationRecord>())
+        override suspend fun categoryCounts(accountId: String) = emptyMap<MailCategory, Int>()
+        override fun observeByPriority(
+            accountId: String,
+            priority: com.greninjaop.mailorganizer.data.local.Priority,
+            limit: Int,
+        ) = MutableStateFlow(emptyList<com.greninjaop.mailorganizer.data.local.PriorityRecord>())
         override suspend fun setPriority(record: com.greninjaop.mailorganizer.data.local.PriorityRecord) = Unit
         override suspend fun getPriority(messageId: String) = null
         override suspend fun getPriorities(messageIds: List<String>) =

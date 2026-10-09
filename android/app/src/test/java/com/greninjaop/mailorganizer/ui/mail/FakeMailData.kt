@@ -326,6 +326,16 @@ class FakeMailRepository : MailRepository {
             .eachCount()
     }
 
+    override suspend fun companyMessageCounts(
+        accountId: String,
+    ): Map<String, Int> {
+        check()
+        return messages.value
+            .filter { it.accountId == accountId && it.companyId != null }
+            .groupingBy { it.companyId!! }
+            .eachCount()
+    }
+
     fun threadCount(): Int = threads.value.size
     fun messageCount(): Int = messages.value.size
     fun allMessages(): List<MessageRecord> = messages.value
@@ -459,6 +469,25 @@ class FakeIntelligenceRepository :
         classifications.map { map ->
             map.values
                 .filter { it.accountId == accountId && it.category == category }
+                .take(limit)
+        }
+
+    override suspend fun categoryCounts(
+        accountId: String,
+    ): Map<com.greninjaop.mailorganizer.data.local.MailCategory, Int> =
+        classifications.value.values
+            .filter { it.accountId == accountId }
+            .groupingBy { it.category }
+            .eachCount()
+
+    override fun observeByPriority(
+        accountId: String,
+        priority: com.greninjaop.mailorganizer.data.local.Priority,
+        limit: Int,
+    ): Flow<List<com.greninjaop.mailorganizer.data.local.PriorityRecord>> =
+        priorities.map { map ->
+            map.values
+                .filter { it.accountId == accountId && it.priority == priority }
                 .take(limit)
         }
 
