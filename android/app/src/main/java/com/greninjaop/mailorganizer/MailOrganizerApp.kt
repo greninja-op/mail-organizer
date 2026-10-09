@@ -22,6 +22,7 @@ class MailOrganizerApp : Application() {
         val isDebug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         MoLogger.init(isDebug)
         container = AppContainer(this)
+        container.syncScheduler.onAppStart()
         MoLogger.i(TAG, "Mail Organizer foundation initialized")
     }
 

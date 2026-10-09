@@ -35,4 +35,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        (application as? MailOrganizerApp)?.container?.syncScheduler?.onAppResume()
+    }
 }
