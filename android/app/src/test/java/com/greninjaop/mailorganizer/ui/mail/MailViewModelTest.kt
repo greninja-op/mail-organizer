@@ -6,6 +6,8 @@ import com.greninjaop.mailorganizer.data.local.AccountRecord
 import com.greninjaop.mailorganizer.data.local.ConnectionState
 import com.greninjaop.mailorganizer.data.sync.DeferredGmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
+import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
+import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -24,6 +27,7 @@ class MailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var accounts: FakeAccountRepository
     private lateinit var mail: FakeMailRepository
+    private lateinit var intelligence: FakeIntelligenceRepository
     private lateinit var connectivity: FakeConnectivityObserver
 
     private fun dispatchers() = AppDispatchers(
@@ -37,9 +41,21 @@ class MailViewModelTest {
         online: Boolean = true,
     ): MailViewModel {
         connectivity = FakeConnectivityObserver(online)
+        val classifyMessage = ClassifyMessageUseCase(
+            mail = mail,
+            intelligence = intelligence,
+            dispatchers = dispatchers(),
+            clock = { 1_800_000_000_000L },
+        )
         return MailViewModel(
             accounts = accounts,
             mail = mail,
+            intelligence = intelligence,
+            classifyMailbox = ClassifyMailboxUseCase(
+                mail = mail,
+                classifyMessage = classifyMessage,
+                dispatchers = dispatchers(),
+            ),
             syncCoordinator = SyncCoordinator(
                 api = DeferredGmailSyncApi(),
                 mail = mail,
@@ -58,6 +74,7 @@ class MailViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         accounts = FakeAccountRepository()
+        intelligence = FakeIntelligenceRepository()
         mail = FakeMailRepository()
     }
 
@@ -77,6 +94,56 @@ class MailViewModelTest {
             }
         }
         return last
+    }
+
+    private suspend fun seedAccount(accountId: String) {
+        accounts.upsert(
+            AccountRecord(
+                accountId = accountId,
+                emailAddress = "$accountId@example.com",
+                displayName = "Test",
+                connectionState = ConnectionState.DISCONNECTED,
+                createdAtEpochMs = 1L,
+            ),
+        )
+    }
+
+    private suspend fun saveMessage(
+        id: String,
+        accountId: String,
+        threadId: String,
+        from: String,
+        subject: String,
+        body: String,
+        labels: List<String> = listOf("INBOX"),
+    ) {
+        mail.saveThreadWithMessages(
+            com.greninjaop.mailorganizer.data.local.ThreadRecord(
+                threadId = threadId,
+                gmailThreadId = null,
+                accountId = accountId,
+                subject = subject,
+                messageCount = 1,
+                latestMessageId = id,
+                latestMessageEpochMs = 1_000L,
+                updatedAtEpochMs = 1_000L,
+            ),
+            listOf(
+                com.greninjaop.mailorganizer.data.local.MessageRecord(
+                    messageId = id,
+                    gmailMessageId = "g-$id",
+                    threadId = threadId,
+                    accountId = accountId,
+                    fromAddress = from,
+                    fromName = null,
+                    subject = subject,
+                    snippet = null,
+                    bodyText = body,
+                    timestampEpochMs = 1_000L,
+                    labels = labels,
+                ),
+            ),
+        )
     }
 
     @Test
@@ -166,23 +233,92 @@ class MailViewModelTest {
     }
 
     @Test
-    fun `classification destinations show honest not-classified empty state`() = runTest(testDispatcher) {
-        val vm = viewModel(seed = true)
+    fun `promotional destination shows classified promotions`() = runTest(testDispatcher) {
+        seedAccount("real-acct")
+        saveMessage(
+            "promo-1", "real-acct", "t-promo",
+            from = "deals@shop.example.com",
+            subject = "Clearance: limited time offer",
+            body = "Our clearance sale ends Sunday.",
+        )
+        saveMessage(
+            "plain-1", "real-acct", "t-plain",
+            from = "friend@example.com",
+            subject = "Hello",
+            body = "Just saying hello.",
+        )
+        val vm = viewModel(seed = false)
         advanceUntilIdle()
-        for (dest in listOf(
-            MailboxDestination.PROMOTIONAL,
-            MailboxDestination.SOCIAL,
-            MailboxDestination.SPAM,
-        )) {
-            vm.setDestination(dest)
+        vm.setDestination(MailboxDestination.PROMOTIONAL)
+        advanceUntilIdle()
+        val content = vm.awaitContent()
+        assertTrue("expected Messages, got $content", content is MailboxContent.Messages)
+        val items = (content as MailboxContent.Messages).items
+        assertEquals(listOf("promo-1"), items.map { it.messageId })
+    }
+
+    @Test
+    fun `promotional destination is honestly empty when nothing classified`() =
+        runTest(testDispatcher) {
+            seedAccount("real-acct")
+            val vm = viewModel(seed = false)
+            advanceUntilIdle()
+            vm.setDestination(MailboxDestination.PROMOTIONAL)
             advanceUntilIdle()
             assertEquals(
-                "destination $dest",
-                MailboxContent.Empty(EmptyKind.NOT_CLASSIFIED_YET),
+                MailboxContent.Empty(EmptyKind.NO_PROMOTIONS),
                 vm.awaitContent(),
             )
         }
+
+    @Test
+    fun `spam destination shows spam-labeled mail`() = runTest(testDispatcher) {
+        seedAccount("real-acct")
+        saveMessage(
+            "spam-1", "real-acct", "t-spam",
+            from = "winner@prize.example.com",
+            subject = "You won!",
+            body = "Claim now.",
+            labels = listOf("SPAM"),
+        )
+        saveMessage(
+            "ham-1", "real-acct", "t-ham",
+            from = "friend@example.com",
+            subject = "Hello",
+            body = "Hi.",
+            labels = listOf("INBOX"),
+        )
+        val vm = viewModel(seed = false)
+        advanceUntilIdle()
+        vm.setDestination(MailboxDestination.SPAM)
+        advanceUntilIdle()
+        val content = vm.awaitContent()
+        assertTrue("expected Messages, got $content", content is MailboxContent.Messages)
+        assertEquals(
+            listOf("spam-1"),
+            (content as MailboxContent.Messages).items.map { it.messageId },
+        )
     }
+
+    @Test
+    fun `background classification classifies new mail on startup`() =
+        runTest(testDispatcher) {
+            seedAccount("real-acct")
+            saveMessage(
+                "otp-1", "real-acct", "t-otp",
+                from = "no-reply@bank.example.com",
+                subject = "Your verification code is 482910",
+                body = "Your verification code is 482910.",
+            )
+            val vm = viewModel(seed = false)
+            advanceUntilIdle()
+            val stored = intelligence.getClassification("otp-1")
+            assertNotNull(stored)
+            assertEquals(
+                com.greninjaop.mailorganizer.data.local.MailCategory.SECURITY,
+                stored!!.category,
+            )
+        }
 
     @Test
     fun `refresh without gmail connection reports honestly`() = runTest(testDispatcher) {

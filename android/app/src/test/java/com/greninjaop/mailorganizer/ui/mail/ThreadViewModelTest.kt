@@ -21,6 +21,7 @@ class ThreadViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mail: FakeMailRepository
+    private lateinit var intelligence: FakeIntelligenceRepository
 
     private fun dispatchers() = AppDispatchers(
         io = testDispatcher,
@@ -79,6 +80,7 @@ class ThreadViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mail = FakeMailRepository()
+        intelligence = FakeIntelligenceRepository()
     }
 
     @After
@@ -90,7 +92,7 @@ class ThreadViewModelTest {
     fun `messages are oldest first and newest starts expanded`() = runTest(testDispatcher) {
         // Inserted newest-first to prove ordering is by timestamp, not insert order.
         seedThread("t1", 3000L, 1000L, 2000L)
-        val vm = ThreadViewModel("t1", mail, dispatchers())
+        val vm = ThreadViewModel("t1", mail, intelligence, dispatchers())
         advanceUntilIdle()
 
         vm.state.test {
@@ -103,7 +105,7 @@ class ThreadViewModelTest {
     @Test
     fun `toggle expands and collapses`() = runTest(testDispatcher) {
         seedThread("t1", 1000L, 2000L) // m0 oldest, m1 newest (expanded by default)
-        val vm = ThreadViewModel("t1", mail, dispatchers())
+        val vm = ThreadViewModel("t1", mail, intelligence, dispatchers())
         advanceUntilIdle()
 
         // Establish the default: newest (m1) expanded.
@@ -126,7 +128,7 @@ class ThreadViewModelTest {
 
     @Test
     fun `unknown thread is empty, not an error`() = runTest(testDispatcher) {
-        val vm = ThreadViewModel("nope", mail, dispatchers())
+        val vm = ThreadViewModel("nope", mail, intelligence, dispatchers())
         advanceUntilIdle()
         vm.state.test {
             while (true) {
@@ -138,7 +140,7 @@ class ThreadViewModelTest {
     @Test
     fun `ensureExpanded opens a deep-linked message`() = runTest(testDispatcher) {
         seedThread("t1", 1000L, 2000L)
-        val vm = ThreadViewModel("t1", mail, dispatchers())
+        val vm = ThreadViewModel("t1", mail, intelligence, dispatchers())
         advanceUntilIdle()
         vm.ensureExpanded("m1")
         advanceUntilIdle()
@@ -149,9 +151,36 @@ class ThreadViewModelTest {
     }
 
     @Test
-    fun `subject comes from the thread messages`() = runTest(testDispatcher) {
-        seedThread("t1", 1000L)
-        val vm = ThreadViewModel("t1", mail, dispatchers())
+    fun `message classifications are loaded with the thread`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L, 2000L)
+        intelligence.seedClassification(
+            com.greninjaop.mailorganizer.data.local.ClassificationRecord(
+                messageId = "m0",
+                accountId = "acct-1",
+                category = com.greninjaop.mailorganizer.data.local.MailCategory.SECURITY,
+                confidence = 0.9f,
+                source = com.greninjaop.mailorganizer.data.local.ClassificationSource.DETERMINISTIC,
+                version = 1,
+                explanation = "Classified as Security [SECURITY_OTP].",
+                classifiedAtEpochMs = 1L,
+            ),
+        )
+        val vm = ThreadViewModel("t1", mail, intelligence, dispatchers())
+        advanceUntilIdle()
+        vm.state.test {
+            val content = awaitContent()
+            assertEquals(
+                com.greninjaop.mailorganizer.data.local.MailCategory.SECURITY,
+                content.classifications["m0"]?.category,
+            )
+            // Unclassified messages map to null, not a crash.
+            assertTrue(content.classifications.containsKey("m1"))
+        }
+    }
+
+    @Test
+    fun `subject comes from the thread messages`() = runTest(testDispatcher) {        seedThread("t1", 1000L)
+        val vm = ThreadViewModel("t1", mail, intelligence, dispatchers())
         advanceUntilIdle()
         vm.subject.test {
             // Initial "" then the real subject once messages arrive.
