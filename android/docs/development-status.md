@@ -1,6 +1,6 @@
 # Development Status — Mail Organizer (Android)
 
-**Last updated:** 2026-10-09 (Phase 8 complete)
+**Last updated:** 2026-10-09 (Phase 9 complete)
 **Branch:** `main`
 **Application ID:** `com.greninjaop.mailorganizer`
 
@@ -618,9 +618,73 @@ Deterministic, on-device company & sender intelligence — no network, no AI:
 
 ### Deferred work (user-approved, unchanged)
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
-  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 9
-  priority/action-required engine, Phase 12 user-correction UI, Phase 26
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 12 user-correction
+  UI, Phase 26 optional AI fallback.
+
+## Phase 9 — Priority & Action-Required Engine: COMPLETE (2026-10-09)
+
+### What was built
+Deterministic, on-device priority engine — no network, no AI:
+
+- **`core/priority/` package (pure Kotlin)** —
+  `PriorityModels` (`PriorityLevel` LOW/NORMAL/HIGH/CRITICAL mirroring
+  requirements.md "independent priority"; `PriorityInput`; `PriorityResult`
+  with signals, rule ids, version, human-readable explanation),
+  `PriorityRules` (15 registered rules with stable ids and per-rule KDoc:
+  2 CRITICAL, 5 HIGH, 1 NORMAL, 7 LOW),
+  `DeterministicPriorityEngine` (VERSION=1; scoring = summed rule weights
+  per level; NORMAL carries a base score of 40 so ordinary mail stays
+  NORMAL; ties break by explicit precedence
+  CRITICAL > HIGH > NORMAL > LOW; total — failures degrade to NORMAL).
+- **Priority is independent from category** (requirements.md): the engine
+  consumes the classification as one signal among several (sender
+  recurrence, labels, unsubscribe markers, bulk-sender heuristic, unread)
+  and never re-derives the category.
+- **`domain/priority/`** — `PrioritizeMessageUseCase` (compute+persist;
+  never overwrites `manualOverride` rows; idempotent for the current
+  version; reprioritizes older versions; account-isolated; failures degrade
+  safely) and `PrioritizeMailboxUseCase` (`prioritizeNew`, incremental,
+  bounded, IO dispatcher). The `toPriority()` mapper lives in domain so
+  core stays data-free.
+- **Action-required elevation** — the classifier's ACTION_REQUIRED category
+  drives priority (HIGH at any confidence, CRITICAL at HIGH confidence);
+  the inbox gains an "Action required" filter chip (global view of
+  ACTION_REQUIRED-classified mail, honest `NO_ACTION_REQUIRED` empty
+  state); thread rows show priority badges (HIGH/CRITICAL only — NORMAL/LOW
+  stay quiet); the email viewer gains a "Why this priority?" expander fed
+  by the persisted reason.
+- **Wiring** — `MessageDao.getUnprioritized` + `PriorityDao.getByMessages`
+  (batch, never N+1); repository methods; `AppContainer` DI; background
+  prioritization runs after classification on startup (bounded, best-effort).
+
+### Validation (actually run)
+- `:app:compileDebugKotlin` — BUILD SUCCESSFUL (real Gradle toolchain).
+- New unit tests via direct `java` JUnitCore: `PriorityEngineTest` (19),
+  `PriorityRobustnessTest` (9), `PrioritizeMessageUseCaseTest` (11).
+- Secret audit: clean.
+
+### Known issues
+1. Gradle daemon dispatch flaky in sandbox (pre-existing) — works with
+   `GRADLE_OPTS=-Djava.net.preferIPv4Stack=true`; a wedged stale daemon
+   had to be killed once.
+2. Gradle test-worker JVM crashes (pre-existing, Phase 0) — tests run via
+   direct kotlinc + JUnitCore.
+3. No device/emulator — device criteria [!] blocked-by-environment, never
+   faked (APK ships only after Phase 30 per user decision).
+4. **The phase-09 plan file is corrupt** (`execution
+   plan/android/phase-09-categories-priority-action-required.md` contains
+   Phase 8 content; the phase-08 file itself contains Phase 3 OAuth
+   content). Scope was derived from requirements.md/spec.md/design.md/
+   editor-rules.md + the Phase 8 handoff. Under NO circumstances was OAuth
+   implemented. (Repo hygiene: the corrupt plan files should be fixed in a
+   later docs pass.)
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  22 (Gmail write), 29 (prod OAuth/Play). Also: Phase 10 search, Phase 12
+  user-correction UI, Phase 13 meeting/deadline extraction, Phase 14 action
+  engine (ActionItemRecord storage already exists from Phase 2), Phase 26
   optional AI fallback.
 
-## Next: Phase 9 — Categories, Priority & Action Required
+## Next: Phase 10 — Search & Local Indexing
 Do NOT start unprompted.

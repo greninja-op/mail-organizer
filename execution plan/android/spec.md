@@ -100,7 +100,11 @@ Never claim tests or device verification that were not actually run. Never touch
 - [x] 8 Company & Sender Intelligence — complete, on main
   (deterministic company detection; sender profiles; company filter chips;
   classifier v2 with recurring-sender rule)
-- [ ] 9 Priority & Action-Required Engine — next
+- [x] 9 Priority & Action-Required Engine — complete, on main
+  (deterministic priority engine v1: core/priority/ 15 rules,
+  LOW/NORMAL/HIGH/CRITICAL independent from category; domain/priority/
+  use cases with manual-override safety; action-required filter chip +
+  priority badges + "why this priority?" in UI)
 - [ ] 10–30 — not started
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.

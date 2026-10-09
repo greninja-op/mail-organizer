@@ -99,6 +99,34 @@ Deterministic, local and explainable before AI. User correction > user rule > bu
   rows reclassify without a resync (Phase 8: v1 → v2 for
   IMPORTANT_RECURRING_SENDER).
 
+
+## Priority & action-required engine (Phase 9 — permanent)
+- Deterministic-first: priority is a pure function of (normalized input,
+  rules, engine version). No randomness, no network, no device state, no
+  remote AI. Same discipline as the Phase 7 classifier.
+- Independent from category: priority never re-derives the category; the
+  classification is one signal among several (sender recurrence, labels,
+  unsubscribe markers, bulk-sender heuristic, unread state).
+- Conservative defaults: NORMAL carries a base score so ordinary mail stays
+  NORMAL; LOW must outscore it; HIGH/CRITICAL need strong rule weights.
+  Failure degrades to NORMAL (neither hiding mail nor crying wolf).
+- Versioned: engine VERSION stamps every result and is persisted;
+  older-version rows are eligible for reprioritization without a resync.
+- User override compatibility: `manualOverride` rows are never overwritten
+  by the engine (same precedence as classification: user intent wins).
+- Explainable: every result carries rule id(s), matched signals, and a
+  human-readable "why". The UI's "Why this priority?" reads the persisted
+  reason — raw email is never needed to explain a decision.
+- Quiet by design: only HIGH/CRITICAL get row badges; NORMAL/LOW stay
+  unbadged. Badges always pair a text label with the color (never color
+  alone) plus a screen-reader content description.
+- Batch priority reads: the visible page loads priorities with one
+  `getByMessages` query — never N+1 per row.
+- Action-required is a view, not a destination: the filter chip shows
+  ACTION_REQUIRED-classified mail globally with an honest empty state.
+  The action-item engine (ActionItemRecord) remains Phase 14's scope —
+  Phase 9 only detects and surfaces.
+
 ## Phase protocol
 At session start read requirements/spec/design/rules, determine the current phase and inspect the actual repository. Implement only that phase. Update this file with genuinely permanent rules without deleting unrelated rules. After implementation: build → test → run → inspect → fix → retest → update status → stop.
 

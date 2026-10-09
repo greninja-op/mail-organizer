@@ -92,6 +92,8 @@ class RecurringSenderWiringTest {
                 if (messageId == "m1") msg else null
             override suspend fun getUnclassifiedMessages(accountId: String, limit: Int) =
                 listOf(msg).take(limit)
+            override suspend fun getUnprioritizedMessages(accountId: String, limit: Int) =
+                listOf(msg).take(limit)
             override fun observeByLabel(accountId: String, label: String, limit: Int) =
                 MutableStateFlow(emptyList<MessageRecord>())
             override suspend fun setMessageCompanyId(messageId: String, companyId: String?) = Unit
@@ -146,6 +148,8 @@ class RecurringSenderWiringTest {
             MutableStateFlow(emptyList<ClassificationRecord>())
         override suspend fun setPriority(record: com.greninjaop.mailorganizer.data.local.PriorityRecord) = Unit
         override suspend fun getPriority(messageId: String) = null
+        override suspend fun getPriorities(messageIds: List<String>) =
+            emptyMap<String, com.greninjaop.mailorganizer.data.local.PriorityRecord>()
         override suspend fun addActionItem(item: com.greninjaop.mailorganizer.data.local.ActionItemRecord) = 0L
         override fun observeOpenActionItems(accountId: String, limit: Int) =
             MutableStateFlow(emptyList<com.greninjaop.mailorganizer.data.local.ActionItemRecord>())
