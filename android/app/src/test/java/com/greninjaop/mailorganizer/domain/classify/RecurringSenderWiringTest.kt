@@ -121,6 +121,24 @@ class RecurringSenderWiringTest {
                 emptyMap<String, Int>()
             override suspend fun companyMessageCounts(accountId: String) =
                 emptyMap<String, Int>()
+            // Phase 12.
+            override suspend fun getMessageIdsByAccount(accountId: String, limit: Int) =
+                emptyList<String>()
+            override suspend fun getMessageIdsBySender(
+                accountId: String,
+                email: String,
+                limit: Int,
+            ) = emptyList<String>()
+            override suspend fun getMessageIdsByDomain(
+                accountId: String,
+                domain: String,
+                limit: Int,
+            ) = emptyList<String>()
+            override suspend fun getMessageIdsByCompany(
+                accountId: String,
+                companyId: String,
+                limit: Int,
+            ) = emptyList<String>()
         }
 
     /** Minimal IntelligenceRepository: captures the persisted record. */
@@ -170,6 +188,9 @@ class RecurringSenderWiringTest {
             type: com.greninjaop.mailorganizer.data.local.ExtractedItemType,
             limit: Int,
         ) = MutableStateFlow(emptyList<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord>())
+        // Phase 12.
+        override suspend fun deleteClassification(messageId: String) = Unit
+        override suspend fun deletePriority(messageId: String) = Unit
     }
 
     private fun useCase(

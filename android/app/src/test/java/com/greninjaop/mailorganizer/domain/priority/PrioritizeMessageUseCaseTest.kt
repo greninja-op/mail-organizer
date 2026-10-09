@@ -272,6 +272,25 @@ class PrioritizeMessageUseCaseTest {
         ): List<MessageRecord> =
             messages.filter { it.accountId == accountId }.take(limit)
 
+        // Phase 12.
+        override suspend fun getMessageIdsByAccount(accountId: String, limit: Int): List<String> =
+            emptyList()
+        override suspend fun getMessageIdsBySender(
+            accountId: String,
+            email: String,
+            limit: Int,
+        ): List<String> = emptyList()
+        override suspend fun getMessageIdsByDomain(
+            accountId: String,
+            domain: String,
+            limit: Int,
+        ): List<String> = emptyList()
+        override suspend fun getMessageIdsByCompany(
+            accountId: String,
+            companyId: String,
+            limit: Int,
+        ): List<String> = emptyList()
+
         override fun observeByLabel(
             accountId: String,
             label: String,
@@ -445,5 +464,9 @@ class PrioritizeMessageUseCaseTest {
             limit: Int,
         ): Flow<List<com.greninjaop.mailorganizer.data.local.ExtractedItemRecord>> =
             MutableStateFlow(emptyList())
+
+        // Phase 12.
+        override suspend fun deleteClassification(messageId: String) = Unit
+        override suspend fun deletePriority(messageId: String) = Unit
     }
 }
