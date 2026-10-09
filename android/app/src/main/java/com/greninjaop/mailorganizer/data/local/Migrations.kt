@@ -410,4 +410,38 @@ object Migrations {
             db.execSQL("UPDATE user_rules SET ruleOrder = id")
         }
     }
+
+    /**
+     * Phase 14: action-engine columns on `action_items` (all additive).
+     * Backfills the new [ActionStatus] from the legacy completed/dismissed
+     * booleans and the thread id from the parent message row.
+     */
+    val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE action_items ADD COLUMN threadId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN description TEXT")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN urgency TEXT NOT NULL DEFAULT 'NORMAL'")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN source TEXT NOT NULL DEFAULT 'CLASSIFICATION'")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN status TEXT NOT NULL DEFAULT 'SUGGESTED'")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN externalEffect TEXT NOT NULL DEFAULT 'NONE'")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN payloadJson TEXT")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN updatedAtEpochMs INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE action_items ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_action_items_threadId ON action_items(threadId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_action_items_status ON action_items(status)")
+            db.execSQL(
+                "UPDATE action_items SET status = CASE " +
+                    "WHEN completed = 1 THEN 'COMPLETED' " +
+                    "WHEN dismissed = 1 THEN 'DISMISSED' " +
+                    "ELSE 'SUGGESTED' END",
+            )
+            db.execSQL(
+                "UPDATE action_items SET threadId = COALESCE(" +
+                    "(SELECT threadId FROM messages WHERE messages.messageId = action_items.messageId), '') " +
+                    "WHERE threadId = ''",
+            )
+            db.execSQL("UPDATE action_items SET updatedAtEpochMs = detectedAtEpochMs")
+        }
+    }
 }

@@ -25,6 +25,9 @@ import com.greninjaop.mailorganizer.data.repository.SyncStateRepository
 import com.greninjaop.mailorganizer.data.sync.DeferredGmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.GmailSyncApi
 import com.greninjaop.mailorganizer.data.sync.SyncCoordinator
+import com.greninjaop.mailorganizer.domain.actions.ActionExecutorRegistry
+import com.greninjaop.mailorganizer.domain.actions.GenerateActionsUseCase
+import com.greninjaop.mailorganizer.domain.actions.ReviewActionUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMailboxUseCase
 import com.greninjaop.mailorganizer.domain.classify.ClassifyMessageUseCase
 import com.greninjaop.mailorganizer.domain.company.CompanyIntelligenceUseCase
@@ -74,13 +77,15 @@ class AppContainer(private val appContext: Context) {
             // v2 -> v3 (Phase 5 parser columns) by Migrations.MIGRATION_2_3;
             // v3 -> v4 (Phase 8 company link) by Migrations.MIGRATION_3_4;
             // v4 -> v5 (Phase 10 search index) by Migrations.MIGRATION_4_5;
-            // v5 -> v6 (Phase 12 rule engine columns) by Migrations.MIGRATION_5_6.
+            // v5 -> v6 (Phase 12 rule engine columns) by Migrations.MIGRATION_5_6;
+            // v6 -> v7 (Phase 14 action-engine columns) by Migrations.MIGRATION_6_7.
             .addMigrations(
                 Migrations.MIGRATION_1_2,
                 Migrations.MIGRATION_2_3,
                 Migrations.MIGRATION_3_4,
                 Migrations.MIGRATION_4_5,
                 Migrations.MIGRATION_5_6,
+                Migrations.MIGRATION_6_7,
             )
             // Fresh installs: the FTS search index is a standalone virtual
             // table (not a Room entity), so it is created here. Upgrades
@@ -287,6 +292,34 @@ class AppContainer(private val appContext: Context) {
             mail = mailRepository,
             rules = ruleRepository,
             apply = applyRulesUseCase,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 14: action cards & action engine ----
+    // Deterministic, on-device: the generator (core.actions) turns
+    // effective intelligence into action candidates; the safety layer
+    // validates them; this use case persists idempotent, account-isolated
+    // cards. No external executor is registered — confirming an external
+    // proposal records the intent locally and reports "not connected"
+    // honestly (phase §31–§33). External integrations are later phases'.
+
+    val actionExecutorRegistry: ActionExecutorRegistry by lazy {
+        ActionExecutorRegistry()
+    }
+
+    val generateActionsUseCase: GenerateActionsUseCase by lazy {
+        GenerateActionsUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val reviewActionUseCase: ReviewActionUseCase by lazy {
+        ReviewActionUseCase(
+            intelligence = intelligenceRepository,
+            executors = actionExecutorRegistry,
             dispatchers = dispatchers,
         )
     }

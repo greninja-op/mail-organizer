@@ -47,7 +47,7 @@ import androidx.room.TypeConverters
         ExtractedItemRecord::class,
         SearchIndexMeta::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)

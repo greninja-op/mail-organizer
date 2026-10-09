@@ -1,6 +1,10 @@
 package com.greninjaop.mailorganizer.data.local
 
 import androidx.room.TypeConverter
+import com.greninjaop.mailorganizer.core.actions.ActionSource
+import com.greninjaop.mailorganizer.core.actions.ActionStatus
+import com.greninjaop.mailorganizer.core.actions.ActionUrgency
+import com.greninjaop.mailorganizer.core.actions.ExternalEffect
 import com.greninjaop.mailorganizer.core.email.AttachmentMeta
 import com.greninjaop.mailorganizer.core.email.AttachmentMetaJson
 
@@ -74,6 +78,20 @@ class MoConverters {
     @TypeConverter fun fromExtractedItemType(v: ExtractedItemType): String = v.name
     @TypeConverter fun toExtractedItemType(v: String): ExtractedItemType =
         ExtractedItemType.valueOf(v)
+
+    // ---- Action engine enums (Phase 14; stored by name, never ordinal) ----
+
+    @TypeConverter fun fromActionStatus(v: ActionStatus): String = v.name
+    @TypeConverter fun toActionStatus(v: String): ActionStatus = ActionStatus.valueOf(v)
+
+    @TypeConverter fun fromActionUrgency(v: ActionUrgency): String = v.name
+    @TypeConverter fun toActionUrgency(v: String): ActionUrgency = ActionUrgency.valueOf(v)
+
+    @TypeConverter fun fromActionSource(v: ActionSource): String = v.name
+    @TypeConverter fun toActionSource(v: String): ActionSource = ActionSource.valueOf(v)
+
+    @TypeConverter fun fromExternalEffect(v: ExternalEffect): String = v.name
+    @TypeConverter fun toExternalEffect(v: String): ExternalEffect = ExternalEffect.valueOf(v)
 
     private companion object {
         const val SEPARATOR = ""

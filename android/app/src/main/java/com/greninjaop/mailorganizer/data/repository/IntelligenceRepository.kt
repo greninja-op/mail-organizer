@@ -1,6 +1,7 @@
 package com.greninjaop.mailorganizer.data.repository
 
 import com.greninjaop.mailorganizer.core.AppDispatchers
+import com.greninjaop.mailorganizer.core.actions.ActionStatus
 import com.greninjaop.mailorganizer.data.local.ActionItemDao
 import com.greninjaop.mailorganizer.data.local.ActionItemRecord
 import com.greninjaop.mailorganizer.data.local.ActionType
@@ -121,6 +122,27 @@ interface IntelligenceRepository {
     fun observeOpenActionItems(accountId: String, limit: Int = 50): Flow<List<ActionItemRecord>>
     suspend fun completeActionItem(id: Long)
     suspend fun dismissActionItem(id: Long)
+
+    /** Phase 14: one action row by id (review/confirm flows). */
+    suspend fun getActionItem(id: Long): ActionItemRecord?
+
+    /** Phase 14: all action rows for one message (idempotency check). */
+    suspend fun getActionItemsByMessage(messageId: String): List<ActionItemRecord>
+
+    /** Phase 14: open action rows in a thread (thread-level dedup). */
+    suspend fun getOpenActionItemsByThread(threadId: String): List<ActionItemRecord>
+
+    /** Phase 14: lifecycle transition (keeps legacy booleans in sync). */
+    suspend fun setActionItemStatus(id: Long, status: ActionStatus)
+
+    /** Phase 14: deletes specific action rows (stale-version re-generation). */
+    suspend fun deleteActionItems(ids: List<Long>)
+
+    /**
+     * Phase 14: transitions open SUGGESTED cards whose due date is older
+     * than [cutoffEpochMs] to EXPIRED. Returns rows transitioned.
+     */
+    suspend fun expireOverdueActionItems(accountId: String, cutoffEpochMs: Long): Int
 
     // extracted items
     suspend fun addExtractedItem(item: ExtractedItemRecord): Long
@@ -253,10 +275,36 @@ class RoomIntelligenceRepository(
         actions.observeOpenByAccount(accountId, limit)
 
     override suspend fun completeActionItem(id: Long) =
-        withContext(dispatchers.io) { actions.markCompleted(id) }
+        withContext(dispatchers.io) { actions.markCompleted(id, System.currentTimeMillis()) }
 
     override suspend fun dismissActionItem(id: Long) =
-        withContext(dispatchers.io) { actions.markDismissed(id) }
+        withContext(dispatchers.io) { actions.markDismissed(id, System.currentTimeMillis()) }
+
+    override suspend fun getActionItem(id: Long): ActionItemRecord? =
+        withContext(dispatchers.io) { actions.getById(id) }
+
+    override suspend fun getActionItemsByMessage(messageId: String): List<ActionItemRecord> =
+        withContext(dispatchers.io) { actions.getByMessage(messageId) }
+
+    override suspend fun getOpenActionItemsByThread(threadId: String): List<ActionItemRecord> =
+        withContext(dispatchers.io) { actions.getOpenByThread(threadId) }
+
+    override suspend fun setActionItemStatus(id: Long, status: ActionStatus) =
+        withContext(dispatchers.io) {
+            actions.setStatus(id, status, System.currentTimeMillis())
+        }
+
+    override suspend fun deleteActionItems(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        withContext(dispatchers.io) { actions.deleteByIds(ids) }
+    }
+
+    override suspend fun expireOverdueActionItems(
+        accountId: String,
+        cutoffEpochMs: Long,
+    ): Int = withContext(dispatchers.io) {
+        actions.expireOverdue(accountId, cutoffEpochMs, System.currentTimeMillis())
+    }
 
     override suspend fun addExtractedItem(item: ExtractedItemRecord): Long =
         withContext(dispatchers.io) { extracted.insert(item) }
