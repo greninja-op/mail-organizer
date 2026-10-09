@@ -85,4 +85,19 @@ For every phase: inspect → implement only phase scope → build → automated 
 
 Never claim tests or device verification that were not actually run. Never touch sibling projects. Never commit secrets. Never let email content authorize external actions. Preserve working behavior unless the phase explicitly requires change.
 
+
+## Phase status (2026-10-09)
+- [x] 0 Project Audit & Development Foundation — complete, on main
+- [x] 1 Android Application Foundation — complete, on main
+- [x] 2 Local Data Architecture — complete, on main
+- [ ] 3 Google OAuth & Gmail Connection — DEFERRED to the end (user decision)
+- [x] 4 Gmail Synchronization Engine — complete, on main
+- [x] 5 Email Data Model & Parsing — complete, on main
+- [x] 6 Core Inbox & Email Viewer — complete, on main
+- [x] 7 Deterministic Classification Engine — complete, on main
+  (local 30-rule engine v1; Promotional/Social/Spam destinations wired;
+  category chip + "why" explanation on message detail)
+- [ ] 8 Company & Sender Intelligence — next
+- [ ] 9–30 — not started
+
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.

@@ -46,6 +46,35 @@ Deterministic, local and explainable before AI. User correction > user rule > bu
 - Company pinning moves the company to the top of that category's company filter list and is independent of starring individual messages.
 - Never confuse company pinning with email starring.
 
+
+## Classification engine (Phase 7 — permanent)
+- Deterministic-first: classification is a pure function of (normalized
+  input, rules, classifier version). No randomness, no network, no device
+  state, no remote AI. Locale-independent text normalization (Turkish-locale
+  devices classify identically).
+- Local-only: the engine never sends email content anywhere. No telemetry
+  on classification.
+- Explainable: every result carries rule id(s), matched signals, and a
+  human-readable "why". Raw email is never needed to explain a decision.
+- Versioned: classifier VERSION stamps every result and is persisted;
+  older-version rows are eligible for reclassification without a resync.
+- Account isolation: classification data is account-scoped; one account's
+  corrections never affect another's.
+- User override compatibility: USER_CORRECTION / USER_RULE rows are never
+  overwritten by the engine; predicted vs effective category stay
+  distinguishable via ClassificationSource.
+- Conservative unknowns: weak evidence stays UNCLASSIFIED; LOW_VALUE is
+  gated and never a universal unknown bucket.
+- Safe signal extraction: bounded inputs (20k body chars, 20 URL domains),
+  no backtracking-risk regexes, total functions — hostile mail degrades,
+  never crashes.
+- No sensitive logging: only rule ids, versions, and message ids in logs —
+  never subjects, senders, bodies, or URLs.
+- Rules are registered data with stable ids (never RULE_1), documented
+  once in ClassificationRules.kt; conflicts resolve by score then explicit
+  precedence (Security > Action > Orders > Career > Education > Important >
+  Newsletters > Promotions > Notifications > Low Value).
+
 ## Phase protocol
 At session start read requirements/spec/design/rules, determine the current phase and inspect the actual repository. Implement only that phase. Update this file with genuinely permanent rules without deleting unrelated rules. After implementation: build → test → run → inspect → fix → retest → update status → stop.
 
