@@ -221,3 +221,28 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
   reasons recorded at generation time.
 - Account isolation is enforced at generation, persistence, display, and
   confirmation. Email content never authorizes external actions.
+
+## Phase 17 — Integration Manager (permanent rules)
+- The manager coordinates integrations; it never absorbs API-specific logic,
+  never performs external side effects, and never bypasses the action
+  confirmation boundary. It answers questions about integrations; execution
+  stays with the Action Engine's executors.
+- CONNECTED is reported only when an integration is genuinely usable.
+  `usableCapabilities` is empty for every other status — a declared
+  capability is never availability. Deferred integrations (Calendar → Phase
+  15, Tasks → Phase 16) report UNAVAILABLE with an explicit reason; their
+  connect() fails honestly, never a fake OAuth flow.
+- Gmail wraps Phase 4's fail-closed sync seam: no account → DISCONNECTED,
+  local-only account → AUTH_REQUIRED naming Phase 3, never CONNECTED
+  without OAuth verification. Permissions are least-privilege (readonly
+  only); modify/send are never declared.
+- Integration state always carries account identity; snapshots are
+  per-account and never leak across accounts. Account removal clears only
+  that account's integration metadata — never mail, classifications, rules,
+  or action history.
+- Error normalization and retry semantics are pure functions in core, not
+  per-screen logic: OFFLINE → retry later, AUTH → ask reconnect,
+  INVALID/NOT_BUILT → never retry, RATE_LIMITED → backoff.
+- No Google API classes leak past the adapter boundary; the UI only sees
+  domain-level snapshots. Credentials are never stored in the app database
+  (phase §35) — integration_states holds metadata only.

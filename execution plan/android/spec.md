@@ -139,6 +139,17 @@ Never claim tests or device verification that were not actually run. Never touch
   schema v6→v7 additive migration extending action_items; ui/actions/
   reusable ActionCard + confirmation dialog + reworked Actions destination;
   generation hooked into MailViewModel background pipeline)
-- [ ] 15–30 — not started
+- [x] 17 Integration Manager — complete, on main
+  (core/integrations/ models + adapter contract + pure error/retry policies;
+  domain/integrations/ IntegrationManager — registry, account-scoped
+  snapshots, capability queries for the Action Engine, action→integration
+  routing, safe connect/disconnect, refreshAll health check,
+  handleAccountRemoved cleanup boundary; data/integrations/ Gmail adapter
+  on Phase 4's fail-closed seam — never CONNECTED without OAuth — plus
+  Calendar/Tasks as honest UNAVAILABLE deferred adapters; schema v7→v8
+  additive integration_states table; ui/integrations/ list + detail screens;
+  ReviewActionUseCase enriched with the manager's honest per-integration
+  reason)
+- [ ] 15–16, 18–30 — not started (15/16 user-deferred to the very end)
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
