@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -243,9 +244,12 @@ private fun AnalyticsContent(
 }
 
 @Composable
+@Suppress("NonObservableLocale")
 private fun FreshnessHeader(snapshot: AnalyticsSnapshot) {
+    val configuration = LocalConfiguration.current
+    val locale = configuration.locales[0]
     val syncText = if (snapshot.lastSyncEpochMs != null && snapshot.lastSyncEpochMs > 0) {
-        val df = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+        val df = SimpleDateFormat("MMM d, HH:mm", locale)
         "Based on local data synchronized ${df.format(Date(snapshot.lastSyncEpochMs))}"
     } else {
         "Based on available synchronized local data"
