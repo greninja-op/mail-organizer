@@ -26,6 +26,7 @@ import androidx.room.PrimaryKey
         Index(value = ["messageId"], unique = true),
         Index("accountId"),
         Index("priority"),
+        Index(value = ["accountId", "priority"]),
     ],
 )
 data class PriorityRecord(

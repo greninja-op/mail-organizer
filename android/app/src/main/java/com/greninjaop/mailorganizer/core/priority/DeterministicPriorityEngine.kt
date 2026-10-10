@@ -90,29 +90,34 @@ object DeterministicPriorityEngine {
         input: PriorityInput,
         clock: () -> Long,
     ): PriorityResult {
-        // Evaluate every rule; collect (rule, signals) pairs for firings.
-        val firings = PriorityRuleSet.ALL.mapNotNull { rule ->
-            val signals = rule.match(input)
-            if (signals.isEmpty()) null else rule to signals
-        }
-
-        // Sum weights per level; NORMAL starts at its base score.
+        val firings = mutableListOf<Pair<PriorityRule, List<MatchedPrioritySignal>>>()
+        val allSignals = mutableListOf<MatchedPrioritySignal>()
         val scores = mutableMapOf<PriorityLevel, Int>()
         scores[PriorityLevel.NORMAL] = NORMAL_BASE_SCORE
-        val allSignals = mutableListOf<MatchedPrioritySignal>()
-        val firingIds = mutableListOf<String>()
-        for ((rule, signals) in firings) {
-            scores[rule.level] = (scores[rule.level] ?: 0) + rule.weight
-            allSignals.addAll(signals)
-            firingIds.add(rule.id)
+
+        for (rule in PriorityRuleSet.ALL) {
+            val signals = rule.match(input)
+            if (signals.isNotEmpty()) {
+                firings.add(rule to signals)
+                scores[rule.level] = (scores[rule.level] ?: 0) + rule.weight
+                allSignals.addAll(signals)
+            }
         }
-        // Order firing ids by weight, highest first (stable for ties).
-        val byWeight = firings.sortedByDescending { it.first.weight }
-        val orderedIds = byWeight.map { it.first.id }
 
         // Resolve: highest score wins; ties → explicit precedence.
-        val maxScore = scores.values.max()
-        val winner = PRECEDENCE.first { (scores[it] ?: 0) == maxScore }
+        var maxScore = -1
+        var winner = PriorityLevel.NORMAL
+        for (level in PRECEDENCE) {
+            val s = scores[level] ?: 0
+            if (s > maxScore) {
+                maxScore = s
+                winner = level
+            }
+        }
+
+        // Order firing ids by weight, highest first (stable for ties).
+        val byWeight = if (firings.size <= 1) firings else firings.sortedByDescending { it.first.weight }
+        val orderedIds = byWeight.map { it.first.id }
 
         val primaryRule = byWeight.firstOrNull()?.first
         val explanation = buildExplanation(winner, byWeight.map { it.first })

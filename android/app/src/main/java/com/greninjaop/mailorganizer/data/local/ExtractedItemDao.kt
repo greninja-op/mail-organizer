@@ -15,6 +15,9 @@ interface ExtractedItemDao {
     @Query("SELECT * FROM extracted_items WHERE messageId = :messageId")
     suspend fun getByMessage(messageId: String): List<ExtractedItemRecord>
 
+    @Query("SELECT * FROM extracted_items WHERE messageId IN (:messageIds)")
+    suspend fun getByMessages(messageIds: List<String>): List<ExtractedItemRecord>
+
     @Query(
         "SELECT * FROM extracted_items WHERE accountId = :accountId " +
             "AND itemType = :type AND completed = 0 " +

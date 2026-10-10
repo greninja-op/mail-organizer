@@ -26,6 +26,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index("accountId"),
         Index(value = ["accountId", "gmailThreadId"], unique = true),
+        Index(value = ["accountId", "latestMessageEpochMs"]),
     ],
 )
 data class ThreadRecord(

@@ -69,6 +69,20 @@ object DeterministicClassifier {
         ClassifierCategory.UNCLASSIFIED,
     )
 
+    private val PRECEDENCE_RANK: Map<ClassifierCategory, Int> =
+        PRECEDENCE.withIndex().associate { (i, c) -> c to i }
+
+    private val ENTRY_COMPARATOR = Comparator<Map.Entry<ClassifierCategory, Int>> { a, b ->
+        val scoreCmp = a.value.compareTo(b.value)
+        if (scoreCmp != 0) {
+            scoreCmp
+        } else {
+            val rankA = PRECEDENCE_RANK[a.key] ?: Int.MAX_VALUE
+            val rankB = PRECEDENCE_RANK[b.key] ?: Int.MAX_VALUE
+            rankB.compareTo(rankA)
+        }
+    }
+
     private const val HIGH_THRESHOLD = 100
     private const val MEDIUM_THRESHOLD = 50
     private const val MIN_SCORE = 20
@@ -152,14 +166,7 @@ object DeterministicClassifier {
         }
 
         // 4. Resolve: highest score; ties → PRECEDENCE order (deterministic).
-        val precedenceRank = PRECEDENCE.withIndex().associate { (i, c) -> c to i }
-        val winner = contenders.entries
-            .sortedWith(
-                compareByDescending<Map.Entry<ClassifierCategory, Int>> { it.value }
-                    .thenBy { precedenceRank[it.key] ?: Int.MAX_VALUE },
-            )
-            .first()
-            .key
+        val winner = contenders.entries.maxWithOrNull(ENTRY_COMPARATOR)!!.key
 
         val winningScore = scores[winner] ?: 0
         val confidence = when {

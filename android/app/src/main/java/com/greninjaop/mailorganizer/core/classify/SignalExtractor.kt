@@ -103,6 +103,9 @@ object SignalExtractor {
     }
 
     private fun extractUrlDomains(bodyNorm: String): Set<String> {
+        if (!bodyNorm.contains("http://") && !bodyNorm.contains("https://")) {
+            return emptySet()
+        }
         val domains = LinkedHashSet<String>()
         try {
             for (match in URL_HOST.findAll(bodyNorm)) {

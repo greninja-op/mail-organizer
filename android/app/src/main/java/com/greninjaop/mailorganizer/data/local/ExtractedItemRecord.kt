@@ -35,6 +35,7 @@ import androidx.room.PrimaryKey
         Index("accountId"),
         Index("itemType"),
         Index("dueDateEpochMs"),
+        Index(value = ["accountId", "itemType"]),
     ],
 )
 data class ExtractedItemRecord(

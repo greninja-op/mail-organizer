@@ -27,6 +27,7 @@ import androidx.room.PrimaryKey
         Index(value = ["messageId"], unique = true),
         Index("accountId"),
         Index("category"),
+        Index(value = ["accountId", "category"]),
     ],
 )
 data class ClassificationRecord(

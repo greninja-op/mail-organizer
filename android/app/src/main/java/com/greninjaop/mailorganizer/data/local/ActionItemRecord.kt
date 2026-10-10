@@ -54,6 +54,7 @@ import com.greninjaop.mailorganizer.core.actions.ExternalEffect
         Index("threadId"),
         Index("dueDateEpochMs"),
         Index("status"),
+        Index(value = ["accountId", "status"]),
     ],
 )
 data class ActionItemRecord(

@@ -42,6 +42,11 @@ import com.greninjaop.mailorganizer.core.email.AttachmentMeta
         Index("timestampEpochMs"),
         Index("unread"),
         Index(value = ["accountId", "gmailMessageId"], unique = true),
+        Index(value = ["accountId", "timestampEpochMs"]),
+        Index(value = ["accountId", "threadId"]),
+        Index(value = ["threadId", "timestampEpochMs"]),
+        Index(value = ["accountId", "unread", "timestampEpochMs"]),
+        Index(value = ["accountId", "starred", "timestampEpochMs"]),
     ],
 )
 data class MessageRecord(

@@ -58,20 +58,17 @@ class ThreadViewModel @JvmOverloads constructor(
         }
 
     /**
-     * Phase 7: classification per message (message-level evidence preserved,
-     * phase §35). Threads are bounded (200), so one lookup per visible
-     * message is fine; failures degrade to "no classification shown".
+     * Phase 7: classification per message (batch lookup, no N+1).
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val classifications =
         messages.mapLatest { items ->
-            items.associate { item ->
-                item.messageId to try {
-                    intelligence.getClassification(item.messageId)
-                } catch (t: Throwable) {
-                    MoLogger.e(TAG, "Classification lookup failed: ${t.javaClass.simpleName}")
-                    null
-                }
+            try {
+                val byId = intelligence.getClassifications(items.map { it.messageId })
+                items.associate { it.messageId to byId[it.messageId] }
+            } catch (t: Throwable) {
+                MoLogger.e(TAG, "Classification lookup failed: ${t.javaClass.simpleName}")
+                items.associate { it.messageId to null }
             }
         }
 
@@ -92,21 +89,20 @@ class ThreadViewModel @JvmOverloads constructor(
         }
 
     /**
-     * Phase 13: temporal items per message (meetings/deadlines extracted
-     * on-device). Threads are bounded (200); one lookup per visible message
-     * is fine; failures degrade to "no temporal section shown".
+     * Phase 13: temporal items per message (batch lookup, no N+1).
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val temporalItems =
         messages.mapLatest { items ->
-            items.associate { item ->
-                item.messageId to try {
-                    intelligence.getExtractedItems(item.messageId)
-                        .mapNotNull { it.toExtractedTemporal() }
-                } catch (t: Throwable) {
-                    MoLogger.e(TAG, "Temporal lookup failed: ${t.javaClass.simpleName}")
-                    emptyList<ExtractedTemporal>()
+            try {
+                val extracted = intelligence.getExtractedItemsByMessages(items.map { it.messageId })
+                val byMessage = extracted.groupBy { it.messageId }
+                items.associate { item ->
+                    item.messageId to (byMessage[item.messageId]?.mapNotNull { it.toExtractedTemporal() } ?: emptyList())
                 }
+            } catch (t: Throwable) {
+                MoLogger.e(TAG, "Temporal lookup failed: ${t.javaClass.simpleName}")
+                emptyMap()
             }
         }
 

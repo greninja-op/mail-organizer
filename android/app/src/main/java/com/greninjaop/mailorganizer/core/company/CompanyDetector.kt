@@ -98,17 +98,34 @@ object CompanyDetector {
 
     private const val MAX_DOMAIN_CHARS = 253
 
+    private const val CACHE_CAPACITY = 512
+    private val detectionCache = object : LinkedHashMap<String, DetectedCompany?>(CACHE_CAPACITY, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, DetectedCompany?>?): Boolean {
+            return size > CACHE_CAPACITY
+        }
+    }
+
     /**
      * Detects the company for a sender, or null when the sender is not
      * attributable to a company (personal mailbox, malformed address).
      */
     fun detect(input: CompanyDetectionInput): DetectedCompany? {
-        return try {
+        val rawAddress = input.fromAddress
+        synchronized(detectionCache) {
+            if (detectionCache.containsKey(rawAddress)) {
+                return detectionCache[rawAddress]
+            }
+        }
+        val result = try {
             detectOrThrow(input)
         } catch (t: Throwable) {
             // Total: hostile input degrades to "no company", never crashes.
             null
         }
+        synchronized(detectionCache) {
+            detectionCache[rawAddress] = result
+        }
+        return result
     }
 
     private fun detectOrThrow(input: CompanyDetectionInput): DetectedCompany? {

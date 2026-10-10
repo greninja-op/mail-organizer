@@ -31,6 +31,9 @@ import androidx.room.TypeConverters
  * - v8 (Phase 17): `integration_states` metadata table (last-known
  *   Integration Manager snapshots; no credentials). See
  *   [Migrations.MIGRATION_7_8].
+ * - v9 (Phase 24): composite performance indexes on messages, threads,
+ *   classifications, priorities, action_items, extracted_items. See
+ *   [Migrations.MIGRATION_8_9].
  *
  * Schema is exported to `app/schemas` so migrations stay verifiable.
  * Destructive fallback is deliberately NOT enabled: production migrations
@@ -53,7 +56,7 @@ import androidx.room.TypeConverters
         SearchIndexMeta::class,
         IntegrationStateRecord::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)

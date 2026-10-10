@@ -106,24 +106,47 @@ class SearchIndexStore(private val db: SupportSQLiteDatabase) {
      * NULL so it contributes no tokens.
      */
     fun indexDocument(doc: FtsDocument) {
-        db.execSQL("DELETE FROM messages_fts WHERE messageId = ?", arrayOf<Any?>(doc.messageId))
-        db.execSQL(
+        indexDocuments(listOf(doc))
+    }
+
+    /**
+     * Batch idempotent upsert of multiple documents using compiled statements
+     * (Phase 24 performance optimization).
+     */
+    fun indexDocuments(docs: List<FtsDocument>) {
+        if (docs.isEmpty()) return
+        val delStmt = db.compileStatement("DELETE FROM messages_fts WHERE messageId = ?")
+        val insStmt = db.compileStatement(
             "INSERT INTO messages_fts " +
                 "(messageId, accountId, subject, bodyText, fromName, fromAddress, " +
                 "snippet, companyName, labelsText) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf<Any?>(
-                doc.messageId,
-                doc.accountId,
-                doc.subject,
-                doc.bodyText?.ifBlank { null },
-                doc.fromName?.ifBlank { null },
-                doc.fromAddress,
-                doc.snippet?.ifBlank { null },
-                doc.companyName?.ifBlank { null },
-                doc.labelsText.ifBlank { null },
-            ),
         )
+        try {
+            for (doc in docs) {
+                delStmt.bindString(1, doc.messageId)
+                delStmt.executeUpdateDelete()
+
+                insStmt.bindString(1, doc.messageId)
+                insStmt.bindString(2, doc.accountId)
+                insStmt.bindString(3, doc.subject)
+                val body = doc.bodyText?.ifBlank { null }
+                if (body != null) insStmt.bindString(4, body) else insStmt.bindNull(4)
+                val fromName = doc.fromName?.ifBlank { null }
+                if (fromName != null) insStmt.bindString(5, fromName) else insStmt.bindNull(5)
+                insStmt.bindString(6, doc.fromAddress)
+                val snippet = doc.snippet?.ifBlank { null }
+                if (snippet != null) insStmt.bindString(7, snippet) else insStmt.bindNull(7)
+                val company = doc.companyName?.ifBlank { null }
+                if (company != null) insStmt.bindString(8, company) else insStmt.bindNull(8)
+                val labels = doc.labelsText.ifBlank { null }
+                if (labels != null) insStmt.bindString(9, labels) else insStmt.bindNull(9)
+                insStmt.executeInsert()
+            }
+        } finally {
+            try { delStmt.close() } catch (_: Throwable) {}
+            try { insStmt.close() } catch (_: Throwable) {}
+        }
     }
 
     /** Removes one document (message deleted locally, phase §24). */
