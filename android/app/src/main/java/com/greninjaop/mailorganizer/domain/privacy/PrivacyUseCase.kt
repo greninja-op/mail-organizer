@@ -35,6 +35,7 @@ class PrivacyUseCase(
     private val integrationManager: IntegrationManager? = null,
     private val integrationStateRepository: IntegrationStateRepository? = null,
     private val searchIndexStore: SearchIndexStore? = null,
+    private val aiFallbackUseCase: com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase? = null,
     private val dispatchers: AppDispatchers,
 ) {
 
@@ -130,6 +131,17 @@ class PrivacyUseCase(
             retentionPolicy = "Persists across app launches.",
             deletionBehavior = "Reset to defaults upon full data clear.",
         ),
+        DataInventoryItem(
+            categoryName = "Optional AI Fallback Context",
+            description = "Data-minimized snippets (subject, sender domain, short preview) processed only when AI is explicitly enabled.",
+            sensitivity = DataSensitivity.SENSITIVE,
+            storageLocation = "In-memory LRU Cache / Secure Settings (Never persisted in plain database)",
+            isAccountScoped = true,
+            leavesDevice = true,
+            destinationIfLeaves = "User-configured AI provider only if remote AI is opted in; stays on-device for local assistant",
+            retentionPolicy = "Transient in-memory cache; purged on app termination or cache limit.",
+            deletionBehavior = "Instantly invalidated on account removal, provider disconnect, or cache reset.",
+        ),
     )
 
     /**
@@ -212,9 +224,11 @@ class PrivacyUseCase(
         integrationStateRepository?.clearForAccount(accountId)
         // 3. Clean FTS virtual table for this account
         searchIndexStore?.deleteForAccount(accountId)
-        // 4. Delete account entity from Room (cascades to threads, messages, classifications, rules, etc.)
+        // 4. Clean AI cache and state for this account (Phase 26 §92)
+        aiFallbackUseCase?.handleAccountRemoved(accountId)
+        // 5. Delete account entity from Room (cascades to threads, messages, classifications, rules, etc.)
         accountRepository.deleteById(accountId)
-        // 5. If active selection was this account, reset to Unified
+        // 6. If active selection was this account, reset to Unified
         val activeSelection = activeAccountPreferences.activeSelection.first()
         if (activeSelection is AccountSelection.Single && activeSelection.accountId == accountId) {
             activeAccountPreferences.setActiveSelection(AccountSelection.Unified)
@@ -231,7 +245,9 @@ class PrivacyUseCase(
         appDatabase?.clearAllTables()
         // 2. Clear FTS index store
         searchIndexStore?.clearAll()
-        // 3. Reset active account selection to Unified
+        // 3. Reset AI cache & configuration (Phase 26 §93)
+        aiFallbackUseCase?.disconnectProvider()
+        // 4. Reset active account selection to Unified
         activeAccountPreferences.setActiveSelection(AccountSelection.Unified)
     }
 

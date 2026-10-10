@@ -15,10 +15,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 import com.greninjaop.mailorganizer.core.conversation.ConversationAnalysisResult
 import com.greninjaop.mailorganizer.domain.conversation.ConversationIntelligenceUseCase
@@ -38,6 +40,7 @@ class ThreadViewModel @JvmOverloads constructor(
     private val intelligence: IntelligenceRepository,
     private val dispatchers: AppDispatchers,
     private val conversationIntelligence: ConversationIntelligenceUseCase? = null,
+    private val aiFallback: com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase? = null,
 ) : ViewModel() {
 
     private val expandedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -175,6 +178,44 @@ class ThreadViewModel @JvmOverloads constructor(
         }
     }
 
+    private val _threadSummary = MutableStateFlow<ThreadSummaryUiState>(ThreadSummaryUiState.Idle)
+    /** On-demand, user-initiated thread summary (Phase 26 §49, §57). */
+    val threadSummary: StateFlow<ThreadSummaryUiState> = _threadSummary
+
+    /** Requests AI thread summarization on user demand (§49, §100). */
+    fun requestThreadSummary() {
+        val ai = aiFallback ?: run {
+            _threadSummary.value = ThreadSummaryUiState.Unavailable
+            return
+        }
+        viewModelScope.launch(dispatchers.main) {
+            _threadSummary.value = ThreadSummaryUiState.Loading
+            try {
+                val msgs = mail.observeMessages(threadId, MAX_THREAD_MESSAGES).first()
+                val accountId = msgs.firstOrNull()?.accountId.orEmpty()
+                if (accountId.isEmpty()) {
+                    _threadSummary.value = ThreadSummaryUiState.Error("Unable to identify thread account")
+                    return@launch
+                }
+                when (val res = ai.summarizeThread(accountId, threadId)) {
+                    is com.greninjaop.mailorganizer.MoResult.Success -> {
+                        _threadSummary.value = ThreadSummaryUiState.Content(
+                            summary = res.value.output.summary,
+                            keyPoints = res.value.output.keyPoints,
+                            confidence = res.value.output.confidence,
+                        )
+                    }
+                    is com.greninjaop.mailorganizer.MoResult.Failure -> {
+                        _threadSummary.value = ThreadSummaryUiState.Error("AI summarization is currently unavailable or disabled")
+                    }
+                }
+            } catch (t: Throwable) {
+                MoLogger.w(TAG, "Thread summary request failed: ${t.javaClass.simpleName}")
+                _threadSummary.value = ThreadSummaryUiState.Error("Unable to generate summary")
+            }
+        }
+    }
+
     private companion object {
         const val TAG = "ThreadViewModel"
         /** Threads are bounded; Gmail threads rarely exceed this (§17). */
@@ -199,3 +240,17 @@ sealed interface ThreadDetailState {
     ) : ThreadDetailState
     data object Empty : ThreadDetailState
 }
+
+/** State for user-initiated on-demand thread summarization (Phase 26 §49, §57). */
+sealed interface ThreadSummaryUiState {
+    data object Idle : ThreadSummaryUiState
+    data object Loading : ThreadSummaryUiState
+    data class Content(
+        val summary: String,
+        val keyPoints: List<String>,
+        val confidence: Float,
+    ) : ThreadSummaryUiState
+    data class Error(val message: String) : ThreadSummaryUiState
+    data object Unavailable : ThreadSummaryUiState
+}
+

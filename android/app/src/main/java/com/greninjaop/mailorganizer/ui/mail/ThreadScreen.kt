@@ -50,6 +50,7 @@ fun ThreadScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val subject by viewModel.subject.collectAsState()
+    val summaryState by viewModel.threadSummary.collectAsState()
     val context = LocalContext.current
     val listState = rememberLazyListState()
     var correctingMessage by remember { mutableStateOf<MessageItem?>(null) }
@@ -101,6 +102,12 @@ fun ThreadScreen(
                         .padding(padding)
                         .fillMaxSize(),
                 ) {
+                    item(key = "thread_summary") {
+                        ThreadSummarySection(
+                            state = summaryState,
+                            onRequestSummary = { viewModel.requestThreadSummary() },
+                        )
+                    }
                     if (s.conversation != null && s.conversation.state != com.greninjaop.mailorganizer.core.conversation.ConversationState.NO_ACTION) {
                         item(key = "conversation_intelligence") {
                             ConversationIntelligenceSection(result = s.conversation)

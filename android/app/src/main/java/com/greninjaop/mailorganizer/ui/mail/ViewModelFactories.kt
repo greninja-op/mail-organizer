@@ -44,6 +44,7 @@ class ThreadViewModelFactory(
             intelligence = container.intelligenceRepository,
             dispatchers = container.dispatchers,
             conversationIntelligence = container.conversationUseCase,
+            aiFallback = container.aiFallbackUseCase,
         ) as T
     }
 }

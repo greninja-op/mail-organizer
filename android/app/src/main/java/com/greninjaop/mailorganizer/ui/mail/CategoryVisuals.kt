@@ -28,7 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.greninjaop.mailorganizer.data.local.ClassificationRecord
+import com.greninjaop.mailorganizer.data.local.ClassificationSource
 import com.greninjaop.mailorganizer.data.local.MailCategory
 import com.greninjaop.mailorganizer.ui.theme.MoDarkCategoryColors
 import com.greninjaop.mailorganizer.ui.theme.MoLightCategoryColors
@@ -159,6 +161,20 @@ fun CategoryChipWithExplanation(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CategoryChip(category = classification.category)
+            if (classification.source == ClassificationSource.OPTIONAL_AI) {
+                Spacer(Modifier.width(MoSpacing.xs))
+                Text(
+                    text = "AI suggestion",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                            RoundedCornerShape(MoSpacing.xs),
+                        )
+                        .padding(horizontal = MoSpacing.xs, vertical = 2.dp),
+                )
+            }
             Spacer(Modifier.width(MoSpacing.xs))
             Icon(
                 imageVector = Icons.Filled.Info,
