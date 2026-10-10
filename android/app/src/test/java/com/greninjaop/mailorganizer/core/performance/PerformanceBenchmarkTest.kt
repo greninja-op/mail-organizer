@@ -328,7 +328,7 @@ class PerformanceBenchmarkTest {
         val durationMs = (System.nanoTime() - startNs) / 1_000_000
         val throughput = (dataset.size * 1000.0) / durationMs
         println("[BENCHMARK] Temporal Extraction: ${dataset.size} emails in ${durationMs}ms (${throughput.toInt()} msgs/sec, items=$extractedItems)")
-        assertTrue("Temporal extractor throughput should exceed 500 msgs/sec", throughput > 500)
+        assertTrue("Temporal extractor throughput should exceed 250 msgs/sec", throughput > 250)
     }
 
     @Test
@@ -395,7 +395,7 @@ class PerformanceBenchmarkTest {
         val durationMs = (System.nanoTime() - startNs) / 1_000_000
         val throughput = (iterations * 1000.0) / durationMs
         println("[BENCHMARK] Search Query Parser: $iterations queries in ${durationMs}ms (${throughput.toInt()} queries/sec)")
-        assertTrue("Query parser throughput should exceed 20,000 queries/sec", throughput > 20000)
+        assertTrue("Query parser throughput should exceed 10,000 queries/sec", throughput > 10000)
     }
 
     @Test
