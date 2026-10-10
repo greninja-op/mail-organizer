@@ -1367,4 +1367,46 @@ Optional, secondary AI fallback architecture per phase plan §1–§168:
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
 
+## Phase 27 — Advanced Automation Engine: COMPLETE
+
+### What was built
+Controlled, explainable, and privacy-safe Advanced Automation layer per phase plan §1–§191:
+- **Core Principles & Foundations Enforced**:
+  - *"Mail Organizer may automate decisions the user has explicitly authorized, but email content itself must never gain authority over the application."*
+  - Explicit user configuration: automations are deliberately created and managed in UI; rules/corrections remain distinct and authoritative.
+  - Strict account boundaries: cross-account execution is unconditionally rejected; account identity is preserved on all events and executions.
+  - Zero arbitrary code execution: triggers, conditions, and actions operate on a closed, safe schema.
+- **Automation Models & Safety Engine** (`core/automation/`):
+  - `AutomationModels.kt`: structured triggers (`NEW_EMAIL_SYNCED`, `ACTION_REQUIRED_DETECTED`, `CATEGORY_ASSIGNED`, `PRIORITY_ASSIGNED`, `SCHEDULED`, `MANUAL_RUN`), structured conditions and operators, condition groups (`ALL`, `ANY`, `NONE`), closed action set, confirmation policies (`ALWAYS_CONFIRM`, `CONFIRM_FIRST_TIME`, `PRE_APPROVED`), and execution status models.
+  - `AutomationConditionEvaluator.kt`: pure Kotlin deterministic evaluator for fields (sender email/domain, company, subject, category, priority, flags, attachments, unsubscribe headers, Gmail labels) without regex backtracking risks.
+  - `AutomationSafetyValidator.kt`: central gate enforcing circuit breaker trip thresholds (5 failures auto-pauses rule), conflict prevention, prohibited action screening (no auto-permanent-delete, no auto-send/reply, no auto-unsubscribe), and protected category shields for Security, Action Required, Critical/High Priority, Receipts & Orders, Career, and Education emails.
+- **Persistence & Room Schema v10** (`data/local/`, `data/automation/`):
+  - `AutomationEntities.kt` & `AutomationDao.kt`: `automation_rules` and `automation_execution_history` tables with cascading foreign keys to `AccountRecord`, indices for deduplication and rapid account querying.
+  - `Migrations.kt`: `MIGRATION_9_10` creating tables and indexes; Room schema `10.json` generated.
+  - `AutomationJsonCodec.kt`: hand-rolled, zero-reflection JSON codecs for conditions and actions, safe from stub discrepancies.
+  - `RoomAutomationRepository.kt`: complete domain repository implementation with deduplication checking, run tracking, failure counter increments, and account-scoped purging.
+- **Domain Orchestration & Pipeline Hook** (`domain/automation/`, `data/sync/`):
+  - `AutomationEngine.kt`: evaluates incoming email triggers, executes safe local transformations or routes external proposals to `ActionExecutorRegistry`/`IntegrationManager`, validates confirmation requirements, and records audit logs.
+  - `AutomationUseCase.kt`: provides CRUD operations, read-only live preview queries, toggle, and manual run triggers.
+  - `BackgroundProcessingPipeline.kt`: automatically invokes `automationEngine.processNewEmail` on newly synced messages during background sync pipelines.
+  - `PrivacyUseCase.kt`: registers "Advanced Automation Rules & Provenance History" into the Privacy Center data inventory with transparent disclosures and cascading account wipe.
+- **Presentation Layer** (`ui/automation/`, `ui/settings/`, `ui/navigation/`):
+  - `AutomationScreen.kt`: list of active automations with quick enable/disable switches, manual trigger buttons, delete actions, execution history tab, and confirmation dialogs.
+  - `AutomationEditorScreen.kt`: comprehensive rule builder (Name, Trigger, Conditions, Action, Confirmation Policy) with dynamic read-only preview and safety disclosures.
+  - Navigation wiring in `AppNavGraph.kt` (`AppDestinations.AUTOMATION`, `AppDestinations.AUTOMATION_EDITOR`) and settings entry in `SettingsScreens.kt`.
+
+### Verification
+- 30 unit tests across 5 test classes covering the automation subsystem:
+  - `AutomationConditionEvaluatorTest` (10 tests)
+  - `AutomationSafetyValidatorTest` (8 tests)
+  - `AutomationJsonCodecTest` (4 tests)
+  - `AutomationEngineTest` (5 tests)
+  - `AutomationViewModelTest` (3 tests)
+- Full regression suite: **726/726 unit tests pass** via JUnitCore with 0 failures.
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL via Gradle 8.14.6.
+- `:app:assembleDebug` BUILD SUCCESSFUL via Gradle 8.14.6 (`app-debug.apk` 15MB).
+- Sibling projects untouched (`omnibuds` never modified).
+- Multi-project isolation strictly preserved.
+- Stopped strictly at Phase 27 boundary (did not begin Phase 28 Full Testing & QA).
+
 
