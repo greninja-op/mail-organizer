@@ -221,7 +221,7 @@ class RoomSearchRepository(
             "LEFT JOIN classifications c ON c.messageId = m.messageId " +
                 "LEFT JOIN priorities p ON p.messageId = m.messageId "
 
-        return if (parsed.matchExpression != null) {
+        return if (parsed.matchExpression != null && isFtsAvailable()) {
             val weights = SearchRanking.bm25WeightList()
             val sql = StringBuilder()
                 .append("SELECT m.messageId AS mid, bm25(messages_fts, ")
@@ -257,10 +257,34 @@ class RoomSearchRepository(
                 sql.append("JOIN accounts a ON a.accountId = m.accountId WHERE a.isEnabled = 1")
             }
             allArgs.addAll(args)
+            if (parsed.terms.isNotEmpty() || parsed.phrases.isNotEmpty()) {
+                val likeParts = mutableListOf<String>()
+                for (term in parsed.terms) {
+                    likeParts.add("(m.subject LIKE '%' || ? || '%' COLLATE NOCASE OR m.bodyText LIKE '%' || ? || '%' COLLATE NOCASE OR m.fromAddress LIKE '%' || ? || '%' COLLATE NOCASE)")
+                    allArgs.add(term)
+                    allArgs.add(term)
+                    allArgs.add(term)
+                }
+                for (phrase in parsed.phrases) {
+                    likeParts.add("(m.subject LIKE '%' || ? || '%' COLLATE NOCASE OR m.bodyText LIKE '%' || ? || '%' COLLATE NOCASE OR m.fromAddress LIKE '%' || ? || '%' COLLATE NOCASE)")
+                    allArgs.add(phrase)
+                    allArgs.add(phrase)
+                    allArgs.add(phrase)
+                }
+                sql.append(" AND (").append(likeParts.joinToString(" AND ")).append(")")
+            }
             allArgs.add(limit)
             sql.append(filters)
                 .append(" ORDER BY m.timestampEpochMs DESC, m.messageId ASC LIMIT ?")
             sql.toString() to allArgs
+        }
+    }
+
+    private fun isFtsAvailable(): Boolean {
+        return try {
+            SearchIndexStore(db.openHelper.writableDatabase).tableExists()
+        } catch (_: Throwable) {
+            false
         }
     }
 
