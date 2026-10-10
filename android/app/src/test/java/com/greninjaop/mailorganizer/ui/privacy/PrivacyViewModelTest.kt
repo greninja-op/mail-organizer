@@ -69,7 +69,7 @@ class PrivacyViewModelTest {
         advanceUntilIdle()
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
-        assertEquals(9, state.dataInventory.size)
+        assertEquals(10, state.dataInventory.size)
         assertEquals(4, state.scopes.size)
         assertEquals(1, state.accounts.size)
         assertNotNull(state.auditSnapshot)

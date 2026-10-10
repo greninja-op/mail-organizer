@@ -73,6 +73,7 @@ class PrivacyUseCaseTest {
             "Action Cards & Proposed Tasks",
             "UI & Display Preferences",
             "Optional AI Fallback Context",
+            "Advanced Automation Rules & Provenance History",
         )
 
         // Mockless validation of inventory items
@@ -87,7 +88,7 @@ class PrivacyUseCaseTest {
         )
 
         val inventory = useCase.getDataInventory()
-        assertEquals(9, inventory.size)
+        assertEquals(10, inventory.size)
         categories.forEach { expectedCat ->
             assertTrue(
                 "Missing category: $expectedCat",
