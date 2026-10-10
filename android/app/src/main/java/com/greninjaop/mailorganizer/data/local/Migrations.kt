@@ -470,4 +470,66 @@ object Migrations {
             )
         }
     }
+
+    /**
+     * v8 → v9 (Phase 24): performance indexes.
+     *
+     * Composite indexes targeting high-frequency query and sort paths:
+     * - messages(accountId, timestampEpochMs): mailbox recency list
+     * - messages(accountId, threadId): account-scoped thread message lookups
+     * - messages(threadId, timestampEpochMs): thread message rendering order
+     * - messages(accountId, unread, timestampEpochMs): unread inbox queries
+     * - messages(accountId, starred, timestampEpochMs): starred queries
+     * - threads(accountId, latestMessageEpochMs): conversation list ordering
+     * - classifications(accountId, category): category chip filtering
+     * - priorities(accountId, priority): priority filtering
+     * - action_items(accountId, status): action item status queries
+     * - extracted_items(accountId, itemType): structured entity filtering
+     *
+     * Purely additive — no data modified.
+     */
+    val MIGRATION_8_9: Migration = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_messages_accountId_timestampEpochMs " +
+                    "ON messages(accountId, timestampEpochMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_messages_accountId_threadId " +
+                    "ON messages(accountId, threadId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_messages_threadId_timestampEpochMs " +
+                    "ON messages(threadId, timestampEpochMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_messages_accountId_unread_timestampEpochMs " +
+                    "ON messages(accountId, unread, timestampEpochMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_messages_accountId_starred_timestampEpochMs " +
+                    "ON messages(accountId, starred, timestampEpochMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_threads_accountId_latestMessageEpochMs " +
+                    "ON threads(accountId, latestMessageEpochMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_classifications_accountId_category " +
+                    "ON classifications(accountId, category)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_priorities_accountId_priority " +
+                    "ON priorities(accountId, priority)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_action_items_accountId_status " +
+                    "ON action_items(accountId, status)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_extracted_items_accountId_itemType " +
+                    "ON extracted_items(accountId, itemType)",
+            )
+        }
+    }
 }
