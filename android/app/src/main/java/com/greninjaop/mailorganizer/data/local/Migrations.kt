@@ -354,10 +354,6 @@ object Migrations {
     val MIGRATION_3_4: Migration = object : Migration(3, 4) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE messages ADD COLUMN companyId TEXT")
-            db.execSQL(
-                "CREATE INDEX IF NOT EXISTS index_messages_companyId " +
-                    "ON messages(companyId)",
-            )
         }
     }
 
@@ -405,13 +401,45 @@ object Migrations {
      */
     val MIGRATION_5_6: Migration = object : Migration(5, 6) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("ALTER TABLE user_rules ADD COLUMN name TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE user_rules ADD COLUMN conditionsJson TEXT NOT NULL DEFAULT '[]'")
-            db.execSQL("ALTER TABLE user_rules ADD COLUMN actionsJson TEXT NOT NULL DEFAULT '[]'")
-            db.execSQL("ALTER TABLE user_rules ADD COLUMN ruleOrder INTEGER NOT NULL DEFAULT 0")
-            db.execSQL("ALTER TABLE user_rules ADD COLUMN ruleVersion INTEGER NOT NULL DEFAULT 1")
-            db.execSQL("ALTER TABLE user_rules ADD COLUMN source TEXT NOT NULL DEFAULT 'MANUAL'")
-            db.execSQL("UPDATE user_rules SET ruleOrder = id")
+            val hasUserRules = db.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user_rules'",
+                emptyArray(),
+            ).use { it.count > 0 }
+            if (hasUserRules) {
+                db.execSQL("ALTER TABLE user_rules ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE user_rules ADD COLUMN conditionsJson TEXT NOT NULL DEFAULT '[]'")
+                db.execSQL("ALTER TABLE user_rules ADD COLUMN actionsJson TEXT NOT NULL DEFAULT '[]'")
+                db.execSQL("ALTER TABLE user_rules ADD COLUMN ruleOrder INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE user_rules ADD COLUMN ruleVersion INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE user_rules ADD COLUMN source TEXT NOT NULL DEFAULT 'MANUAL'")
+                db.execSQL("UPDATE user_rules SET ruleOrder = id")
+            } else {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS user_rules (" +
+                        "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                        "accountId TEXT NOT NULL, " +
+                        "ruleType TEXT NOT NULL, " +
+                        "matcher TEXT NOT NULL, " +
+                        "targetCategory TEXT, " +
+                        "targetPriority TEXT, " +
+                        "targetActionRequired INTEGER, " +
+                        "enabled INTEGER NOT NULL DEFAULT 1, " +
+                        "createdAtEpochMs INTEGER NOT NULL, " +
+                        "updatedAtEpochMs INTEGER NOT NULL, " +
+                        "name TEXT NOT NULL DEFAULT '', " +
+                        "conditionsJson TEXT NOT NULL DEFAULT '[]', " +
+                        "actionsJson TEXT NOT NULL DEFAULT '[]', " +
+                        "ruleOrder INTEGER NOT NULL DEFAULT 0, " +
+                        "ruleVersion INTEGER NOT NULL DEFAULT 1, " +
+                        "source TEXT NOT NULL DEFAULT 'MANUAL', " +
+                        "FOREIGN KEY(accountId) REFERENCES accounts(accountId) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_user_rules_accountId " +
+                        "ON user_rules(accountId)",
+                )
+            }
         }
     }
 
@@ -422,30 +450,36 @@ object Migrations {
      */
     val MIGRATION_6_7: Migration = object : Migration(6, 7) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("ALTER TABLE action_items ADD COLUMN threadId TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN description TEXT")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN urgency TEXT NOT NULL DEFAULT 'NORMAL'")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN source TEXT NOT NULL DEFAULT 'CLASSIFICATION'")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN status TEXT NOT NULL DEFAULT 'SUGGESTED'")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN externalEffect TEXT NOT NULL DEFAULT 'NONE'")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN payloadJson TEXT")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN updatedAtEpochMs INTEGER NOT NULL DEFAULT 0")
-            db.execSQL("ALTER TABLE action_items ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_action_items_threadId ON action_items(threadId)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_action_items_status ON action_items(status)")
-            db.execSQL(
-                "UPDATE action_items SET status = CASE " +
-                    "WHEN completed = 1 THEN 'COMPLETED' " +
-                    "WHEN dismissed = 1 THEN 'DISMISSED' " +
-                    "ELSE 'SUGGESTED' END",
-            )
-            db.execSQL(
-                "UPDATE action_items SET threadId = COALESCE(" +
-                    "(SELECT threadId FROM messages WHERE messages.messageId = action_items.messageId), '') " +
-                    "WHERE threadId = ''",
-            )
-            db.execSQL("UPDATE action_items SET updatedAtEpochMs = detectedAtEpochMs")
+            val hasActionItems = db.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='action_items'",
+                emptyArray(),
+            ).use { it.count > 0 }
+            if (hasActionItems) {
+                db.execSQL("ALTER TABLE action_items ADD COLUMN threadId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN description TEXT")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN urgency TEXT NOT NULL DEFAULT 'NORMAL'")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN source TEXT NOT NULL DEFAULT 'CLASSIFICATION'")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN status TEXT NOT NULL DEFAULT 'SUGGESTED'")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN externalEffect TEXT NOT NULL DEFAULT 'NONE'")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN payloadJson TEXT")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN updatedAtEpochMs INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE action_items ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_action_items_threadId ON action_items(threadId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_action_items_status ON action_items(status)")
+                db.execSQL(
+                    "UPDATE action_items SET status = CASE " +
+                        "WHEN completed = 1 THEN 'COMPLETED' " +
+                        "WHEN dismissed = 1 THEN 'DISMISSED' " +
+                        "ELSE 'SUGGESTED' END",
+                )
+                db.execSQL(
+                    "UPDATE action_items SET threadId = COALESCE(" +
+                        "(SELECT threadId FROM messages WHERE messages.messageId = action_items.messageId), '') " +
+                        "WHERE threadId = ''",
+                )
+                db.execSQL("UPDATE action_items SET updatedAtEpochMs = detectedAtEpochMs")
+            }
         }
     }
 
@@ -467,10 +501,6 @@ object Migrations {
                     "updatedAtEpochMs INTEGER NOT NULL, " +
                     "configVersion INTEGER NOT NULL, " +
                     "PRIMARY KEY(integrationId, accountId))",
-            )
-            db.execSQL(
-                "CREATE INDEX IF NOT EXISTS index_integration_states_accountId " +
-                    "ON integration_states(accountId)",
             )
         }
     }
@@ -613,6 +643,8 @@ object Migrations {
                 "CREATE INDEX IF NOT EXISTS index_automation_history_dedup " +
                     "ON automation_execution_history(accountId, sourceMessageId, triggerType)",
             )
+            db.execSQL("DROP INDEX IF EXISTS index_messages_companyId")
+            db.execSQL("DROP INDEX IF EXISTS index_integration_states_accountId")
         }
     }
 }
