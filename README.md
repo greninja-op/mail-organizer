@@ -4,6 +4,8 @@
 
 This repository contains the execution plan for Mailstack (formerly "Mail Organizer"). Execute one phase at a time from the cloned repository.
 
+> **Working on this repo? Start with [CONTEXT.md](CONTEXT.md)** — the canonical continuity file: current build state, standing rules, and decisions. Read it before starting any work, and update it after every prompt.
+
 ## Architecture direction
 - Kotlin Multiplatform (KMP) for shared domain, data, sync, intelligence and integration logic.
 - Android UI: Kotlin + Jetpack Compose.
