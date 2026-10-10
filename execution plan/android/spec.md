@@ -175,7 +175,17 @@ Never claim tests or device verification that were not actually run. Never touch
   precedence & winner resolution; URL scan short-circuit; bounded LRU company detection; priority engine
   optimization; Room schema v9 additive composite indexes; batch FTS document indexing; N+1 query elimination
   in ThreadViewModel; Compose HtmlSanitizer memoization; 646/646 unit tests pass, assembleDebug passes)
-- [ ] 25 Analytics & Insights Engine — next phase
-- [ ] 15–16, 22, 26–30 — not started (15/16, 22, 29 user-deferred)
+- [x] 25 Analytics & Insights Engine — complete, on main
+  (core/analytics/ models + InsightGenerator; domain/analytics/ AnalyticsUseCase;
+  ui/analytics/ AnalyticsViewModel + AnalyticsScreen; 10 unit tests)
+- [x] 26 Optional AI Fallback Architecture — complete, on main
+  (core/ai/ models + DataMinimizer + PromptBoundary anti-injection armor + AiOutputValidator +
+  AiCache bounded LRU; data/ai/ AiProvider + AiProviderRegistry + LocalRuleAiProvider +
+  StubRemoteAiProvider; data/prefs/ AiPreferences; domain/ai/ AiManager + AiFallbackUseCase;
+  ui/settings/ AiSettingsViewModel + AiSettingsScreen; ui/mail/ subtle badge in CategoryVisuals +
+  on-demand thread summary in ThreadViewModel; 38 new unit tests across 9 test classes,
+  92 test classes / 691 tests pass with 0 failures)
+- [ ] 27 Advanced Automation Engine — next phase
+- [ ] 15–16, 22, 28–30 — not started (15/16, 22, 29 user-deferred)
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
