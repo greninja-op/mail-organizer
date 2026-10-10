@@ -162,7 +162,20 @@ Never claim tests or device verification that were not actually run. Never touch
   CleanupProtector security/receipt/career shield + NewsletterAnalyzer + NoiseAnalyzer +
   CleanupRecommendationEngine; domain/cleanup/ CleanupUseCase; ui/cleanup/ CleanupViewModel +
   CleanupScreen with recommendations & newsletters tabs, non-destructive safety notices)
-- [ ] 21 Waiting-for-Reply & Conversation Intelligence — next phase
-- [ ] 15–16, 22–30 — not started (15/16, 22, 29 user-deferred)
+- [x] 21 Waiting-for-Reply & Conversation Intelligence — complete, on main
+  (core/conversation/ participant classification, timeline ordering, negative signal shields,
+  stale/follow-up detectors; domain/conversation/ ConversationIntelligenceUseCase;
+  ui/mail/ ConversationStateBadge + expandable ConversationIntelligenceSection; 25 unit tests)
+- [x] 23 Privacy Center & Security Hardening — complete, on main
+  (core/privacy/ models + sensitivity tiers + transparent scope disclosures; SecuritySanitizer
+  token/email masking in logs and safe URL guards; backup exclusion rules in AndroidManifest.xml;
+  account-scoped cascade delete & full local purge; ui/privacy/ tabbed PrivacyCenterScreen; 17 unit tests)
+- [x] 24 Performance, Scalability & Battery Optimization — complete, on main
+  (core/performance/ PerformanceBenchmarkTest over 100/1k/5k/10k synthetic emails; static classifier
+  precedence & winner resolution; URL scan short-circuit; bounded LRU company detection; priority engine
+  optimization; Room schema v9 additive composite indexes; batch FTS document indexing; N+1 query elimination
+  in ThreadViewModel; Compose HtmlSanitizer memoization; 646/646 unit tests pass, assembleDebug passes)
+- [ ] 25 Analytics & Insights Engine — next phase
+- [ ] 15–16, 22, 26–30 — not started (15/16, 22, 29 user-deferred)
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.

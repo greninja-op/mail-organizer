@@ -246,3 +246,13 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
 - No Google API classes leak past the adapter boundary; the UI only sees
   domain-level snapshots. Credentials are never stored in the app database
   (phase §35) — integration_states holds metadata only.
+
+## Phase 24 — Performance & Battery Optimization (permanent rules)
+- Measure first. Optimize the actual bottlenecks. Re-measure after every meaningful change. Never optimize based only on source-code assumptions or fabricate numbers.
+- Main-thread safety: database queries, parsing, classification, search indexing, MIME parsing, and large transformations must never run on the main thread.
+- Bounded processing: no unbounded memory loading; all queries must be paged/bounded.
+- Zero N+1 query patterns: batch-resolve sibling relations (classifications, temporal items, priorities, companies, search indexing).
+- Room schema v9: composite indexes must back real query/filter paths (recency sorting, category/priority filtering, action item status, thread ordering).
+- Compiled statement batching for FTS index upserts: avoid per-message DDL/DML compilation loops.
+- Compose rendering: memoize expensive transformations (e.g. HtmlSanitizer.htmlToText) with remember to prevent repeated parsing during recompositions.
+- Privacy & security preservation: performance optimizations must never weaken privacy guarantees, bypass credential sanitization, or send telemetry to external servers.
