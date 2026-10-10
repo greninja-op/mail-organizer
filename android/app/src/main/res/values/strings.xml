@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Mailstack</string>
+    <!-- Google OAuth Client ID for Gmail/Calendar/Tasks integration (Phase 3). Configured 2026-10-11. -->
+    <string name="google_oauth_client_id">922852545613-f0vel0oe1i2g10rc9cst028s8mhnhl13.apps.googleusercontent.com</string>
 </resources>
