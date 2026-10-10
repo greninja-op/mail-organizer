@@ -190,7 +190,11 @@ Never claim tests or device verification that were not actually run. Never touch
   and circuit breaker; data/automation/ RoomAutomationRepository + AutomationJsonCodec; data/local/ AutomationEntities & Room schema v10;
   domain/automation/ AutomationEngine + AutomationUseCase; ui/automation/ AutomationViewModel + AutomationScreen + AutomationEditorScreen;
   BackgroundProcessingPipeline integration for automatic new email triggers; 726/726 tests pass, assembleDebug passes)
-- [ ] 28 Full Testing & QA — next phase
-- [ ] 15–16, 22, 29–30 — not started (15/16, 22, 29 user-deferred)
+- [x] 28 Full Testing & QA — complete, on main
+  (774/774 automated tests pass across 105 test classes with 0 failures via test-runner/run_tests.sh;
+  database migration suite v1->v10 validated on SQLite/Robolectric; lintDebug 0 errors;
+  assembleDebug and assembleRelease with R8 minification pass; comprehensive QA report in docs/qa/phase-28-qa-report.md)
+- [ ] 29 Production OAuth / Play Store Preparation — next phase
+- [ ] 15–16, 22, 30 — not started (15/16, 22 user-deferred)
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
