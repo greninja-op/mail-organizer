@@ -1175,3 +1175,48 @@ Local-first, deterministic conversation intelligence and waiting-for-reply syste
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
 
+## Phase 23 — Privacy Center & Security Hardening: COMPLETE
+
+### What was built
+Privacy Center and security hardening architecture per phase plan §1–§50:
+- **Threat Model & Data Classification** (`core/privacy/PrivacyModels.kt`):
+  - 4 data sensitivity tiers: `HIGHLY_SENSITIVE`, `SENSITIVE`, `DERIVED_INTELLIGENCE`, `NON_SENSITIVE`.
+  - Comprehensive 8-category Data Inventory model with explicit storage locations, retention rules, and deletion semantics.
+  - Transparent technical scope disclosures translating OAuth scopes into plain English.
+  - Security audit snapshot modeling platform keystore token decoupling, database sandboxing, sanitized logging, and network boundaries.
+- **Security Hardening & Sanitization** (`core/privacy/SecuritySanitizer.kt`, `core/MoLogger.kt`):
+  - Sanitizer regex engine stripping Bearer tokens, raw OAuth tokens (`ya29.*`, `1//*`), authorization headers, and redacting email addresses preserving domain context (`u***r@domain.com`).
+  - `MoLogger` hardened: all logs pass through `SecuritySanitizer.sanitizeForLog()`.
+  - External URL security: strict validation of web URLs (http/https only, rejection of javascript:, data:, file:, content:, and control characters); mailto validation.
+  - `ThreadScreen.openExternalLink` hardened using `SecuritySanitizer.isSafeWebUrl` with fallback crash protection.
+- **Backup Leakage Shield** (`res/xml/data_extraction_rules.xml`, `res/xml/backup_rules.xml`, `AndroidManifest.xml`):
+  - Explicit exclusion of SQLite databases (`database` domain) and internal files (`file` domain) from cloud backup and device transfer.
+  - Only non-sensitive shared preferences (`sharedpref` domain) are backed up.
+- **Cascading Data Removal & Local Purge** (`domain/privacy/PrivacyUseCase.kt`, `data/local/MessageDao.kt`, `data/local/SearchIndexStore.kt`):
+  - Account-scoped deletion: cleanly cascades through Room foreign keys, removes integration metadata, wipes FTS5 search index entries for the account, and resets active selection.
+  - Full local data purge: purges all Room tables, truncates FTS5 virtual table, and resets UI state without affecting remote Gmail data.
+- **Privacy Center UI** (`ui/privacy/`):
+  - `PrivacyCenterScreen.kt`: Material 3 tabbed experience with 4 sections:
+    1. *Overview*: Core local-first guarantees, zero Mailstack server explanation, connected account management, and full local data reset.
+    2. *Your Data*: Complete transparent data inventory with sensitivity badges, storage locations, transmission status, and deletion behavior.
+    3. *Google Access*: Human-readable scope explanations, access levels, and why each permission is required.
+    4. *Security*: Live audit checks (credential decoupling, no plain secrets in DB, sanitized logging, backup rules, strict HTTPS).
+  - Confirmation dialogs for single account removal and full local data wiping.
+  - Navigation wiring in `AppNavGraph.kt` and `SettingsScreens.kt` via `PrivacyViewModelFactory`.
+
+### Verification
+- 17 new unit tests across 3 test classes:
+  - `SecuritySanitizerTest` (7 tests)
+  - `PrivacyModelsTest` (3 tests)
+  - `PrivacyUseCaseTest` (3 tests)
+  - `PrivacyViewModelTest` (4 tests)
+- Full test suite: **638/638 tests pass** via JUnitCore across 79 test classes (0 failures).
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL via Gradle 8.14.6.
+- Secret audit clean: zero API keys, secrets, or passwords committed.
+- Stopped strictly at Phase 23 boundary (did not begin Phase 24 Performance/Battery or Phase 22 Gmail write operations).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
+
+
