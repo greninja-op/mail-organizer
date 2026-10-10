@@ -280,3 +280,12 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
 - Idempotency & provenance: every execution is identified by (accountId, messageId, triggerType) and recorded with complete provenance metadata; duplicates are skipped.
 - Safety circuit breaker: repeated failures (>= 5 consecutive) automatically pause the automation rule to prevent unbounded failure loops.
 - Local-first privacy: automation rules and execution history remain entirely on-device; full email bodies are never stored in execution logs.
+
+## Phase 28 — Full Testing & QA (permanent rules)
+- Build success is never completion: code is complete only after the implemented behavior has been exercised, verified, and shown to remain stable under realistic and adversarial conditions.
+- Cumulative migration verification: all Room schema migrations must be tested across real cumulative chains (v1 -> vN, v2 -> vN) on SQLite to guarantee upgrade integrity without relying on intermediate un-migrated tables.
+- Defense-in-depth search fallback: FTS5 queries must verify virtual table availability and degrade safely to parameterized NOCASE substring matching if FTS indexes are unpopulated or inaccessible.
+- Minification and R8 verification: release builds (`assembleRelease`) must always be verified with ProGuard/R8 to catch reflection or serialization breaks before release prep.
+- Transparent environment constraints: if hardware devices, emulators, or live OAuth credentials are not available in a sandboxed execution environment, document them honestly as NOT VERIFIED rather than fabricating fake test results.
+- Multi-project isolation: never touch, inspect, or modify sibling projects during testing passes.
+
