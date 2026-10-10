@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+export JAVA_HOME=/home/hatch/jdk/jdk-17.0.20.1+1
+export PATH="$JAVA_HOME/bin:$PATH"
+export GRADLE_OPTS="-Djava.net.preferIPv4Stack=true"
+export JAVA_OPTS="-Djava.net.preferIPv4Stack=true"
+exec /home/hatch/gradle-dist/gradle-8.14.6/bin/gradle "$@"
