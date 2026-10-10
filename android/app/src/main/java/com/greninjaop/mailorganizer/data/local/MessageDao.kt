@@ -96,6 +96,9 @@ interface MessageDao {
     @Query("SELECT COUNT(*) FROM messages WHERE accountId = :accountId")
     suspend fun countByAccount(accountId: String): Int
 
+    @Query("SELECT COUNT(*) FROM messages")
+    suspend fun countAll(): Int
+
     @Query("DELETE FROM messages WHERE accountId = :accountId")
     suspend fun deleteByAccount(accountId: String)
 

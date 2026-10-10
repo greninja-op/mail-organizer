@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules for Mailstack (Phase 23 - Privacy & Security Hardening).
+    Only non-sensitive user preferences are eligible for backup.
+    Local mail database, search indices, accounts, and credentials MUST NEVER be backed up.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude database and internal files containing cached email data -->
+        <exclude domain="database" />
+        <exclude domain="file" />
+        <!-- DataStore / shared preferences for non-sensitive UI settings are included -->
+        <include domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" />
+        <exclude domain="file" />
+        <include domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

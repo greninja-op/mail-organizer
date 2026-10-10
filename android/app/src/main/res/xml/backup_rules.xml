@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Legacy backup rules (Android < 12) for Mailstack.
+    Excludes databases and private app files to prevent email data leakage.
+-->
+<full-backup-content>
+    <exclude domain="database" />
+    <exclude domain="file" />
+    <include domain="sharedpref" path="." />
+</full-backup-content>

@@ -136,9 +136,20 @@ class SearchIndexStore(private val db: SupportSQLiteDatabase) {
         db.execSQL("DELETE FROM messages_fts WHERE accountId = ?", arrayOf<Any?>(accountId))
     }
 
+    /** Removes all documents across all accounts (data purge / rebuild). */
+    fun clearAll() {
+        db.execSQL("DELETE FROM messages_fts")
+    }
+
     /** Number of indexed documents for one account. */
     fun countForAccount(accountId: String): Int {
         db.query("SELECT COUNT(*) FROM messages_fts WHERE accountId = ?", arrayOf<Any?>(accountId))
+            .use { c -> return if (c.moveToFirst()) c.getInt(0) else 0 }
+    }
+
+    /** Total number of indexed documents across all accounts. */
+    fun countAll(): Int {
+        db.query("SELECT COUNT(*) FROM messages_fts")
             .use { c -> return if (c.moveToFirst()) c.getInt(0) else 0 }
     }
 

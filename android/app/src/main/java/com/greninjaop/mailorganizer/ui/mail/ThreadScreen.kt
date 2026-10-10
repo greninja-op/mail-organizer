@@ -156,11 +156,13 @@ fun ThreadScreen(
  * URL is re-validated here even though the renderer already filtered it.
  */
 private fun openExternalLink(context: android.content.Context, url: String) {
-    val scheme = url.substringBefore(':').lowercase()
-    if (!url.contains(':') || (scheme != "http" && scheme != "https")) return
-    if (url.any { it.isWhitespace() || it.code < 0x20 }) return
+    if (!com.greninjaop.mailorganizer.core.privacy.SecuritySanitizer.isSafeWebUrl(url)) return
     val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
-    context.startActivity(intent)
+    try {
+        context.startActivity(intent)
+    } catch (_: Exception) {
+        // Fallback for devices without a default browser handler
+    }
 }

@@ -24,18 +24,19 @@ object MoLogger {
     }
 
     fun d(tag: String, message: String) {
-        if (debugEnabled) Log.d(tag, message)
+        if (debugEnabled) Log.d(tag, com.greninjaop.mailorganizer.core.privacy.SecuritySanitizer.sanitizeForLog(message))
     }
 
     fun i(tag: String, message: String) {
-        if (debugEnabled) Log.i(tag, message)
+        if (debugEnabled) Log.i(tag, com.greninjaop.mailorganizer.core.privacy.SecuritySanitizer.sanitizeForLog(message))
     }
 
     fun w(tag: String, message: String, throwable: Throwable? = null) {
-        if (debugEnabled) Log.w(tag, message, throwable) else Log.w(tag, message)
+        val sanitized = com.greninjaop.mailorganizer.core.privacy.SecuritySanitizer.sanitizeForLog(message)
+        if (debugEnabled) Log.w(tag, sanitized, throwable) else Log.w(tag, sanitized)
     }
 
     fun e(tag: String, message: String, throwable: Throwable? = null) {
-        Log.e(tag, message, throwable)
+        Log.e(tag, com.greninjaop.mailorganizer.core.privacy.SecuritySanitizer.sanitizeForLog(message), throwable)
     }
 }
