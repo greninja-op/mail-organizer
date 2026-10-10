@@ -3,6 +3,8 @@ package com.greninjaop.mailorganizer.data.local
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import com.greninjaop.mailorganizer.core.email.AttachmentMeta
 import java.io.File
@@ -49,9 +51,19 @@ class MigrationTest {
         raw.version = 1
         raw.close()
 
-        // ---- Open through Room: triggers MIGRATION_1_2 + schema validation ----
+        // ---- Open through Room: triggers MIGRATION_1_2 .. MIGRATION_9_10 + schema validation ----
         val db = Room.databaseBuilder(context, AppDatabase::class.java, dbFile.absolutePath)
-            .addMigrations(Migrations.MIGRATION_1_2)
+            .addMigrations(
+                Migrations.MIGRATION_1_2,
+                Migrations.MIGRATION_2_3,
+                Migrations.MIGRATION_3_4,
+                Migrations.MIGRATION_4_5,
+                Migrations.MIGRATION_5_6,
+                Migrations.MIGRATION_6_7,
+                Migrations.MIGRATION_7_8,
+                Migrations.MIGRATION_8_9,
+                Migrations.MIGRATION_9_10,
+            )
             .allowMainThreadQueries()
             .build()
 
@@ -103,64 +115,27 @@ class MigrationTest {
         val dbFile = File(context.cacheDir, "migration-v2-v3-test.db")
         if (dbFile.exists()) dbFile.delete()
 
-        // ---- Build a v2 database exactly as MIGRATION_1_2 defined it ----
+        // ---- Build a v2 database by running MIGRATION_1_2 on genuine v1 schema ----
         val raw = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
         raw.execSQL(
             "CREATE TABLE accounts (" +
                 "accountId TEXT NOT NULL PRIMARY KEY, " +
                 "emailAddress TEXT NOT NULL, " +
                 "displayName TEXT, " +
-                "createdAtEpochMs INTEGER NOT NULL, " +
-                "googleAccountId TEXT, " +
-                "provider TEXT NOT NULL DEFAULT 'google', " +
-                "connectionState TEXT NOT NULL DEFAULT 'DISCONNECTED', " +
-                "lastSyncEpochMs INTEGER, " +
-                "updatedAtEpochMs INTEGER NOT NULL DEFAULT 0, " +
-                "isEnabled INTEGER NOT NULL DEFAULT 1)",
+                "createdAtEpochMs INTEGER NOT NULL)",
+        )
+        applyMigration(Migrations.MIGRATION_1_2, raw)
+
+        raw.execSQL(
+            "INSERT INTO accounts (accountId, emailAddress, displayName, createdAtEpochMs) VALUES " +
+                "('acc-1', 'a@example.test', NULL, 1)",
         )
         raw.execSQL(
-            "INSERT INTO accounts VALUES " +
-                "('acc-1', 'a@example.test', NULL, 1, NULL, 'google', " +
-                "'DISCONNECTED', NULL, 0, 1)",
-        )
-        raw.execSQL(
-            "CREATE TABLE threads (" +
-                "threadId TEXT NOT NULL PRIMARY KEY, " +
-                "gmailThreadId TEXT, " +
-                "accountId TEXT NOT NULL, " +
-                "subject TEXT NOT NULL, " +
-                "participantDisplayNames TEXT NOT NULL, " +
-                "messageCount INTEGER NOT NULL DEFAULT 0, " +
-                "unreadCount INTEGER NOT NULL DEFAULT 0, " +
-                "latestMessageId TEXT, " +
-                "latestMessageEpochMs INTEGER NOT NULL DEFAULT 0, " +
-                "updatedAtEpochMs INTEGER NOT NULL DEFAULT 0)",
-        )
-        raw.execSQL(
-            "INSERT INTO threads VALUES " +
+            "INSERT INTO threads (threadId, gmailThreadId, accountId, subject, participantDisplayNames, messageCount, unreadCount, latestMessageId, latestMessageEpochMs, updatedAtEpochMs) VALUES " +
                 "('thr-1', 'gt-1', 'acc-1', 'subj', 'Jane', 1, 1, 'msg-1', 5, 5)",
         )
         raw.execSQL(
-            "CREATE TABLE messages (" +
-                "messageId TEXT NOT NULL PRIMARY KEY, " +
-                "gmailMessageId TEXT, " +
-                "threadId TEXT NOT NULL, " +
-                "accountId TEXT NOT NULL, " +
-                "fromAddress TEXT NOT NULL, " +
-                "fromName TEXT, " +
-                "toAddresses TEXT NOT NULL, " +
-                "ccAddresses TEXT NOT NULL, " +
-                "subject TEXT NOT NULL, " +
-                "snippet TEXT, " +
-                "bodyText TEXT, " +
-                "timestampEpochMs INTEGER NOT NULL, " +
-                "unread INTEGER NOT NULL DEFAULT 1, " +
-                "starred INTEGER NOT NULL DEFAULT 0, " +
-                "labels TEXT NOT NULL, " +
-                "sizeBytes INTEGER)",
-        )
-        raw.execSQL(
-            "INSERT INTO messages VALUES (" +
+            "INSERT INTO messages (messageId, gmailMessageId, threadId, accountId, fromAddress, fromName, toAddresses, ccAddresses, subject, snippet, bodyText, timestampEpochMs, unread, starred, labels, sizeBytes) VALUES (" +
                 "'msg-1', 'm-1', 'thr-1', 'acc-1', 'j@example.test', 'Jane', " +
                 "'me@example.test', '', 'Hello', 'snip', 'body', " +
                 "1700000000000, 1, 0, 'INBOX', 100)",
@@ -168,9 +143,18 @@ class MigrationTest {
         raw.version = 2
         raw.close()
 
-        // ---- Open through Room: triggers MIGRATION_2_3 + schema validation ----
+        // ---- Open through Room: triggers MIGRATION_2_3 .. MIGRATION_9_10 + schema validation ----
         val db = Room.databaseBuilder(context, AppDatabase::class.java, dbFile.absolutePath)
-            .addMigrations(Migrations.MIGRATION_2_3)
+            .addMigrations(
+                Migrations.MIGRATION_2_3,
+                Migrations.MIGRATION_3_4,
+                Migrations.MIGRATION_4_5,
+                Migrations.MIGRATION_5_6,
+                Migrations.MIGRATION_6_7,
+                Migrations.MIGRATION_7_8,
+                Migrations.MIGRATION_8_9,
+                Migrations.MIGRATION_9_10,
+            )
             .allowMainThreadQueries()
             .build()
 
@@ -209,66 +193,28 @@ class MigrationTest {
         val dbFile = File(context.cacheDir, "migration-v3-v4-test.db")
         if (dbFile.exists()) dbFile.delete()
 
-        // ---- Build a v3 database (v2 schema + Phase 5 parser columns) ----
+        // ---- Build a v3 database by running MIGRATION_1_2 + MIGRATION_2_3 on genuine v1 schema ----
         val raw = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
         raw.execSQL(
             "CREATE TABLE accounts (" +
                 "accountId TEXT NOT NULL PRIMARY KEY, " +
                 "emailAddress TEXT NOT NULL, " +
                 "displayName TEXT, " +
-                "createdAtEpochMs INTEGER NOT NULL, " +
-                "googleAccountId TEXT, " +
-                "provider TEXT NOT NULL DEFAULT 'google', " +
-                "connectionState TEXT NOT NULL DEFAULT 'DISCONNECTED', " +
-                "lastSyncEpochMs INTEGER, " +
-                "updatedAtEpochMs INTEGER NOT NULL DEFAULT 0, " +
-                "isEnabled INTEGER NOT NULL DEFAULT 1)",
+                "createdAtEpochMs INTEGER NOT NULL)",
+        )
+        applyMigration(Migrations.MIGRATION_1_2, raw)
+        applyMigration(Migrations.MIGRATION_2_3, raw)
+
+        raw.execSQL(
+            "INSERT INTO accounts (accountId, emailAddress, displayName, createdAtEpochMs) VALUES " +
+                "('acc-1', 'a@example.test', NULL, 1)",
         )
         raw.execSQL(
-            "INSERT INTO accounts VALUES " +
-                "('acc-1', 'a@example.test', NULL, 1, NULL, 'google', " +
-                "'DISCONNECTED', NULL, 0, 1)",
-        )
-        raw.execSQL(
-            "CREATE TABLE threads (" +
-                "threadId TEXT NOT NULL PRIMARY KEY, " +
-                "gmailThreadId TEXT, " +
-                "accountId TEXT NOT NULL, " +
-                "subject TEXT NOT NULL, " +
-                "participantDisplayNames TEXT NOT NULL, " +
-                "messageCount INTEGER NOT NULL DEFAULT 0, " +
-                "unreadCount INTEGER NOT NULL DEFAULT 0, " +
-                "latestMessageId TEXT, " +
-                "latestMessageEpochMs INTEGER NOT NULL DEFAULT 0, " +
-                "updatedAtEpochMs INTEGER NOT NULL DEFAULT 0)",
-        )
-        raw.execSQL(
-            "INSERT INTO threads VALUES " +
+            "INSERT INTO threads (threadId, gmailThreadId, accountId, subject, participantDisplayNames, messageCount, unreadCount, latestMessageId, latestMessageEpochMs, updatedAtEpochMs) VALUES " +
                 "('thr-1', 'gt-1', 'acc-1', 'subj', 'Jane', 1, 1, 'msg-1', 5, 5)",
         )
         raw.execSQL(
-            "CREATE TABLE messages (" +
-                "messageId TEXT NOT NULL PRIMARY KEY, " +
-                "gmailMessageId TEXT, " +
-                "threadId TEXT NOT NULL, " +
-                "accountId TEXT NOT NULL, " +
-                "fromAddress TEXT NOT NULL, " +
-                "fromName TEXT, " +
-                "toAddresses TEXT NOT NULL, " +
-                "ccAddresses TEXT NOT NULL, " +
-                "subject TEXT NOT NULL, " +
-                "snippet TEXT, " +
-                "bodyText TEXT, " +
-                "bodyHtml TEXT, " +
-                "attachments TEXT NOT NULL DEFAULT '', " +
-                "timestampEpochMs INTEGER NOT NULL, " +
-                "unread INTEGER NOT NULL DEFAULT 1, " +
-                "starred INTEGER NOT NULL DEFAULT 0, " +
-                "labels TEXT NOT NULL, " +
-                "sizeBytes INTEGER)",
-        )
-        raw.execSQL(
-            "INSERT INTO messages VALUES (" +
+            "INSERT INTO messages (messageId, gmailMessageId, threadId, accountId, fromAddress, fromName, toAddresses, ccAddresses, subject, snippet, bodyText, bodyHtml, attachments, timestampEpochMs, unread, starred, labels, sizeBytes) VALUES (" +
                 "'msg-1', 'm-1', 'thr-1', 'acc-1', 'j@example.test', 'Jane', " +
                 "'me@example.test', '', 'Hello', 'snip', 'body', " +
                 "NULL, '', 1700000000000, 1, 0, 'INBOX', 100)",
@@ -276,9 +222,17 @@ class MigrationTest {
         raw.version = 3
         raw.close()
 
-        // ---- Open through Room: triggers MIGRATION_3_4 + schema validation ----
+        // ---- Open through Room: triggers MIGRATION_3_4 .. MIGRATION_9_10 + schema validation ----
         val db = Room.databaseBuilder(context, AppDatabase::class.java, dbFile.absolutePath)
-            .addMigrations(Migrations.MIGRATION_3_4)
+            .addMigrations(
+                Migrations.MIGRATION_3_4,
+                Migrations.MIGRATION_4_5,
+                Migrations.MIGRATION_5_6,
+                Migrations.MIGRATION_6_7,
+                Migrations.MIGRATION_7_8,
+                Migrations.MIGRATION_8_9,
+                Migrations.MIGRATION_9_10,
+            )
             .allowMainThreadQueries()
             .build()
 
@@ -301,5 +255,25 @@ class MigrationTest {
             db.close()
             dbFile.delete()
         }
+    }
+
+    private fun applyMigration(migration: Migration, raw: SQLiteDatabase) {
+        val proxy = java.lang.reflect.Proxy.newProxyInstance(
+            SupportSQLiteDatabase::class.java.classLoader,
+            arrayOf(SupportSQLiteDatabase::class.java),
+        ) { _, method, args ->
+            if (method.name == "execSQL") {
+                if (args == null || args.size == 1) {
+                    raw.execSQL(args?.get(0) as String)
+                } else {
+                    @Suppress("UNCHECKED_CAST")
+                    raw.execSQL(args[0] as String, args[1] as Array<out Any>)
+                }
+                null
+            } else {
+                null
+            }
+        } as SupportSQLiteDatabase
+        migration.migrate(proxy)
     }
 }
