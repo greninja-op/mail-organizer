@@ -142,6 +142,17 @@ class PrivacyUseCase(
             retentionPolicy = "Transient in-memory cache; purged on app termination or cache limit.",
             deletionBehavior = "Instantly invalidated on account removal, provider disconnect, or cache reset.",
         ),
+        DataInventoryItem(
+            categoryName = "Advanced Automation Rules & Provenance History",
+            description = "User-configured automation triggers, condition groups, actions, and audit provenance execution history.",
+            sensitivity = DataSensitivity.DERIVED_INTELLIGENCE,
+            storageLocation = "Local SQLite / Room Database (automation_rules, automation_execution_history tables)",
+            isAccountScoped = true,
+            leavesDevice = false,
+            destinationIfLeaves = null,
+            retentionPolicy = "Preserved until deleted or edited by user; execution logs pruned periodically.",
+            deletionBehavior = "Deleted with owning account or on user action.",
+        ),
     )
 
     /**

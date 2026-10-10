@@ -104,6 +104,7 @@ class AppContainer(private val appContext: Context) {
                 Migrations.MIGRATION_6_7,
                 Migrations.MIGRATION_7_8,
                 Migrations.MIGRATION_8_9,
+                Migrations.MIGRATION_9_10,
             )
             // Fresh installs: the FTS search index is a standalone virtual
             // table (not a Room entity), so it is created here. Upgrades
@@ -405,6 +406,34 @@ class AppContainer(private val appContext: Context) {
         SampleMailboxSeeder(accountRepository, mailRepository)
     }
 
+    // ---- Phase 27: Advanced Automation Engine ----
+    val automationRepository: com.greninjaop.mailorganizer.data.automation.AutomationRepository by lazy {
+        com.greninjaop.mailorganizer.data.automation.RoomAutomationRepository(
+            ruleDao = database.automationRuleDao(),
+            historyDao = database.automationHistoryDao(),
+            dispatchers = dispatchers,
+        )
+    }
+
+    val automationEngine: com.greninjaop.mailorganizer.domain.automation.AutomationEngine by lazy {
+        com.greninjaop.mailorganizer.domain.automation.AutomationEngine(
+            automationRepository = automationRepository,
+            mailRepository = mailRepository,
+            intelligenceRepository = intelligenceRepository,
+            integrationManager = integrationManager,
+            executorRegistry = actionExecutorRegistry,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val automationUseCase: com.greninjaop.mailorganizer.domain.automation.AutomationUseCase by lazy {
+        com.greninjaop.mailorganizer.domain.automation.AutomationUseCase(
+            repository = automationRepository,
+            engine = automationEngine,
+            dispatchers = dispatchers,
+        )
+    }
+
     // ---- Phase 19: Background sync & offline behavior ----
     val backgroundProcessingPipeline: com.greninjaop.mailorganizer.data.sync.BackgroundProcessingPipeline by lazy {
         com.greninjaop.mailorganizer.data.sync.BackgroundProcessingPipeline(
@@ -414,6 +443,8 @@ class AppContainer(private val appContext: Context) {
             extractMailbox = extractMailboxUseCase,
             generateActions = generateActionsUseCase,
             searchIndex = searchIndexUseCase,
+            automationEngine = automationEngine,
+            mailRepository = mailRepository,
             dispatchers = dispatchers,
         )
     }

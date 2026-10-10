@@ -45,6 +45,8 @@ class BackgroundProcessingPipeline(
     private val extractMailbox: ExtractMailboxUseCase,
     private val generateActions: GenerateActionsUseCase,
     private val searchIndex: SearchIndexUseCase? = null,
+    private val automationEngine: com.greninjaop.mailorganizer.domain.automation.AutomationEngine? = null,
+    private val mailRepository: com.greninjaop.mailorganizer.data.repository.MailRepository? = null,
     private val dispatchers: AppDispatchers,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
@@ -100,12 +102,26 @@ class BackgroundProcessingPipeline(
             MoLogger.w(TAG, "Search index warning account=$accountId: ${t.javaClass.simpleName}")
         }
 
+        // 7. Advanced Automation processing (Phase 27)
+        var automationsExecuted = 0
+        if (automationEngine != null && mailRepository != null) {
+            try {
+                val recentIds = mailRepository.getMessageIdsByAccount(accountId, limit = 20)
+                for (id in recentIds) {
+                    val runResult = automationEngine.processNewEmail(accountId, id)
+                    automationsExecuted += runResult.executedCount
+                }
+            } catch (t: Throwable) {
+                MoLogger.w(TAG, "Automation execution warning account=$accountId: ${t.javaClass.simpleName}")
+            }
+        }
+
         val duration = clock() - startMs
         MoLogger.i(
             TAG,
             "Finished background intelligence pipeline account=$accountId: " +
                 "attributed=$attributed classified=$classified prioritized=$prioritized " +
-                "extracted=$extracted actions=$actions durationMs=$duration",
+                "extracted=$extracted actions=$actions automations=$automationsExecuted durationMs=$duration",
         )
 
         ProcessingSummary(

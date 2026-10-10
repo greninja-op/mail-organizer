@@ -93,6 +93,28 @@ class MoConverters {
     @TypeConverter fun fromExternalEffect(v: ExternalEffect): String = v.name
     @TypeConverter fun toExternalEffect(v: String): ExternalEffect = ExternalEffect.valueOf(v)
 
+    // ---- Automation enums (Phase 27) ----
+
+    @TypeConverter fun fromAutomationScopeType(v: com.greninjaop.mailorganizer.core.automation.AutomationScopeType): String = v.name
+    @TypeConverter fun toAutomationScopeType(v: String): com.greninjaop.mailorganizer.core.automation.AutomationScopeType =
+        com.greninjaop.mailorganizer.core.automation.AutomationScopeType.valueOf(v)
+
+    @TypeConverter fun fromAutomationTriggerType(v: com.greninjaop.mailorganizer.core.automation.AutomationTriggerType): String = v.name
+    @TypeConverter fun toAutomationTriggerType(v: String): com.greninjaop.mailorganizer.core.automation.AutomationTriggerType =
+        com.greninjaop.mailorganizer.core.automation.AutomationTriggerType.valueOf(v)
+
+    @TypeConverter fun fromAutomationConfirmationPolicy(v: com.greninjaop.mailorganizer.core.automation.AutomationConfirmationPolicy): String = v.name
+    @TypeConverter fun toAutomationConfirmationPolicy(v: String): com.greninjaop.mailorganizer.core.automation.AutomationConfirmationPolicy =
+        com.greninjaop.mailorganizer.core.automation.AutomationConfirmationPolicy.valueOf(v)
+
+    @TypeConverter fun fromAutomationLifecycleState(v: com.greninjaop.mailorganizer.core.automation.AutomationLifecycleState): String = v.name
+    @TypeConverter fun toAutomationLifecycleState(v: String): com.greninjaop.mailorganizer.core.automation.AutomationLifecycleState =
+        com.greninjaop.mailorganizer.core.automation.AutomationLifecycleState.valueOf(v)
+
+    @TypeConverter fun fromAutomationExecutionStatus(v: com.greninjaop.mailorganizer.core.automation.AutomationExecutionStatus): String = v.name
+    @TypeConverter fun toAutomationExecutionStatus(v: String): com.greninjaop.mailorganizer.core.automation.AutomationExecutionStatus =
+        com.greninjaop.mailorganizer.core.automation.AutomationExecutionStatus.valueOf(v)
+
     private companion object {
         const val SEPARATOR = ""
     }

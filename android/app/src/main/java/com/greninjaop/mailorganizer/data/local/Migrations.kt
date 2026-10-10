@@ -536,4 +536,84 @@ object Migrations {
             )
         }
     }
+
+    /**
+     * v9 → v10 (Phase 27): Advanced Automation engine tables.
+     *
+     * Creates `automation_rules` and `automation_execution_history`.
+     * Purely additive: no existing data is touched.
+     */
+    val MIGRATION_9_10: Migration = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS automation_rules (" +
+                    "ruleId TEXT NOT NULL PRIMARY KEY, " +
+                    "name TEXT NOT NULL, " +
+                    "description TEXT NOT NULL, " +
+                    "scopeType TEXT NOT NULL, " +
+                    "targetAccountId TEXT, " +
+                    "state TEXT NOT NULL, " +
+                    "triggerType TEXT NOT NULL, " +
+                    "triggerParam TEXT, " +
+                    "conditionGroupJson TEXT NOT NULL, " +
+                    "actionsJson TEXT NOT NULL, " +
+                    "confirmationPolicy TEXT NOT NULL, " +
+                    "createdAtEpochMs INTEGER NOT NULL, " +
+                    "updatedAtEpochMs INTEGER NOT NULL, " +
+                    "lastRunEpochMs INTEGER, " +
+                    "failureCount INTEGER NOT NULL, " +
+                    "version INTEGER NOT NULL DEFAULT 1, " +
+                    "FOREIGN KEY(targetAccountId) REFERENCES accounts(accountId) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_rules_targetAccountId " +
+                    "ON automation_rules(targetAccountId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_rules_state " +
+                    "ON automation_rules(state)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_rules_triggerType " +
+                    "ON automation_rules(triggerType)",
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS automation_execution_history (" +
+                    "executionId TEXT NOT NULL PRIMARY KEY, " +
+                    "automationId TEXT NOT NULL, " +
+                    "automationName TEXT NOT NULL, " +
+                    "accountId TEXT NOT NULL, " +
+                    "triggerType TEXT NOT NULL, " +
+                    "sourceMessageId TEXT, " +
+                    "sourceThreadId TEXT, " +
+                    "actionSummary TEXT NOT NULL, " +
+                    "status TEXT NOT NULL, " +
+                    "executedAtEpochMs INTEGER NOT NULL, " +
+                    "detailMessage TEXT, " +
+                    "FOREIGN KEY(automationId) REFERENCES automation_rules(ruleId) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(accountId) REFERENCES accounts(accountId) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_execution_history_automationId " +
+                    "ON automation_execution_history(automationId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_execution_history_accountId " +
+                    "ON automation_execution_history(accountId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_execution_history_executedAtEpochMs " +
+                    "ON automation_execution_history(executedAtEpochMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_automation_history_dedup " +
+                    "ON automation_execution_history(accountId, sourceMessageId, triggerType)",
+            )
+        }
+    }
 }
+
