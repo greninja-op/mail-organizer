@@ -268,3 +268,15 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
 - Strict output validation: models output flat JSON matching strict enums. Confidence is capped at `MAX_AI_CONFIDENCE = 0.85`. Prohibited action keywords ("delete", "send", "drop table", etc.) fail validation.
 - Account isolation & privacy boundary: AI caches are account-scoped (`accountId` in key); account disconnection or removal immediately purges all associated cache entries and resets state.
 - Offline & No-AI resilience: Mail Organizer remains fully functional offline, when providers are unconfigured, when keys are absent, or when AI fails.
+
+## Phase 27 — Advanced Automation Engine (permanent rules)
+- Explicit user configuration: automations must be deliberately created or enabled by the user; existing rules are never silently converted into automations.
+- Email content never gains authority: untrusted email content cannot create, enable, modify, or authorize automations.
+- Account isolation: every automation definition and execution is strictly account-scoped; cross-account trigger execution is unconditionally rejected.
+- Deterministic finite actions: actions originate from a closed, safe set. Arbitrary code, shell commands, scripts, or network requests are strictly forbidden.
+- Confirmation boundaries: destructive actions (Trash, Archive, remove labels) and external proposals default to ALWAYS_CONFIRM.
+- No auto-delete, auto-send, or auto-unsubscribe: permanent deletion, automatic email sending/replying/forwarding, and automated unsubscribe invocations are strictly prohibited.
+- Protected category & priority shield: Security, Action Required, Critical/High Priority, Receipts & Orders, Career, and Education emails cannot have destructive mutations applied without explicit confirmation.
+- Idempotency & provenance: every execution is identified by (accountId, messageId, triggerType) and recorded with complete provenance metadata; duplicates are skipped.
+- Safety circuit breaker: repeated failures (>= 5 consecutive) automatically pause the automation rule to prevent unbounded failure loops.
+- Local-first privacy: automation rules and execution history remain entirely on-device; full email bodies are never stored in execution logs.

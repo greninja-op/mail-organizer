@@ -185,7 +185,12 @@ Never claim tests or device verification that were not actually run. Never touch
   ui/settings/ AiSettingsViewModel + AiSettingsScreen; ui/mail/ subtle badge in CategoryVisuals +
   on-demand thread summary in ThreadViewModel; 38 new unit tests across 9 test classes,
   92 test classes / 691 tests pass with 0 failures)
-- [ ] 27 Advanced Automation Engine — next phase
-- [ ] 15–16, 22, 28–30 — not started (15/16, 22, 29 user-deferred)
+- [x] 27 Advanced Automation Engine — complete, on main
+  (core/automation/ models + AutomationConditionEvaluator + AutomationSafetyValidator with protected category shields
+  and circuit breaker; data/automation/ RoomAutomationRepository + AutomationJsonCodec; data/local/ AutomationEntities & Room schema v10;
+  domain/automation/ AutomationEngine + AutomationUseCase; ui/automation/ AutomationViewModel + AutomationScreen + AutomationEditorScreen;
+  BackgroundProcessingPipeline integration for automatic new email triggers; 726/726 tests pass, assembleDebug passes)
+- [ ] 28 Full Testing & QA — next phase
+- [ ] 15–16, 22, 29–30 — not started (15/16, 22, 29 user-deferred)
 
 Phase 30 is the final roadmap phase. A fully written roadmap is not evidence that implementation is complete.
