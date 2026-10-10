@@ -155,6 +155,10 @@ interface IntelligenceRepository {
     /** All extracted rows for one message (Phase 13 idempotency check). */
     suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord>
 
+    /** Batch extracted items lookup across multiple messages (Phase 24). */
+    suspend fun getExtractedItemsByMessages(messageIds: List<String>): List<ExtractedItemRecord> =
+        messageIds.flatMap { getExtractedItems(it) }
+
     /** Deletes specific extracted rows (Phase 13 re-extraction). */
     suspend fun deleteExtractedItems(ids: List<Long>)
 }
@@ -318,6 +322,12 @@ class RoomIntelligenceRepository(
 
     override suspend fun getExtractedItems(messageId: String): List<ExtractedItemRecord> =
         withContext(dispatchers.io) { extracted.getByMessage(messageId) }
+
+    override suspend fun getExtractedItemsByMessages(messageIds: List<String>): List<ExtractedItemRecord> =
+        withContext(dispatchers.io) {
+            if (messageIds.isEmpty()) emptyList()
+            else extracted.getByMessages(messageIds)
+        }
 
     override suspend fun deleteExtractedItems(ids: List<Long>) {
         if (ids.isEmpty()) return

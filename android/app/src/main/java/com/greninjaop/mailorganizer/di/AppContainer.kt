@@ -92,7 +92,8 @@ class AppContainer(private val appContext: Context) {
             // v4 -> v5 (Phase 10 search index) by Migrations.MIGRATION_4_5;
             // v5 -> v6 (Phase 12 rule engine columns) by Migrations.MIGRATION_5_6;
             // v6 -> v7 (Phase 14 action-engine columns) by Migrations.MIGRATION_6_7;
-            // v7 -> v8 (Phase 17 integration metadata) by Migrations.MIGRATION_7_8.
+            // v7 -> v8 (Phase 17 integration metadata) by Migrations.MIGRATION_7_8;
+            // v8 -> v9 (Phase 24 performance indexes) by Migrations.MIGRATION_8_9.
             .addMigrations(
                 Migrations.MIGRATION_1_2,
                 Migrations.MIGRATION_2_3,
@@ -101,6 +102,7 @@ class AppContainer(private val appContext: Context) {
                 Migrations.MIGRATION_5_6,
                 Migrations.MIGRATION_6_7,
                 Migrations.MIGRATION_7_8,
+                Migrations.MIGRATION_8_9,
             )
             // Fresh installs: the FTS search index is a standalone virtual
             // table (not a Room entity), so it is created here. Upgrades

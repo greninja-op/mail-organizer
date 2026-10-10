@@ -189,14 +189,21 @@ class RoomMailRepository(
      */
     private suspend fun indexMessagesForSearch(messages: List<MessageRecord>) {
         val store = searchIndex ?: return
+        if (messages.isEmpty()) return
         store.ensureCreated()
-        for (m in messages) {
-            val companyName = m.companyId?.let { cid ->
-                db.companyDao().getByAccountAndId(m.accountId, cid)
-                    ?.let { it.userOverrideName ?: it.canonicalName }
-            }
-            store.indexDocument(SearchIndexStore.FtsDocument.fromMessage(m, companyName))
+        val uniqueCompanyKeys = messages.mapNotNull { m ->
+            m.companyId?.let { cid -> m.accountId to cid }
+        }.distinct()
+        val companyNameMap = mutableMapOf<Pair<String, String>, String?>()
+        for ((accountId, cid) in uniqueCompanyKeys) {
+            val comp = db.companyDao().getByAccountAndId(accountId, cid)
+            companyNameMap[accountId to cid] = comp?.let { it.userOverrideName ?: it.canonicalName }
         }
+        val docs = messages.map { m ->
+            val companyName = m.companyId?.let { cid -> companyNameMap[m.accountId to cid] }
+            SearchIndexStore.FtsDocument.fromMessage(m, companyName)
+        }
+        store.indexDocuments(docs)
     }
 
     override fun observeThreads(accountId: String, limit: Int): Flow<List<ThreadRecord>> =

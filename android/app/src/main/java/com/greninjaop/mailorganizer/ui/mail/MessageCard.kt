@@ -244,9 +244,11 @@ private fun MessageBody(
             }
             !html.isNullOrBlank() -> {
                 // Enormous body: plain-text fallback keeps the UI responsive.
+                val fallbackText = remember(html) {
+                    com.greninjaop.mailorganizer.core.email.HtmlSanitizer.htmlToText(html)
+                }
                 Text(
-                    text = com.greninjaop.mailorganizer.core.email.HtmlSanitizer
-                        .htmlToText(html),
+                    text = fallbackText,
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
