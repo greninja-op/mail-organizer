@@ -1,6 +1,6 @@
 # Development Status — Mail Organizer (Android)
 
-**Last updated:** 2026-10-09 (Phase 9 complete)
+**Last updated:** 2026-10-10 (Phase 25 complete)
 **Branch:** `main`
 **Application ID:** `com.greninjaop.mailorganizer`
 
@@ -1272,4 +1272,45 @@ Measured, bottleneck-driven performance and battery optimizations across core en
 ### Deferred work (user-approved, unchanged)
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
+
+## Phase 25 — Analytics & Insights: COMPLETE
+
+### What was built
+Local-first analytics and insights layer per phase plan §1–§57:
+- **Local Insights Philosophy & Data Models** (`core/analytics/AnalyticsModels.kt`):
+  - Strictly adheres to the core philosophy: *"Analytics should help the user understand and act on their email—not encourage them to chase arbitrary metrics."* Zero vanity scores or gamification.
+  - Standard date ranges (`TODAY`, `LAST_7_DAYS`, `LAST_30_DAYS`, `ALL_TIME`).
+  - Structured, deterministic insight models (`Insight`, `InsightType`, `InsightSeverity`).
+  - Core metric groups: `InboxHealthMetrics`, `OrganizationMetrics`, `PriorityMetrics`, `SourceMetrics`, `NoiseMetrics`, `TimeMetrics`, and `RuleCorrectionMetrics`.
+- **Deterministic Insight Generator** (`core/analytics/InsightGenerator.kt`):
+  - Deterministic, explainable rule engine generating targeted insights from local metrics without LLMs or remote network calls.
+  - Insight categories: `ACTION_REQUIRED_SPIKE`, `UNRESOLVED_CONVERSATION_GROWTH`, `NEWSLETTER_INCREASE`, `PROMOTION_INCREASE`, `CATEGORY_SHIFT`, `NEW_TOP_SENDER`, `DEADLINE_CLUSTER`, and `ORGANIZATION_COVERAGE_CHANGE`.
+  - Statistical honesty safeguards: strictly avoids asserting noisy trends on small datasets (< 10 synchronized messages).
+- **Domain Use Case & Local Aggregation** (`domain/analytics/AnalyticsUseCase.kt`):
+  - Single source of truth: reuses authoritative classifications, priorities, temporal extractions, conversation states, and cleanup candidates from existing repositories without creating duplicate classification or action engines.
+  - Account scoping & Unified Inbox: supports single account IDs or unified aggregation across all enabled accounts (`UNIFIED_ACCOUNT_ID`), preserving source account indicators.
+  - Timezone-aware date bucketing respecting user local timezone.
+  - Privacy guarantee: strictly local aggregation, zero third-party telemetry, zero external data transmissions.
+- **Presentation & Navigation Layer** (`ui/analytics/`, `ui/home/`, `ui/settings/`, `ui/navigation/`):
+  - `AnalyticsScreen.kt`: Material 3 dashboard displaying freshness notice, actionable insight cards, inbox health summary, conversation/reply backlog, canonical category distribution, priority distribution, top sources, and noise progress indicator.
+  - `AnalyticsViewModel.kt`: dynamic date range selection, multi-account awareness, reactive refresh on account selection changes.
+  - Registered destination in `AppNavGraph.kt` (`AppDestinations.ANALYTICS`), linked via Home screen attention banner and Settings menu row.
+  - Dependency injection wired in `AppContainer.kt`.
+
+### Verification
+- 10 new unit tests across 3 test classes:
+  - `InsightGeneratorTest` (5 tests)
+  - `AnalyticsUseCaseTest` (2 tests)
+  - `AnalyticsViewModelTest` (3 tests)
+- Full benchmark and regression test suite verified via JUnitCore.
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL via Gradle 8.14.6.
+- `:app:assembleDebug` BUILD SUCCESSFUL via Gradle 8.14.6 (`app-debug.apk` 15MB).
+- Sibling projects untouched (`omnibuds` never touched).
+- Secret audit clean: zero API keys, secrets, or passwords committed.
+- Stopped strictly at Phase 25 boundary (did not begin Phase 26 Optional AI Fallback).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
+
 
