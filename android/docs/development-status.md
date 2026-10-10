@@ -1313,4 +1313,58 @@ Local-first analytics and insights layer per phase plan §1–§57:
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
 
+## Phase 26 — Optional AI Fallback Architecture: COMPLETE
+
+### What was built
+Optional, secondary AI fallback architecture per phase plan §1–§168:
+- **Central Principle Enforced**:
+  - *"AI is an optional fallback, never the foundation of Mail Organizer."* Mail Organizer remains fully functional offline, without API keys, when AI providers fail, or when AI is disabled.
+  - Deterministic precedence strictly enforced: User correction > User rule > Deterministic intelligence > Optional AI fallback > Unknown.
+  - Default state is strictly OFF (`isAiEnabled = false`, `hasUserConsented = false`).
+- **Core AI Abstraction & Data Minimization** (`core/ai/`):
+  - `AiModels.kt`: capability-based AI (`AiCapability`: CLASSIFY_EMAIL, EXTRACT_DEADLINE, EXTRACT_MEETING, SUMMARIZE_THREAD, DETECT_INTENT), availability state model (`AiAvailabilityState`: DISABLED, NOT_CONFIGURED, AVAILABLE, OFFLINE, AUTH_REQUIRED, RATE_LIMITED, UNAVAILABLE, ERROR), structured requests (`AiRequest`, `AiMinimalContext`), and structured results (`AiResult`, `AiClassificationOutput`, `AiThreadSummaryOutput`, `AiTemporalOutput`).
+  - `DataMinimizer.kt`: strictly minimizes email data before crossing the boundary — sender registrable domain only, subject capped at 120 chars, snippet capped at 500 chars, raw HTML stripped, attachments stripped, OAuth tokens and secrets scrubbed via `SecuritySanitizer`.
+  - `PromptBoundary.kt`: prompt injection armor enclosing untrusted email content in strict delimiters (`<<<BEGIN_UNTRUSTED_EMAIL_DATA>>>`) with explicit system notices instructing the model never to treat email text as executable directives.
+  - `AiOutputValidator.kt`: strict schema validation, sanitization, and domain safety. Rejects prohibited actions (delete, send, exec), caps AI confidence at `MAX_AI_CONFIDENCE = 0.85`, and enforces the Security Shield: AI can never downgrade a deterministic `SECURITY` classification.
+  - `AiCache.kt`: thread-safe bounded LRU cache (500 entries) isolated by `accountId`, `sourceId`, `capability`, and schema version. Purges instantly on account removal or disconnect.
+- **Provider Infrastructure & Secure Preferences** (`data/ai/`, `data/prefs/`):
+  - `AiProvider.kt` & `AiProviderRegistry.kt`: decoupled provider interface with capability advertisement and cancellation support. Zero third-party SDK dependencies in domain/UI layers.
+  - `LocalRuleAiProvider.kt`: on-device heuristic provider running purely offline without network calls.
+  - `StubRemoteAiProvider.kt`: remote AI seam supporting user-supplied Bring-Your-Own-Key (BYOK) over HTTPS with online/offline detection and fail-closed auth handling.
+  - `FakeTestAiProvider.kt`: deterministic test provider for unit tests without network requirements.
+  - `AiPreferences.kt`: DataStore-backed preference store for AI toggles, provider selection, capability checkboxes, explicit remote consent, and secure API key storage.
+- **Domain Fallback Coordination** (`domain/ai/`, `domain/classify/`):
+  - `AiManager.kt`: orchestrates deterministic sufficiency checks, policy validation, data minimization, cache lookups, provider execution, schema validation, and cache insertion.
+  - `AiFallbackUseCase.kt`: high-level use case bridging classification and user-initiated thread summarization.
+  - `ClassifyMessageUseCase.kt`: integrated AI fallback triggered only when deterministic classification yields `UNCLASSIFIED`. AI results saved with `source = ClassificationSource.OPTIONAL_AI`.
+  - `PrivacyUseCase.kt`: registers "Optional AI Fallback Context" as the 9th Data Inventory item with explicit transparency, cascading account purge, and provider disconnect wiping.
+- **Presentation Layer** (`ui/settings/`, `ui/mail/`, `ui/navigation/`):
+  - `AiSettingsScreen.kt` & `AiSettingsViewModel.kt`: comprehensive Material 3 settings screen with master toggle, provider picker, capability checkboxes, BYOK API key configuration, live availability indicator, and one-tap provider disconnect.
+  - `CategoryVisuals.kt`: subtle Material 3 "AI suggestion" badge pill for advisory classifications.
+  - `ThreadSummaryCard.kt`: user-initiated on-demand thread summary card with loading spinner, advisory error warnings, key points bullet list, and authoritative preservation of original thread content below.
+  - Wired into `AppNavGraph.kt` (`AppDestinations.AI_SETTINGS`), `SettingsScreens.kt`, and `ThreadScreen.kt`.
+
+### Verification
+- 41 unit tests across 10 test classes covering the AI subsystem:
+  - `AiModelsTest` (5 tests)
+  - `AiCacheTest` (4 tests)
+  - `AiOutputValidatorTest` (7 tests)
+  - `DataMinimizerTest` (4 tests)
+  - `PromptBoundaryTest` (3 tests)
+  - `AiProviderRegistryTest` (4 tests)
+  - `AiManagerTest` (4 tests)
+  - `AiFallbackUseCaseTest` (2 tests)
+  - `AiSettingsViewModelTest` (5 tests)
+  - `ThreadViewModelTest` (3 new thread summary tests)
+- Full regression suite: **736/736 unit tests pass** via JUnitCore across 97 test classes with 0 failures.
+- `:app:compileDebugKotlin` and `:app:compileDebugUnitTestKotlin` BUILD SUCCESSFUL via Gradle 8.14.6.
+- `:app:assembleDebug` BUILD SUCCESSFUL via Gradle 8.14.6 (`app-debug.apk` 15MB).
+- Sibling projects untouched (`omnibuds` never modified).
+- Secret audit clean: zero API keys, secrets, or passwords committed.
+- Stopped strictly at Phase 26 boundary (did not begin Phase 27 Advanced Automation).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
+
 

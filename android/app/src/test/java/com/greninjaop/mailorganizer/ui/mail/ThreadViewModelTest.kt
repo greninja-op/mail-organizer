@@ -222,4 +222,104 @@ class ThreadViewModelTest {
             assertEquals("t1", content.conversation?.threadId)
         }
     }
+
+    @Test
+    fun `requestThreadSummary transitions to Unavailable when aiFallback is absent`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L)
+        val vm = ThreadViewModel(
+            threadId = "t1",
+            mail = mail,
+            intelligence = intelligence,
+            dispatchers = dispatchers(),
+            aiFallback = null,
+        )
+        advanceUntilIdle()
+
+        vm.requestThreadSummary()
+        assertEquals(ThreadSummaryUiState.Unavailable, vm.threadSummary.value)
+    }
+
+    @Test
+    fun `requestThreadSummary transitions to Content on successful AI response`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L)
+        val prefs = com.greninjaop.mailorganizer.data.prefs.FakeAiPreferences(
+            initialEnabled = true,
+            initialProviderId = "fake_test",
+        )
+        val fakeProvider = com.greninjaop.mailorganizer.data.ai.FakeTestAiProvider()
+        val registry = com.greninjaop.mailorganizer.data.ai.AiProviderRegistry().apply {
+            register(fakeProvider)
+        }
+        val aiManager = com.greninjaop.mailorganizer.domain.ai.AiManager(
+            preferences = prefs,
+            registry = registry,
+            dispatchers = dispatchers(),
+        )
+        val aiFallbackUseCase = com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase(
+            aiManager = aiManager,
+            preferences = prefs,
+            mailRepository = mail,
+            dispatchers = dispatchers(),
+        )
+
+        val vm = ThreadViewModel(
+            threadId = "t1",
+            mail = mail,
+            intelligence = intelligence,
+            dispatchers = dispatchers(),
+            aiFallback = aiFallbackUseCase,
+        )
+        advanceUntilIdle()
+
+        assertEquals(ThreadSummaryUiState.Idle, vm.threadSummary.value)
+        vm.requestThreadSummary()
+        advanceUntilIdle()
+
+        val summary = vm.threadSummary.value
+        assertTrue("Expected Content state but was $summary", summary is ThreadSummaryUiState.Content)
+        val content = summary as ThreadSummaryUiState.Content
+        assertTrue(content.summary.isNotBlank())
+        assertTrue(content.keyPoints.isNotEmpty())
+    }
+
+    @Test
+    fun `requestThreadSummary transitions to Error on provider failure`() = runTest(testDispatcher) {
+        seedThread("t1", 1000L)
+        val prefs = com.greninjaop.mailorganizer.data.prefs.FakeAiPreferences(
+            initialEnabled = true,
+            initialProviderId = "fake_test",
+        )
+        val fakeProvider = com.greninjaop.mailorganizer.data.ai.FakeTestAiProvider(
+            shouldFail = true,
+        )
+        val registry = com.greninjaop.mailorganizer.data.ai.AiProviderRegistry().apply {
+            register(fakeProvider)
+        }
+        val aiManager = com.greninjaop.mailorganizer.domain.ai.AiManager(
+            preferences = prefs,
+            registry = registry,
+            dispatchers = dispatchers(),
+        )
+        val aiFallbackUseCase = com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase(
+            aiManager = aiManager,
+            preferences = prefs,
+            mailRepository = mail,
+            dispatchers = dispatchers(),
+        )
+
+        val vm = ThreadViewModel(
+            threadId = "t1",
+            mail = mail,
+            intelligence = intelligence,
+            dispatchers = dispatchers(),
+            aiFallback = aiFallbackUseCase,
+        )
+        advanceUntilIdle()
+
+        vm.requestThreadSummary()
+        advanceUntilIdle()
+
+        val summary = vm.threadSummary.value
+        assertTrue("Expected Error state but was $summary", summary is ThreadSummaryUiState.Error)
+    }
 }
