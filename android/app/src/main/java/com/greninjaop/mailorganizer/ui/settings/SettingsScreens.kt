@@ -120,8 +120,8 @@ fun SettingsScreen(
             )
             SettingsRow(
                 icon = Icons.Filled.Lock,
-                title = "Privacy",
-                subtitle = "How your data is handled",
+                title = "Privacy Center",
+                subtitle = "Data audit, Google scopes & security hardening",
                 onClick = { onNavigate(AppDestinations.PRIVACY) },
             )
             // Phase 12: rules & corrections management (§9).
