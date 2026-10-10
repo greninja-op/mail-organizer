@@ -470,6 +470,21 @@ class AppContainer(private val appContext: Context) {
         )
     }
 
+    // ---- Phase 25: Analytics & Insights Engine ----
+    val analyticsUseCase: com.greninjaop.mailorganizer.domain.analytics.AnalyticsUseCase by lazy {
+        com.greninjaop.mailorganizer.domain.analytics.AnalyticsUseCase(
+            mail = mailRepository,
+            intelligence = intelligenceRepository,
+            accounts = accountRepository,
+            syncState = syncStateRepository,
+            ruleRepository = ruleRepository,
+            conversationUseCase = conversationUseCase,
+            cleanupUseCase = cleanupUseCase,
+            activeAccountPreferences = activeAccountPreferences,
+            dispatchers = dispatchers,
+        )
+    }
+
     private companion object {
         const val DATABASE_NAME = "mail_organizer.db"
     }
