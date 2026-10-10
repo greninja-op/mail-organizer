@@ -109,6 +109,13 @@ object AppDestinations {
     fun ruleEditorRoute(ruleId: Long? = null): String =
         if (ruleId == null) "rules/editor" else "rules/editor?ruleId=$ruleId"
 
+    /** Phase 27: Advanced Automation routes. */
+    const val AUTOMATION = "automation"
+    const val AUTOMATION_EDITOR = "automation/editor?ruleId={ruleId}"
+
+    fun automationEditorRoute(ruleId: String? = null): String =
+        if (ruleId == null) "automation/editor" else "automation/editor?ruleId=$ruleId"
+
     /**
      * Thread route with an optional deep-link focus arg (Phase 6, phase §37):
      * `mail/thread/{threadId}?focusMessageId={messageId}`. Future features
@@ -535,6 +542,41 @@ fun AppNavGraph(
             com.greninjaop.mailorganizer.ui.settings.AiSettingsScreen(
                 viewModel = vm,
                 onNavigate = { route -> navController.navigate(route) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        // Phase 27: Advanced Automation destinations
+        composable(AppDestinations.AUTOMATION) {
+            val vm: com.greninjaop.mailorganizer.ui.automation.AutomationViewModel =
+                viewModel(
+                    factory = com.greninjaop.mailorganizer.ui.automation.AutomationViewModelFactory(container),
+                )
+            com.greninjaop.mailorganizer.ui.automation.AutomationScreen(
+                viewModel = vm,
+                onNavigateToEditor = { ruleId ->
+                    navController.navigate(AppDestinations.automationEditorRoute(ruleId))
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(
+            route = AppDestinations.AUTOMATION_EDITOR,
+            arguments = listOf(
+                navArgument("ruleId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { backStackEntry ->
+            val ruleId = backStackEntry.arguments?.getString("ruleId")
+            val vm: com.greninjaop.mailorganizer.ui.automation.AutomationViewModel =
+                viewModel(
+                    factory = com.greninjaop.mailorganizer.ui.automation.AutomationViewModelFactory(container),
+                )
+            com.greninjaop.mailorganizer.ui.automation.AutomationEditorScreen(
+                ruleId = ruleId,
+                viewModel = vm,
                 onBack = { navController.popBackStack() },
             )
         }

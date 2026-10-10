@@ -159,6 +159,13 @@ fun SettingsScreen(
                 subtitle = "Optional secondary fallback for ambiguous emails",
                 onClick = { onNavigate(AppDestinations.AI_SETTINGS) },
             )
+            // Phase 27: Advanced Automation
+            SettingsRow(
+                icon = Icons.Filled.Build,
+                title = "Advanced Automation",
+                subtitle = "Trigger-based rules, safe local actions & execution history",
+                onClick = { onNavigate(AppDestinations.AUTOMATION) },
+            )
             AppearanceSection(viewModel = appearanceViewModel)
             AboutSection()
         }
