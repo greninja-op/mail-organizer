@@ -55,8 +55,10 @@ import androidx.room.TypeConverters
         ExtractedItemRecord::class,
         SearchIndexMeta::class,
         IntegrationStateRecord::class,
+        AutomationRuleRecord::class,
+        AutomationExecutionRecordEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(MoConverters::class)
@@ -77,4 +79,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     /** Search-index version bookkeeping (Phase 10). */
     abstract fun searchIndexMetaDao(): SearchIndexMetaDao
+
+    /** Advanced Automation (Phase 27). */
+    abstract fun automationRuleDao(): AutomationRuleDao
+    abstract fun automationHistoryDao(): AutomationHistoryDao
 }
