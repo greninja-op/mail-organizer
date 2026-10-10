@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material3.AlertDialog
@@ -143,6 +144,13 @@ fun SettingsScreen(
                 title = "Cleanup & Newsletters",
                 subtitle = "Review newsletters, notifications and low-value mail",
                 onClick = { onNavigate(AppDestinations.CLEANUP) },
+            )
+            // Phase 25: Analytics & Insights
+            SettingsRow(
+                icon = Icons.Filled.Info,
+                title = "Analytics & Insights",
+                subtitle = "Local workload, categories, sources & attention patterns",
+                onClick = { onNavigate(AppDestinations.ANALYTICS) },
             )
             AppearanceSection(viewModel = appearanceViewModel)
             AboutSection()

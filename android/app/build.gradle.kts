@@ -113,3 +113,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
+
+tasks.register("printTestClasspath") {
+    doLast {
+        val testTask = tasks.named<Test>("testDebugUnitTest").get()
+        println("###TEST_CP###" + testTask.classpath.asPath)
+    }
+}
