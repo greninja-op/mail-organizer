@@ -1219,4 +1219,57 @@ Privacy Center and security hardening architecture per phase plan §1–§50:
 - Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
   Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
 
+## Phase 24 — Performance, Scalability & Battery Optimization: COMPLETE
+
+### What was built
+Measured, bottleneck-driven performance and battery optimizations across core engines, database, repository batching, and UI rendering:
+- **Baseline Measurements & Controlled Synthetic Dataset Testing** (`core/performance/PerformanceBenchmarkTest.kt`):
+  - Benchmarked across 100, 1,000, 5,000, and 10,000 synthetic emails covering short, long, HTML, multipart, attachments metadata, senders, companies, categories, rules, action items, deadlines, and thread states.
+  - Identified and eliminated bottlenecks in classifier precedence map allocation, priority engine rule collection and sorting, N+1 query patterns in `ThreadViewModel`, unbatched FTS document indexing in `SearchIndexStore` / `RoomMailRepository`, un-memoized HTML rendering in Compose `MessageCard`, and missing composite indexes on primary Room entities.
+- **Classifier & Priority Engine Streamlining**:
+  - `DeterministicClassifier`: static `PRECEDENCE_RANK` map + `ENTRY_COMPARATOR` with `maxWithOrNull` eliminating intermediate sorting allocations. Per-message classification cost dropped to **0.032 ms/msg (31,446 msgs/sec)** for 10,000 emails.
+  - `SignalExtractor`: added fast-path substring check before regex URL scanning (`http://`, `https://`).
+  - `CompanyDetector`: bounded LRU cache (512 capacity) for instant resolution of recurring senders (**1,250,000 lookups/sec**).
+  - `DeterministicPriorityEngine`: streamlined rule evaluation, single-pass winner determination in precedence order, conditional sorting. Per-message priority cost dropped to **0.0108 ms/msg (92,592 msgs/sec)** for 10,000 emails.
+- **Database Index Optimization (Room Schema v8 -> v9)**:
+  - Additive `MIGRATION_8_9` created 10 composite indexes:
+    - `messages(accountId, timestampEpochMs)`
+    - `messages(accountId, threadId)`
+    - `messages(threadId, timestampEpochMs)`
+    - `messages(accountId, unread, timestampEpochMs)`
+    - `messages(accountId, starred, timestampEpochMs)`
+    - `threads(accountId, latestMessageEpochMs)`
+    - `classifications(accountId, category)`
+    - `priorities(accountId, priority)`
+    - `action_items(accountId, status)`
+    - `extracted_items(accountId, itemType)`
+  - Room version bumped to 9, schema exported to `9.json`, wired in `AppContainer.kt`.
+- **Elimination of N+1 Query Patterns**:
+  - `ExtractedItemDao` & `IntelligenceRepository`: added batch `getByMessages(messageIds: List<String>)`.
+  - `ThreadViewModel`: eliminated 2 distinct N+1 queries by batching classifications with `getClassifications` and temporal extractions with `getExtractedItemsByMessages`.
+- **Batch FTS Indexing**:
+  - `SearchIndexStore`: added compiled batch statement upserts `indexDocuments(docs)`.
+  - `RoomMailRepository`: batch-resolves unique `companyId`s across the batch instead of querying `companyDao` per message.
+- **UI Compose Optimization**:
+  - `MessageCard.kt`: wrapped `HtmlSanitizer.htmlToText(html)` in `remember(html)` to avoid costly re-parsing during recomposition.
+
+### Verification & Measured Benchmarks
+- 8 comprehensive benchmark suites in `PerformanceBenchmarkTest`:
+  - Search Query Parser: **61,728 queries/sec** (162ms for 10,000 queries)
+  - Priority Engine: **92,592 msgs/sec** (0.0108 ms/msg for 10,000 emails)
+  - Deterministic Classifier: **31,446 msgs/sec** (0.032 ms/msg for 10,000 emails)
+  - Company Detection: **1,250,000 lookups/sec** (4ms for 5,000 lookups)
+  - Temporal Extractor: **1,329 msgs/sec** (752ms for 1,000 emails)
+  - Conversation Analyzer: **12,500 threads/sec** (16ms for 200 threads / 600 msgs)
+  - Memory Retained Delta: **9.62 MB** for 10,000 synthetic emails
+  - HTML Sanitizer: **3,937 msgs/sec** (127ms for 500 emails)
+- Full test suite: **646/646 tests pass** via JUnitCore across 80 test classes (0 failures).
+- `:app:assembleDebug` BUILD SUCCESSFUL via Gradle 8.14.6 (`app-debug.apk` 15MB).
+- Sibling projects untouched (`omnibuds` never touched).
+- Secret audit clean: zero API keys, secrets, or passwords committed.
+- Stopped strictly at Phase 24 boundary (did not begin Phase 25 Analytics or Phase 22 Gmail write operations).
+
+### Deferred work (user-approved, unchanged)
+- Phase 3 (Google OAuth & Gmail Connection), Phases 15/16 (Calendar/Tasks),
+  Phase 22 (Gmail write operations), Phase 29 (production OAuth/Play Store).
 
