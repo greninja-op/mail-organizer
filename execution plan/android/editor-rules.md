@@ -256,3 +256,15 @@ If supported, maintain skills for Architecture, Android Development, Gmail OAuth
 - Compiled statement batching for FTS index upserts: avoid per-message DDL/DML compilation loops.
 - Compose rendering: memoize expensive transformations (e.g. HtmlSanitizer.htmlToText) with remember to prevent repeated parsing during recompositions.
 - Privacy & security preservation: performance optimizations must never weaken privacy guarantees, bypass credential sanitization, or send telemetry to external servers.
+
+## Phase 26 — Optional AI Fallback Architecture (permanent rules)
+- AI is an optional secondary fallback, never the foundation of Mail Organizer.
+- Deterministic, local-first intelligence remains authoritative: User correction > User rule > Deterministic intelligence > Optional AI fallback > Unknown.
+- Default to OFF: AI is disabled out of the box (`isAiEnabled = false`). Remote AI requires explicit user opt-in and consent (`hasUserConsented = false`).
+- Zero direct action authority: AI can only suggest structured advisory classifications or summaries; it can NEVER authorize sends, deletions, modifications, calendar/task creations, or permissions.
+- Security Shield: AI can never downgrade a deterministic `SECURITY` classification signal.
+- Untrusted content & prompt boundary: email text is strictly enclosed in boundary delimiters with anti-injection system armor. Directives within emails can never override application tasks.
+- Data minimization: send only bounded subjects (<=120 chars) and snippets (<=500 chars), with tokens/credentials sanitized via `SecuritySanitizer`. Never transmit raw HTML, full MIME payloads, or OAuth tokens.
+- Strict output validation: models output flat JSON matching strict enums. Confidence is capped at `MAX_AI_CONFIDENCE = 0.85`. Prohibited action keywords ("delete", "send", "drop table", etc.) fail validation.
+- Account isolation & privacy boundary: AI caches are account-scoped (`accountId` in key); account disconnection or removal immediately purges all associated cache entries and resets state.
+- Offline & No-AI resilience: Mail Organizer remains fully functional offline, when providers are unconfigured, when keys are absent, or when AI fails.
