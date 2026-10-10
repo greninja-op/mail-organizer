@@ -50,6 +50,7 @@ import com.greninjaop.mailorganizer.ui.mail.ConnectivityObserver
 import com.greninjaop.mailorganizer.ui.mail.DebugSampleDataPolicy
 import com.greninjaop.mailorganizer.ui.mail.SampleDataPolicy
 import com.greninjaop.mailorganizer.ui.mail.SampleMailboxSeeder
+import kotlinx.coroutines.flow.first
 
 /**
  * Manual dependency container (Phase 0; data layer wired in Phase 2).
@@ -200,6 +201,7 @@ class AppContainer(private val appContext: Context) {
             intelligence = intelligenceRepository,
             dispatchers = dispatchers,
             recurringSenderProvider = companyIntelligenceUseCase,
+            aiFallback = aiFallbackUseCase,
         )
     }
 
@@ -466,6 +468,7 @@ class AppContainer(private val appContext: Context) {
             integrationManager = integrationManager,
             integrationStateRepository = integrationStateRepository,
             searchIndexStore = searchIndexStore,
+            aiFallbackUseCase = aiFallbackUseCase,
             dispatchers = dispatchers,
         )
     }
@@ -481,6 +484,51 @@ class AppContainer(private val appContext: Context) {
             conversationUseCase = conversationUseCase,
             cleanupUseCase = cleanupUseCase,
             activeAccountPreferences = activeAccountPreferences,
+            dispatchers = dispatchers,
+        )
+    }
+
+    // ---- Phase 26: Optional AI Fallback Architecture ----
+    val aiPreferences: com.greninjaop.mailorganizer.data.prefs.AiPreferences by lazy {
+        com.greninjaop.mailorganizer.data.prefs.DataStoreAiPreferences(
+            appContext.applicationContext,
+            dispatchers,
+        )
+    }
+
+    val aiProviderRegistry: com.greninjaop.mailorganizer.data.ai.AiProviderRegistry by lazy {
+        com.greninjaop.mailorganizer.data.ai.AiProviderRegistry().apply {
+            register(com.greninjaop.mailorganizer.data.ai.LocalRuleAiProvider())
+            register(
+                com.greninjaop.mailorganizer.data.ai.StubRemoteAiProvider(
+                    apiKeyProvider = {
+                        kotlinx.coroutines.runBlocking(dispatchers.io) {
+                            aiPreferences.apiKey.first()
+                        }
+                    },
+                    isNetworkAvailable = {
+                        kotlinx.coroutines.runBlocking(dispatchers.io) {
+                            connectivityObserver.isOnline.first()
+                        }
+                    },
+                )
+            )
+        }
+    }
+
+    val aiManager: com.greninjaop.mailorganizer.domain.ai.AiManager by lazy {
+        com.greninjaop.mailorganizer.domain.ai.AiManager(
+            preferences = aiPreferences,
+            registry = aiProviderRegistry,
+            dispatchers = dispatchers,
+        )
+    }
+
+    val aiFallbackUseCase: com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase by lazy {
+        com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase(
+            aiManager = aiManager,
+            preferences = aiPreferences,
+            mailRepository = mailRepository,
             dispatchers = dispatchers,
         )
     }

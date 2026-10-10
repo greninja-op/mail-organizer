@@ -378,7 +378,11 @@ object Migrations {
      */
     val MIGRATION_4_5: Migration = object : Migration(4, 5) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL(SearchIndexStore.CREATE_SQL)
+            try {
+                db.execSQL(SearchIndexStore.CREATE_SQL)
+            } catch (_: Throwable) {
+                // Handled gracefully: device SQLite may lack FTS5 extension (SearchIndexStore probes availability)
+            }
             db.execSQL(
                 "CREATE TABLE IF NOT EXISTS search_index_meta (" +
                     "accountId TEXT NOT NULL PRIMARY KEY, " +

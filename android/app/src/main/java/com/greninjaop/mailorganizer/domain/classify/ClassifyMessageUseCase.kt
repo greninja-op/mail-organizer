@@ -46,6 +46,11 @@ class ClassifyMessageUseCase(
      * sender history.
      */
     private val recurringSenderProvider: RecurringSenderProvider? = null,
+    /**
+     * Optional AI fallback architecture (Phase 26).
+     * AI is only queried if deterministic classification yields UNCLASSIFIED.
+     */
+    private val aiFallback: com.greninjaop.mailorganizer.domain.ai.AiFallbackUseCase? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -113,7 +118,18 @@ class ClassifyMessageUseCase(
             isRecurringSender = isRecurringSender,
             clock = clock,
         )
-        intelligence.setClassification(result.toRecord(messageId, accountId))
+
+        // Phase 26: Optional AI Fallback Architecture.
+        // Deterministic classification is authoritative. AI fallback is only attempted
+        // when deterministic classification yields UNCLASSIFIED.
+        val recordToSave = if (result.category == ClassifierCategory.UNCLASSIFIED && aiFallback != null) {
+            val aiRecord = aiFallback.classifyWithFallback(message, MailCategory.UNCLASSIFIED)
+            aiRecord ?: result.toRecord(messageId, accountId)
+        } else {
+            result.toRecord(messageId, accountId)
+        }
+
+        intelligence.setClassification(recordToSave)
         return result
     }
 
