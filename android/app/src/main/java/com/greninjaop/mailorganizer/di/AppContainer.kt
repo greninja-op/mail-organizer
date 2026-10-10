@@ -455,6 +455,19 @@ class AppContainer(private val appContext: Context) {
         )
     }
 
+    // ---- Phase 23: Privacy Center & Security Hardening ----
+    val privacyUseCase: com.greninjaop.mailorganizer.domain.privacy.PrivacyUseCase by lazy {
+        com.greninjaop.mailorganizer.domain.privacy.PrivacyUseCase(
+            appDatabase = database,
+            accountRepository = accountRepository,
+            activeAccountPreferences = activeAccountPreferences,
+            integrationManager = integrationManager,
+            integrationStateRepository = integrationStateRepository,
+            searchIndexStore = searchIndexStore,
+            dispatchers = dispatchers,
+        )
+    }
+
     private companion object {
         const val DATABASE_NAME = "mail_organizer.db"
     }

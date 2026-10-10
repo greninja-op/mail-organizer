@@ -475,7 +475,12 @@ fun AppNavGraph(
             )
         }
         composable(AppDestinations.PRIVACY) {
-            PrivacyScreen(onBack = { navController.popBackStack() })
+            val vm: com.greninjaop.mailorganizer.ui.privacy.PrivacyViewModel =
+                viewModel(factory = com.greninjaop.mailorganizer.ui.privacy.PrivacyViewModelFactory(container))
+            com.greninjaop.mailorganizer.ui.privacy.PrivacyCenterScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
         }
         composable(AppDestinations.ACCOUNTS) {
             val vm: AccountsViewModel =
