@@ -85,6 +85,7 @@ object AppDestinations {
     const val ACCOUNTS = "accounts"
     const val CLEANUP = "cleanup"
     const val ANALYTICS = "analytics"
+    const val AI_SETTINGS = "settings/ai"
 
     /**
      * Integration detail route: `integration/{integrationId}` (Phase 17).
@@ -517,6 +518,23 @@ fun AppNavGraph(
                 )
             com.greninjaop.mailorganizer.ui.analytics.AnalyticsScreen(
                 viewModel = vm,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        // Phase 26: Optional AI Fallback Settings destination
+        composable(AppDestinations.AI_SETTINGS) {
+            val vm: com.greninjaop.mailorganizer.ui.settings.AiSettingsViewModel =
+                viewModel(
+                    factory = com.greninjaop.mailorganizer.ui.settings.AiSettingsViewModelFactory(
+                        preferences = container.aiPreferences,
+                        registry = container.aiProviderRegistry,
+                        aiFallbackUseCase = container.aiFallbackUseCase,
+                        dispatchers = container.dispatchers,
+                    ),
+                )
+            com.greninjaop.mailorganizer.ui.settings.AiSettingsScreen(
+                viewModel = vm,
+                onNavigate = { route -> navController.navigate(route) },
                 onBack = { navController.popBackStack() },
             )
         }

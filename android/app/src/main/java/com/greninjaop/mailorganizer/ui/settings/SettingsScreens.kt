@@ -152,6 +152,13 @@ fun SettingsScreen(
                 subtitle = "Local workload, categories, sources & attention patterns",
                 onClick = { onNavigate(AppDestinations.ANALYTICS) },
             )
+            // Phase 26: Optional AI Fallback Architecture
+            SettingsRow(
+                icon = Icons.Filled.Build,
+                title = "AI Assistance (Optional)",
+                subtitle = "Optional secondary fallback for ambiguous emails",
+                onClick = { onNavigate(AppDestinations.AI_SETTINGS) },
+            )
             AppearanceSection(viewModel = appearanceViewModel)
             AboutSection()
         }
