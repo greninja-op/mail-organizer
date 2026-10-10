@@ -1,0 +1,1585 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 9,
+    "identityHash": "2e08454fb7e905316d003e7b4ed0b0ba",
+    "entities": [
+      {
+        "tableName": "accounts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountId` TEXT NOT NULL, `emailAddress` TEXT NOT NULL, `displayName` TEXT, `createdAtEpochMs` INTEGER NOT NULL, `googleAccountId` TEXT, `provider` TEXT NOT NULL, `connectionState` TEXT NOT NULL, `lastSyncEpochMs` INTEGER, `updatedAtEpochMs` INTEGER NOT NULL, `isEnabled` INTEGER NOT NULL, PRIMARY KEY(`accountId`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "emailAddress",
+            "columnName": "emailAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "createdAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "googleAccountId",
+            "columnName": "googleAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "provider",
+            "columnName": "provider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "connectionState",
+            "columnName": "connectionState",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncEpochMs",
+            "columnName": "lastSyncEpochMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isEnabled",
+            "columnName": "isEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountId"
+          ]
+        }
+      },
+      {
+        "tableName": "threads",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`threadId` TEXT NOT NULL, `gmailThreadId` TEXT, `accountId` TEXT NOT NULL, `subject` TEXT NOT NULL, `participantDisplayNames` TEXT NOT NULL, `messageCount` INTEGER NOT NULL, `unreadCount` INTEGER NOT NULL, `latestMessageId` TEXT, `latestMessageEpochMs` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, PRIMARY KEY(`threadId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "threadId",
+            "columnName": "threadId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gmailThreadId",
+            "columnName": "gmailThreadId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subject",
+            "columnName": "subject",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantDisplayNames",
+            "columnName": "participantDisplayNames",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageCount",
+            "columnName": "messageCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unreadCount",
+            "columnName": "unreadCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latestMessageId",
+            "columnName": "latestMessageId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "latestMessageEpochMs",
+            "columnName": "latestMessageEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "threadId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_threads_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_threads_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_threads_accountId_gmailThreadId",
+            "unique": true,
+            "columnNames": [
+              "accountId",
+              "gmailThreadId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_threads_accountId_gmailThreadId` ON `${TABLE_NAME}` (`accountId`, `gmailThreadId`)"
+          },
+          {
+            "name": "index_threads_accountId_latestMessageEpochMs",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "latestMessageEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_threads_accountId_latestMessageEpochMs` ON `${TABLE_NAME}` (`accountId`, `latestMessageEpochMs`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`messageId` TEXT NOT NULL, `gmailMessageId` TEXT, `threadId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `fromAddress` TEXT NOT NULL, `fromName` TEXT, `toAddresses` TEXT NOT NULL, `ccAddresses` TEXT NOT NULL, `subject` TEXT NOT NULL, `snippet` TEXT, `bodyText` TEXT, `bodyHtml` TEXT, `attachments` TEXT NOT NULL, `timestampEpochMs` INTEGER NOT NULL, `unread` INTEGER NOT NULL, `starred` INTEGER NOT NULL, `labels` TEXT NOT NULL, `sizeBytes` INTEGER, `companyId` TEXT, PRIMARY KEY(`messageId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`threadId`) REFERENCES `threads`(`threadId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gmailMessageId",
+            "columnName": "gmailMessageId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "threadId",
+            "columnName": "threadId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromAddress",
+            "columnName": "fromAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromName",
+            "columnName": "fromName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "toAddresses",
+            "columnName": "toAddresses",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ccAddresses",
+            "columnName": "ccAddresses",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subject",
+            "columnName": "subject",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snippet",
+            "columnName": "snippet",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bodyText",
+            "columnName": "bodyText",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bodyHtml",
+            "columnName": "bodyHtml",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attachments",
+            "columnName": "attachments",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestampEpochMs",
+            "columnName": "timestampEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unread",
+            "columnName": "unread",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "starred",
+            "columnName": "starred",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "labels",
+            "columnName": "labels",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeBytes",
+            "columnName": "sizeBytes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "companyId",
+            "columnName": "companyId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "messageId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_messages_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_messages_threadId",
+            "unique": false,
+            "columnNames": [
+              "threadId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_threadId` ON `${TABLE_NAME}` (`threadId`)"
+          },
+          {
+            "name": "index_messages_fromAddress",
+            "unique": false,
+            "columnNames": [
+              "fromAddress"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_fromAddress` ON `${TABLE_NAME}` (`fromAddress`)"
+          },
+          {
+            "name": "index_messages_timestampEpochMs",
+            "unique": false,
+            "columnNames": [
+              "timestampEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_timestampEpochMs` ON `${TABLE_NAME}` (`timestampEpochMs`)"
+          },
+          {
+            "name": "index_messages_unread",
+            "unique": false,
+            "columnNames": [
+              "unread"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_unread` ON `${TABLE_NAME}` (`unread`)"
+          },
+          {
+            "name": "index_messages_accountId_gmailMessageId",
+            "unique": true,
+            "columnNames": [
+              "accountId",
+              "gmailMessageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_messages_accountId_gmailMessageId` ON `${TABLE_NAME}` (`accountId`, `gmailMessageId`)"
+          },
+          {
+            "name": "index_messages_accountId_timestampEpochMs",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "timestampEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_accountId_timestampEpochMs` ON `${TABLE_NAME}` (`accountId`, `timestampEpochMs`)"
+          },
+          {
+            "name": "index_messages_accountId_threadId",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "threadId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_accountId_threadId` ON `${TABLE_NAME}` (`accountId`, `threadId`)"
+          },
+          {
+            "name": "index_messages_threadId_timestampEpochMs",
+            "unique": false,
+            "columnNames": [
+              "threadId",
+              "timestampEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_threadId_timestampEpochMs` ON `${TABLE_NAME}` (`threadId`, `timestampEpochMs`)"
+          },
+          {
+            "name": "index_messages_accountId_unread_timestampEpochMs",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "unread",
+              "timestampEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_accountId_unread_timestampEpochMs` ON `${TABLE_NAME}` (`accountId`, `unread`, `timestampEpochMs`)"
+          },
+          {
+            "name": "index_messages_accountId_starred_timestampEpochMs",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "starred",
+              "timestampEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_accountId_starred_timestampEpochMs` ON `${TABLE_NAME}` (`accountId`, `starred`, `timestampEpochMs`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          },
+          {
+            "table": "threads",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "threadId"
+            ],
+            "referencedColumns": [
+              "threadId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "senders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`senderId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `emailAddress` TEXT NOT NULL, `normalizedEmail` TEXT NOT NULL, `displayName` TEXT, `domain` TEXT NOT NULL, `firstSeenEpochMs` INTEGER NOT NULL, `lastSeenEpochMs` INTEGER NOT NULL, `messageCount` INTEGER NOT NULL, PRIMARY KEY(`senderId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "senderId",
+            "columnName": "senderId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "emailAddress",
+            "columnName": "emailAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedEmail",
+            "columnName": "normalizedEmail",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "domain",
+            "columnName": "domain",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenEpochMs",
+            "columnName": "firstSeenEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenEpochMs",
+            "columnName": "lastSeenEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageCount",
+            "columnName": "messageCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "senderId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_senders_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_senders_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_senders_accountId_normalizedEmail",
+            "unique": true,
+            "columnNames": [
+              "accountId",
+              "normalizedEmail"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_senders_accountId_normalizedEmail` ON `${TABLE_NAME}` (`accountId`, `normalizedEmail`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "companies",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`companyId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `canonicalName` TEXT NOT NULL, `normalizedDomain` TEXT NOT NULL, `knownDomains` TEXT NOT NULL, `userOverrideName` TEXT, `pinned` INTEGER NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, PRIMARY KEY(`companyId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "companyId",
+            "columnName": "companyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "canonicalName",
+            "columnName": "canonicalName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedDomain",
+            "columnName": "normalizedDomain",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "knownDomains",
+            "columnName": "knownDomains",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userOverrideName",
+            "columnName": "userOverrideName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pinned",
+            "columnName": "pinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "createdAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "companyId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_companies_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_companies_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_companies_accountId_normalizedDomain",
+            "unique": true,
+            "columnNames": [
+              "accountId",
+              "normalizedDomain"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_companies_accountId_normalizedDomain` ON `${TABLE_NAME}` (`accountId`, `normalizedDomain`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "classifications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `messageId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `category` TEXT NOT NULL, `confidence` REAL NOT NULL, `source` TEXT NOT NULL, `version` INTEGER NOT NULL, `explanation` TEXT, `overridden` INTEGER NOT NULL, `classifiedAtEpochMs` INTEGER NOT NULL, FOREIGN KEY(`messageId`) REFERENCES `messages`(`messageId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "explanation",
+            "columnName": "explanation",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "overridden",
+            "columnName": "overridden",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "classifiedAtEpochMs",
+            "columnName": "classifiedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_classifications_messageId",
+            "unique": true,
+            "columnNames": [
+              "messageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_classifications_messageId` ON `${TABLE_NAME}` (`messageId`)"
+          },
+          {
+            "name": "index_classifications_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_classifications_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_classifications_category",
+            "unique": false,
+            "columnNames": [
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_classifications_category` ON `${TABLE_NAME}` (`category`)"
+          },
+          {
+            "name": "index_classifications_accountId_category",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_classifications_accountId_category` ON `${TABLE_NAME}` (`accountId`, `category`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "messages",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "messageId"
+            ],
+            "referencedColumns": [
+              "messageId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "priorities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `messageId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `priority` TEXT NOT NULL, `manualOverride` INTEGER NOT NULL, `reason` TEXT, `version` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, FOREIGN KEY(`messageId`) REFERENCES `messages`(`messageId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "manualOverride",
+            "columnName": "manualOverride",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_priorities_messageId",
+            "unique": true,
+            "columnNames": [
+              "messageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_priorities_messageId` ON `${TABLE_NAME}` (`messageId`)"
+          },
+          {
+            "name": "index_priorities_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_priorities_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_priorities_priority",
+            "unique": false,
+            "columnNames": [
+              "priority"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_priorities_priority` ON `${TABLE_NAME}` (`priority`)"
+          },
+          {
+            "name": "index_priorities_accountId_priority",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "priority"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_priorities_accountId_priority` ON `${TABLE_NAME}` (`accountId`, `priority`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "messages",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "messageId"
+            ],
+            "referencedColumns": [
+              "messageId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "action_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `messageId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `threadId` TEXT NOT NULL, `actionType` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `urgency` TEXT NOT NULL, `source` TEXT NOT NULL, `status` TEXT NOT NULL, `confidence` REAL NOT NULL, `explanation` TEXT, `externalEffect` TEXT NOT NULL, `payloadJson` TEXT, `dueDateEpochMs` INTEGER, `detectedAtEpochMs` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, `version` INTEGER NOT NULL, `completed` INTEGER NOT NULL, `dismissed` INTEGER NOT NULL, FOREIGN KEY(`messageId`) REFERENCES `messages`(`messageId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "threadId",
+            "columnName": "threadId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actionType",
+            "columnName": "actionType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "urgency",
+            "columnName": "urgency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "explanation",
+            "columnName": "explanation",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "externalEffect",
+            "columnName": "externalEffect",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dueDateEpochMs",
+            "columnName": "dueDateEpochMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "detectedAtEpochMs",
+            "columnName": "detectedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completed",
+            "columnName": "completed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dismissed",
+            "columnName": "dismissed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_action_items_messageId",
+            "unique": false,
+            "columnNames": [
+              "messageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_action_items_messageId` ON `${TABLE_NAME}` (`messageId`)"
+          },
+          {
+            "name": "index_action_items_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_action_items_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_action_items_threadId",
+            "unique": false,
+            "columnNames": [
+              "threadId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_action_items_threadId` ON `${TABLE_NAME}` (`threadId`)"
+          },
+          {
+            "name": "index_action_items_dueDateEpochMs",
+            "unique": false,
+            "columnNames": [
+              "dueDateEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_action_items_dueDateEpochMs` ON `${TABLE_NAME}` (`dueDateEpochMs`)"
+          },
+          {
+            "name": "index_action_items_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_action_items_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_action_items_accountId_status",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_action_items_accountId_status` ON `${TABLE_NAME}` (`accountId`, `status`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "messages",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "messageId"
+            ],
+            "referencedColumns": [
+              "messageId"
+            ]
+          },
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sync_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountId` TEXT NOT NULL, `status` TEXT NOT NULL, `lastSuccessfulSyncEpochMs` INTEGER, `lastAttemptEpochMs` INTEGER, `cursor` TEXT, `errorCode` TEXT, `retryCount` INTEGER NOT NULL, `syncVersion` INTEGER NOT NULL, PRIMARY KEY(`accountId`), FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSuccessfulSyncEpochMs",
+            "columnName": "lastSuccessfulSyncEpochMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastAttemptEpochMs",
+            "columnName": "lastAttemptEpochMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cursor",
+            "columnName": "cursor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "errorCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncVersion",
+            "columnName": "syncVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "user_rules",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `accountId` TEXT NOT NULL, `ruleType` TEXT NOT NULL, `matcher` TEXT NOT NULL, `targetCategory` TEXT, `targetPriority` TEXT, `targetActionRequired` INTEGER, `enabled` INTEGER NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, `updatedAtEpochMs` INTEGER NOT NULL, `name` TEXT NOT NULL, `conditionsJson` TEXT NOT NULL, `actionsJson` TEXT NOT NULL, `ruleOrder` INTEGER NOT NULL, `ruleVersion` INTEGER NOT NULL, `source` TEXT NOT NULL, FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruleType",
+            "columnName": "ruleType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matcher",
+            "columnName": "matcher",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetCategory",
+            "columnName": "targetCategory",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "targetPriority",
+            "columnName": "targetPriority",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "targetActionRequired",
+            "columnName": "targetActionRequired",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "createdAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conditionsJson",
+            "columnName": "conditionsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actionsJson",
+            "columnName": "actionsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruleOrder",
+            "columnName": "ruleOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruleVersion",
+            "columnName": "ruleVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_user_rules_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_user_rules_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "user_corrections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `accountId` TEXT NOT NULL, `scope` TEXT NOT NULL, `scopeKey` TEXT NOT NULL, `field` TEXT NOT NULL, `value` TEXT NOT NULL, `createdAtEpochMs` INTEGER NOT NULL, FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scope",
+            "columnName": "scope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scopeKey",
+            "columnName": "scopeKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "field",
+            "columnName": "field",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "createdAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_user_corrections_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_user_corrections_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_user_corrections_accountId_scope_scopeKey_field",
+            "unique": true,
+            "columnNames": [
+              "accountId",
+              "scope",
+              "scopeKey",
+              "field"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_user_corrections_accountId_scope_scopeKey_field` ON `${TABLE_NAME}` (`accountId`, `scope`, `scopeKey`, `field`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "extracted_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `messageId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `itemType` TEXT NOT NULL, `title` TEXT NOT NULL, `payload` TEXT, `dueDateEpochMs` INTEGER, `detectedAtEpochMs` INTEGER NOT NULL, `completed` INTEGER NOT NULL, FOREIGN KEY(`messageId`) REFERENCES `messages`(`messageId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`accountId`) REFERENCES `accounts`(`accountId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemType",
+            "columnName": "itemType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payload",
+            "columnName": "payload",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dueDateEpochMs",
+            "columnName": "dueDateEpochMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "detectedAtEpochMs",
+            "columnName": "detectedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completed",
+            "columnName": "completed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_extracted_items_messageId",
+            "unique": false,
+            "columnNames": [
+              "messageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_items_messageId` ON `${TABLE_NAME}` (`messageId`)"
+          },
+          {
+            "name": "index_extracted_items_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_items_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_extracted_items_itemType",
+            "unique": false,
+            "columnNames": [
+              "itemType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_items_itemType` ON `${TABLE_NAME}` (`itemType`)"
+          },
+          {
+            "name": "index_extracted_items_dueDateEpochMs",
+            "unique": false,
+            "columnNames": [
+              "dueDateEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_items_dueDateEpochMs` ON `${TABLE_NAME}` (`dueDateEpochMs`)"
+          },
+          {
+            "name": "index_extracted_items_accountId_itemType",
+            "unique": false,
+            "columnNames": [
+              "accountId",
+              "itemType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_extracted_items_accountId_itemType` ON `${TABLE_NAME}` (`accountId`, `itemType`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "messages",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "messageId"
+            ],
+            "referencedColumns": [
+              "messageId"
+            ]
+          },
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountId"
+            ],
+            "referencedColumns": [
+              "accountId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "search_index_meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountId` TEXT NOT NULL, `version` INTEGER NOT NULL, PRIMARY KEY(`accountId`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountId"
+          ]
+        }
+      },
+      {
+        "tableName": "integration_states",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`integrationId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `lastStatus` TEXT NOT NULL, `statusReason` TEXT, `updatedAtEpochMs` INTEGER NOT NULL, `configVersion` INTEGER NOT NULL, PRIMARY KEY(`integrationId`, `accountId`))",
+        "fields": [
+          {
+            "fieldPath": "integrationId",
+            "columnName": "integrationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastStatus",
+            "columnName": "lastStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "statusReason",
+            "columnName": "statusReason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updatedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "configVersion",
+            "columnName": "configVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "integrationId",
+            "accountId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2e08454fb7e905316d003e7b4ed0b0ba')"
+    ]
+  }
+}
